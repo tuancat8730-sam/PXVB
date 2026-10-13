@@ -21,6 +21,8 @@
     <module>modules/identity</module>
     <module>modules/workflow</module>
     <module>modules/alerting</module>
+    <module>modules/dataio</module>
+    <module>modules/masterdata</module>
     <module>hosts/pxvb-api</module>
     <module>hosts/pxvb-worker</module>
   </modules>
@@ -33,6 +35,7 @@
     <bouncycastle.version>1.80</bouncycastle.version>
     <archunit.version>1.3.0</archunit.version>
     <springdoc.version>2.8.13</springdoc.version>
+    <poi.version>5.4.0</poi.version>
   </properties>
 
   <dependencyManagement>
@@ -63,6 +66,21 @@
         <groupId>vn.pxvb</groupId>
         <artifactId>pxvb-alerting</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>vn.pxvb</groupId>
+        <artifactId>pxvb-dataio</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>vn.pxvb</groupId>
+        <artifactId>pxvb-masterdata</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.poi</groupId>
+        <artifactId>poi-ooxml</artifactId>
+        <version>${poi.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.f4b6a3</groupId>

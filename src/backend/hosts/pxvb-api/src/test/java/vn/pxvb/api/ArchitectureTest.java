@@ -24,6 +24,17 @@ class ArchitectureTest {
                     "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..");
 
     @ArchTest
+    static final ArchRule masterdataAndDataioAreIndependentOfOtherBusinessModules = noClasses()
+            .that().resideInAnyPackage("vn.pxvb.masterdata..", "vn.pxvb.dataio..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity..", "vn.pxvb.workflow..",
+                    "vn.pxvb.alerting..");
+
+    @ArchTest
+    static final ArchRule dataioDoesNotDependOnMasterdata = noClasses()
+            .that().resideInAPackage("vn.pxvb.dataio..")
+            .should().dependOnClassesThat().resideInAPackage("vn.pxvb.masterdata..");
+
+    @ArchTest
     static final ArchRule alertingDoesNotDependOnWorkflow = noClasses()
             .that().resideInAPackage("vn.pxvb.alerting..")
             .should().dependOnClassesThat().resideInAPackage("vn.pxvb.workflow..");

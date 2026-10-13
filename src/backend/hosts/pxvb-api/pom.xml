@@ -35,6 +35,14 @@
       <artifactId>pxvb-alerting</artifactId>
     </dependency>
     <dependency>
+      <groupId>vn.pxvb</groupId>
+      <artifactId>pxvb-dataio</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>vn.pxvb</groupId>
+      <artifactId>pxvb-masterdata</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>

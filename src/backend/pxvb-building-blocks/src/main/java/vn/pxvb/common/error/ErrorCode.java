@@ -15,7 +15,15 @@ public enum ErrorCode {
     INVALID_STATE_TRANSITION("PXVB-CC-0422", 422, "Chuyển trạng thái không hợp lệ"),
     DATA_LOCKED("PXVB-CC-0423", 423, "Dữ liệu đã được xác nhận/khóa, không thể sửa trực tiếp"),
     RATE_LIMITED("PXVB-CC-0429", 429, "Thao tác quá nhanh, vui lòng thử lại sau"),
-    INTERNAL("PXVB-CC-0500", 500, "Lỗi hệ thống, vui lòng liên hệ quản trị kèm mã truy vết");
+    INTERNAL("PXVB-CC-0500", 500, "Lỗi hệ thống, vui lòng liên hệ quản trị kèm mã truy vết"),
+
+    // Masterdata (PXVB-MD-1xxx)
+    MD_PAIRING_CONFLICT("PXVB-MD-1002", 409, "Máy bao đã được ghép với máy vấn khác trong cùng ca"),
+    MD_IN_USE("PXVB-MD-1003", 409, "Danh mục đang được sử dụng, không thể khóa"),
+    MD_NORM_INVALID("PXVB-MD-1004", 422, "Định mức không hợp lệ"),
+    MD_DUPLICATE("PXVB-MD-1005", 409, "Bản ghi đã tồn tại"),
+    // Import/Export (PXVB-CC-05xx)
+    IMPORT_INVALID_FILE("PXVB-CC-0510", 400, "Tệp nhập liệu không hợp lệ");
 
     private final String code;
     private final int status;

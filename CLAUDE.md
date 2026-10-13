@@ -30,7 +30,17 @@
 
 Đã làm: Sprint 0 phần backend (E00), E01 (building blocks), E02 (identity), E03 (module `workflow`: luồng duyệt,
 ủy quyền, xác nhận điện tử, điều chỉnh sau khóa), E04 (module `alerting`: rule, cảnh báo, thông báo, STOMP).
-Chưa làm: khung frontend React (`src/web`, dashboard, tablet), E05 trở đi (xem SDD §18.2).
+E05 (module `dataio`: nhập/xuất Excel), E06–E08 (module `masterdata`: máy, cụm, ghép cặp, ca, SP, NVL, định mức
+có phiên bản, ngưỡng, mã dừng/lý do, mẫu KSCL, lỗi/luật, bảo trì, phụ tùng, liên kết).
+Chưa làm: khung frontend React (`src/web`, dashboard, tablet), E09 trở đi (xem SDD §18.2).
+
+## Masterdata: thêm danh mục mới
+
+- Khai báo `CatalogSpec` trong `Catalogs.java` + bảng `md_*` trong migration (tên cột = snake_case của tên thuộc tính).
+  API `/api/v1/md/{resource}`, quyền `md.<permKey>.<view|create|update|export|approve>`, mẫu import và export tự có.
+- Luật riêng (phiên bản, ràng buộc chéo) viết thành dịch vụ riêng, không nhồi vào `CatalogService`.
+- Module khác lấy dữ liệu qua `MasterdataQueries` (ngưỡng, định mức hiệu lực, ghép cặp); chặn khóa bằng `UsageChecker`.
+- Nhập Excel: hiện thực `dataio.contract.ImportTemplate` + `ImportTemplate.Provider`.
 
 ## Quy ước tích hợp giữa module
 

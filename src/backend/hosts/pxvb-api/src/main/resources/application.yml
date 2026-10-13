@@ -18,7 +18,11 @@ spring:
           time_zone: UTC
   flyway:
     # Mỗi module thêm một location khi được tạo (db/migration/<module>)
-    locations: classpath:db/migration/common,classpath:db/migration/identity,classpath:db/migration/workflow,classpath:db/migration/alerting
+    locations: classpath:db/migration/common,classpath:db/migration/identity,classpath:db/migration/workflow,classpath:db/migration/alerting,classpath:db/migration/dataio,classpath:db/migration/masterdata
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
   jackson:
     serialization:
       write-dates-as-timestamps: false
