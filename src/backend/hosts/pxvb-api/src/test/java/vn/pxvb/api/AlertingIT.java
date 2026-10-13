@@ -1,0 +1,168 @@
+package vn.pxvb.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import vn.pxvb.alerting.application.AlertService;
+import vn.pxvb.alerting.contract.AlertRaiser;
+import vn.pxvb.alerting.contract.AlertRaiser.AlertCommand;
+import vn.pxvb.alerting.contract.AlertRaiser.AlertRef;
+import vn.pxvb.common.error.BusinessException;
+
+/** Động cơ cảnh báo: khử trùng, vòng đời, người nhận, leo thang, cấu hình rule (E04). */
+@AutoConfigureMockMvc
+class AlertingIT extends AbstractIntegrationTest {
+
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    ObjectMapper mapper;
+    @Autowired
+    AlertRaiser raiser;
+    @Autowired
+    AlertService alertService;
+
+    private String admin;
+    private TestUser leader;
+    private TestUser deputy;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        admin = adminToken(mvc, mapper);
+        leader = createUser(mvc, mapper, admin, "lead", "SHIFT_LEADER");
+        deputy = createUser(mvc, mapper, admin, "dep", "DEPUTY_DIRECTOR");
+    }
+
+    private AlertCommand command(String rule, String subject) {
+        return new AlertCommand(rule, "Machine", subject, UUID.randomUUID(), null, "Cảnh báo " + rule,
+                "Chi tiết " + subject, Map.of("value", 4.2), null, null);
+    }
+
+    private JsonNode json(MvcResult r) throws Exception {
+        return mapper.readTree(r.getResponse().getContentAsString());
+    }
+
+    private MvcResult call(TestUser user, String path, String body) throws Exception {
+        return mvc.perform(post(path).header("Authorization", "Bearer " + user.token())
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+    }
+
+    @Test
+    void raisedAlertNotifiesRuleRecipientsAndIsDeduplicated() throws Exception {
+        String subject = "M-" + UUID.randomUUID();
+        AlertRef first = raiser.raise(command("MT_WASTE_HIGH", subject));
+        assertThat(first.created()).isTrue();
+
+        mvc.perform(get("/api/v1/alerting/notifications").header("Authorization", "Bearer " + leader.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.alertId == '%s')]".formatted(first.alertId())).exists());
+        mvc.perform(get("/api/v1/alerting/notifications").header("Authorization", "Bearer " + deputy.token()))
+                .andExpect(jsonPath("$.content[?(@.alertId == '%s')]".formatted(first.alertId())).exists());
+
+        AlertRef again = raiser.raise(command("MT_WASTE_HIGH", subject));
+        assertThat(again.created()).isFalse();
+        assertThat(again.alertId()).isEqualTo(first.alertId());
+        mvc.perform(get("/api/v1/alerting/alerts/" + first.alertId())
+                        .header("Authorization", "Bearer " + leader.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alert.occurrenceCount").value(2))
+                .andExpect(jsonPath("$.alert.status").value("OPEN"));
+    }
+
+    @Test
+    void lifecycleRequiresCauseAndRejectsInvalidTransitions() throws Exception {
+        AlertRef ref = raiser.raise(command("PR_BUFFER_LOW", "M-" + UUID.randomUUID()));
+        String base = "/api/v1/alerting/alerts/" + ref.alertId();
+
+        // Chưa ACK thì không thể đóng
+        assertThat(call(leader,base + "/close", "{}").getResponse().getStatus()).isEqualTo(422);
+        assertThat(json(call(leader,base + "/ack", "{\"note\":\"Đã nhận\"}")).get("status").asText())
+                .isEqualTo("ACK");
+        assertThat(json(call(leader,base + "/start", "{}")).get("status").asText()).isEqualTo("IN_PROGRESS");
+
+        // Bắt buộc nguyên nhân khi xử lý xong
+        assertThat(call(leader,base + "/resolve", "{\"note\":\"Xong\"}").getResponse().getStatus()).isEqualTo(400);
+        JsonNode resolved = json(call(leader,base + "/resolve", "{\"cause\":\"Thiếu điếu\",\"note\":\"Đã bổ sung\"}"));
+        assertThat(resolved.get("status").asText()).isEqualTo("RESOLVED");
+        assertThat(resolved.get("cause").asText()).isEqualTo("Thiếu điếu");
+        assertThat(json(call(leader,base + "/close", "{}")).get("status").asText()).isEqualTo("CLOSED");
+
+        JsonNode detail = json(mvc.perform(get(base).header("Authorization", "Bearer " + leader.token()))
+                .andReturn());
+        assertThat(detail.get("history")).hasSize(5);
+    }
+
+    @Test
+    void userWithoutHandlePermissionCannotAcknowledge() throws Exception {
+        TestUser planner = createUser(mvc, mapper, admin, "plan", "PLANNER");
+        AlertRef ref = raiser.raise(command("PR_BUFFER_HIGH", "M-" + UUID.randomUUID()));
+        assertThat(call(planner,"/api/v1/alerting/alerts/" + ref.alertId() + "/ack", "{}")
+                .getResponse().getStatus()).isEqualTo(403);
+    }
+
+    @Test
+    void unackedAlertEscalatesToSuperiorOnce() throws Exception {
+        TestUser freshDeputy = createUser(mvc, mapper, admin, "dep", "DEPUTY_DIRECTOR");
+        AlertRef ref = raiser.raise(command("PR_OUTPUT_BEHIND", "M-" + UUID.randomUUID()));
+
+        // Chưa quá hạn: không leo thang
+        assertThat(alertService.escalateDue(Instant.now().plus(5, ChronoUnit.MINUTES))).isZero();
+        assertThat(alertService.escalateDue(Instant.now().plus(31, ChronoUnit.MINUTES))).isGreaterThanOrEqualTo(1);
+        assertThat(alertService.escalateDue(Instant.now().plus(32, ChronoUnit.MINUTES))).isZero();
+
+        mvc.perform(get("/api/v1/alerting/alerts/" + ref.alertId())
+                        .header("Authorization", "Bearer " + freshDeputy.token()))
+                .andExpect(jsonPath("$.alert.escalationLevel").value(1));
+        mvc.perform(get("/api/v1/alerting/notifications").header("Authorization", "Bearer " + freshDeputy.token()))
+                .andExpect(jsonPath("$.content[?(@.alertId == '%s')]".formatted(ref.alertId())).exists())
+                .andExpect(jsonPath("$.content[0].title").value(org.hamcrest.Matchers.startsWith("[Leo thang]")));
+    }
+
+    @Test
+    void disabledRuleDoesNotRaiseAndUnknownRuleIsRejected() throws Exception {
+        MvcResult off = mvc.perform(put("/api/v1/alerting/rules/TX_BLOCK_LOW")
+                .header("Authorization", "Bearer " + admin).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"active\":false}")).andReturn();
+        assertThat(off.getResponse().getStatus()).isEqualTo(200);
+        try {
+            AlertRef ref = raiser.raise(command("TX_BLOCK_LOW", "S-1"));
+            assertThat(ref.alertId()).isNull();
+        } finally {
+            mvc.perform(put("/api/v1/alerting/rules/TX_BLOCK_LOW").header("Authorization", "Bearer " + admin)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}"));
+        }
+        assertThatThrownBy(() -> raiser.raise(command("NO_SUCH_RULE", "x"))).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void notificationsCanBeMarkedRead() throws Exception {
+        raiser.raise(command("PR_OEE_LOW", "M-" + UUID.randomUUID()));
+        JsonNode unread = json(mvc.perform(get("/api/v1/alerting/notifications/unread-count")
+                .header("Authorization", "Bearer " + leader.token())).andReturn());
+        assertThat(unread.get("unread").asLong()).isGreaterThanOrEqualTo(1);
+
+        mvc.perform(post("/api/v1/alerting/notifications/read-all").header("Authorization",
+                "Bearer " + leader.token())).andExpect(status().isOk());
+        JsonNode after = json(mvc.perform(get("/api/v1/alerting/notifications/unread-count")
+                .header("Authorization", "Bearer " + leader.token())).andReturn());
+        assertThat(after.get("unread").asLong()).isZero();
+    }
+}

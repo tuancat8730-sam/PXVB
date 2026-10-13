@@ -28,5 +28,15 @@
 
 ## Trạng thái triển khai
 
-Đã làm: Sprint 0 phần backend (E00), E01 (building blocks), E02 (identity). Chưa làm: khung frontend React
-(`src/web`, dashboard, tablet), E03 trở đi (xem SDD §18.2).
+Đã làm: Sprint 0 phần backend (E00), E01 (building blocks), E02 (identity), E03 (module `workflow`: luồng duyệt,
+ủy quyền, xác nhận điện tử, điều chỉnh sau khóa), E04 (module `alerting`: rule, cảnh báo, thông báo, STOMP).
+Chưa làm: khung frontend React (`src/web`, dashboard, tablet), E05 trở đi (xem SDD §18.2).
+
+## Quy ước tích hợp giữa module
+
+- Module chỉ dùng `identity` qua `vn.pxvb.identity.contract` (`IdentityDirectory`, `AccessTokenVerifier`).
+- Module nghiệp vụ khai báo quyền bằng bean `PermissionContributor` (vai trò mặc định chỉ gán một lần).
+- Điều chỉnh dữ liệu đã khóa: module đăng ký bean `AdjustmentApplier` cho `entityType` của mình.
+- Phát cảnh báo: gọi `AlertRaiser.raise(...)` theo mã rule; duyệt: `ApprovalService.start(flowCode, entityId, ...)`
+  và lắng nghe `WorkflowEvents.ApprovalCompleted`; ký: `SignatureService.sign(...)` với hash tính phía server.
+- Repository dạng interface lồng trong lớp `Repositories` (đã bật `considerNestedRepositories`).

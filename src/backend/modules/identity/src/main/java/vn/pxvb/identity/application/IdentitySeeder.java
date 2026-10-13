@@ -1,7 +1,10 @@
 package vn.pxvb.identity.application;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import vn.pxvb.common.security.PermissionContributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -40,10 +43,13 @@ public class IdentitySeeder implements ApplicationRunner {
     private final PasswordPolicy policy;
     private final IdentityProperties props;
     private final TransactionTemplate tx;
+    private final List<PermissionContributor> contributors;
 
     public IdentitySeeder(PermissionRepository permissions, RoleRepository roles, OrgUnitRepository orgUnits,
                           UserRepository users, UserRoleRepository userRoles, PasswordEncoder encoder,
-                          PasswordPolicy policy, IdentityProperties props, TransactionTemplate tx) {
+                          PasswordPolicy policy, IdentityProperties props, TransactionTemplate tx,
+                          List<PermissionContributor> contributors) {
+        this.contributors = contributors;
         this.permissions = permissions;
         this.roles = roles;
         this.orgUnits = orgUnits;
@@ -79,10 +85,34 @@ public class IdentitySeeder implements ApplicationRunner {
         Set<String> all = PermissionCatalog.PERMISSIONS.stream().map(PermissionCatalog.PermissionDef::code)
                 .collect(Collectors.toSet());
         Role admin = roles.findByCode("SYS_ADMIN").orElseThrow();
-        if (!admin.getPermissionCodes().equals(all)) {
-            admin.replacePermissions(all);
+        // Chỉ bổ sung quyền identity còn thiếu; không được thu hồi quyền do module khác/quản trị đã cấp.
+        if (!admin.getPermissionCodes().containsAll(all)) {
+            Set<String> merged = new HashSet<>(admin.getPermissionCodes());
+            merged.addAll(all);
+            admin.replacePermissions(merged);
         }
+        seedContributedPermissions();
         bootstrapAdmin(admin);
+    }
+
+    /** Quyền do các module khác khai báo; gán vai trò mặc định đúng một lần khi quyền mới xuất hiện. */
+    private void seedContributedPermissions() {
+        for (PermissionContributor contributor : contributors) {
+            for (PermissionContributor.PermissionDef def : contributor.permissions()) {
+                if (permissions.existsById(def.code())) {
+                    continue;
+                }
+                permissions.save(new Permission(def.code(), def.module(), def.description()));
+                for (String roleCode : def.defaultRoles()) {
+                    roles.findByCode(roleCode).ifPresent(role -> {
+                        Set<String> granted = new HashSet<>(role.getPermissionCodes());
+                        granted.add(def.code());
+                        role.replacePermissions(granted);
+                    });
+                }
+            }
+        }
+        permissions.flush();
     }
 
     private void bootstrapAdmin(Role adminRole) {

@@ -19,6 +19,8 @@
   <modules>
     <module>pxvb-building-blocks</module>
     <module>modules/identity</module>
+    <module>modules/workflow</module>
+    <module>modules/alerting</module>
     <module>hosts/pxvb-api</module>
     <module>hosts/pxvb-worker</module>
   </modules>
@@ -50,6 +52,16 @@
       <dependency>
         <groupId>vn.pxvb</groupId>
         <artifactId>pxvb-identity</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>vn.pxvb</groupId>
+        <artifactId>pxvb-workflow</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>vn.pxvb</groupId>
+        <artifactId>pxvb-alerting</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

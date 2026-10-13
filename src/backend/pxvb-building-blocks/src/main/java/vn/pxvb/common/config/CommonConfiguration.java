@@ -15,7 +15,7 @@ import vn.pxvb.common.security.CurrentUser;
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorAware")
 @EntityScan("vn.pxvb")
-@EnableJpaRepositories("vn.pxvb")
+@EnableJpaRepositories(basePackages = "vn.pxvb", considerNestedRepositories = true)
 public class CommonConfiguration {
 
     @Bean

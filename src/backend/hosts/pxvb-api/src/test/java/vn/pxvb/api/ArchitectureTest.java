@@ -14,7 +14,35 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule buildingBlocksDoNotDependOnModules = noClasses()
             .that().resideInAPackage("vn.pxvb.common..")
-            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity..");
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity..", "vn.pxvb.workflow..",
+                    "vn.pxvb.alerting..");
+
+    @ArchTest
+    static final ArchRule modulesUseIdentityOnlyThroughContract = noClasses()
+            .that().resideInAnyPackage("vn.pxvb.workflow..", "vn.pxvb.alerting..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity.domain..",
+                    "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..");
+
+    @ArchTest
+    static final ArchRule alertingDoesNotDependOnWorkflow = noClasses()
+            .that().resideInAPackage("vn.pxvb.alerting..")
+            .should().dependOnClassesThat().resideInAPackage("vn.pxvb.workflow..");
+
+    @ArchTest
+    static final ArchRule workflowDoesNotDependOnAlerting = noClasses()
+            .that().resideInAPackage("vn.pxvb.workflow..")
+            .should().dependOnClassesThat().resideInAPackage("vn.pxvb.alerting..");
+
+    @ArchTest
+    static final ArchRule newModulesKeepDomainIndependent = noClasses()
+            .that().resideInAnyPackage("vn.pxvb.workflow.domain..", "vn.pxvb.alerting.domain..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.workflow.api..", "vn.pxvb.workflow.application..",
+                    "vn.pxvb.alerting.api..", "vn.pxvb.alerting.application..", "vn.pxvb.alerting.infrastructure..");
+
+    @ArchTest
+    static final ArchRule newModulesApiLayerNotUsedByOthers = noClasses()
+            .that().resideOutsideOfPackages("vn.pxvb.workflow.api..", "vn.pxvb.alerting.api..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.workflow.api..", "vn.pxvb.alerting.api..");
 
     @ArchTest
     static final ArchRule domainDoesNotDependOnOuterLayers = noClasses()

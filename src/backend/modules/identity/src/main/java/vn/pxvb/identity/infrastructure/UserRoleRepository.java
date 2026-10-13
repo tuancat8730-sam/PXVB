@@ -9,5 +9,7 @@ public interface UserRoleRepository extends JpaRepository<UserRole, UUID> {
 
     List<UserRole> findByUserId(UUID userId);
 
+    List<UserRole> findByRoleId(UUID roleId);
+
     void deleteByUserId(UUID userId);
 }

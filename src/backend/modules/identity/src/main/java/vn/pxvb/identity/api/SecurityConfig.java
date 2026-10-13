@@ -65,7 +65,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/v1/identity/auth/login", "/api/v1/identity/auth/refresh",
                                 "/api/v1/identity/auth/pin-login", "/api/v1/identity/devices/activate",
-                                "/actuator/health/**").permitAll()
+                                "/actuator/health/**",
+                                // Handshake WebSocket: xác thực thực hiện ở STOMP CONNECT (Bearer token)
+                                "/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(j -> j.decoder(tokens.accessDecoder()).jwtAuthenticationConverter(converter))

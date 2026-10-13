@@ -18,7 +18,7 @@ spring:
           time_zone: UTC
   flyway:
     # Mỗi module thêm một location khi được tạo (db/migration/<module>)
-    locations: classpath:db/migration/common,classpath:db/migration/identity
+    locations: classpath:db/migration/common,classpath:db/migration/identity,classpath:db/migration/workflow,classpath:db/migration/alerting
   jackson:
     serialization:
       write-dates-as-timestamps: false
@@ -41,6 +41,18 @@ management:
         enabled: true
 
 pxvb:
+  outbox:
+    dispatcher:
+      enabled: ${PXVB_OUTBOX_DISPATCHER:true}
+  workflow:
+    scanner:
+      enabled: ${PXVB_WORKFLOW_SCANNER:true}
+  alerting:
+    scanner:
+      enabled: ${PXVB_ALERT_SCANNER:true}
+  websocket:
+    # Danh sách origin được phép, phân tách bằng dấu phẩy; production phải đặt cụ thể
+    allowed-origins: ${PXVB_WS_ALLOWED_ORIGINS:*}
   security:
     # Bắt buộc, >= 32 byte. Đặt qua biến môi trường PXVB_SECURITY_JWT_SECRET, không commit giá trị thật.
     jwt-secret: ${PXVB_SECURITY_JWT_SECRET:}
