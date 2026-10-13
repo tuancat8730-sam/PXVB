@@ -307,8 +307,14 @@ public class ApprovalService {
             if (actor.equals(step.getAssigneeUserId())) {
                 return Optional.of(actor);
             }
-            if (step.getRoleCode() != null && directory.roleCodesOf(actor).contains(step.getRoleCode())) {
-                return Optional.of(actor);
+            if (step.getRoleCode() != null) {
+                // roleCode có thể là danh sách cách nhau bằng dấu phẩy: người giữ BẤT KỲ vai trò nào đều duyệt được
+                Set<String> have = directory.roleCodesOf(actor);
+                for (String role : step.getRoleCode().split(",")) {
+                    if (have.contains(role.trim())) {
+                        return Optional.of(actor);
+                    }
+                }
             }
         }
         return Optional.empty();

@@ -32,7 +32,17 @@
 ủy quyền, xác nhận điện tử, điều chỉnh sau khóa), E04 (module `alerting`: rule, cảnh báo, thông báo, STOMP).
 E05 (module `dataio`: nhập/xuất Excel), E06–E08 (module `masterdata`: máy, cụm, ghép cặp, ca, SP, NVL, định mức
 có phiên bản, ngưỡng, mã dừng/lý do, mẫu KSCL, lỗi/luật, bảo trì, phụ tùng, liên kết).
-Chưa làm: khung frontend React (`src/web`, dashboard, tablet), E09 trở đi (xem SDD §18.2).
+E09 (module `sync`: push/pull/xung đột/giám sát thiết bị; lõi ngoại tuyến tablet `src/tablet`), E10 (module
+`planning`: KHSX tháng/tuần, lệnh SX, bố trí nhân sự).
+Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E11 trở đi (xem SDD §18.2).
+
+## Đồng bộ ngoại tuyến & kế hoạch
+
+- Lệnh từ tablet: hiện thực `sync.contract.SyncCommandHandler` cho từng loại lệnh (idempotent do engine lo; ném
+  `ConflictException`/`RejectedException`). Dữ liệu kéo về: hiện thực `common.sync.SyncPullProvider`.
+- Lõi tablet kiểm thử: `cd src/tablet && npm test` (cần Node ≥ 22.5, dùng `node:sqlite`).
+- Lệnh SX xác nhận phát `PlanningEvents.OrderConfirmed` (+ outbox `pl.order.confirmed`) để MT/QC/PR sinh phiếu/lịch/phiên.
+- Luồng duyệt có thể khai báo vai trò dạng danh sách (`"A,B"` = bất kỳ vai trò nào) trong `roleCode` của bước.
 
 ## Masterdata: thêm danh mục mới
 

@@ -6,6 +6,17 @@ on:
     branches: [main]
 
 jobs:
+  tablet-core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Test tablet offline core
+        working-directory: src/tablet
+        run: npm test
+
   backend:
     runs-on: ubuntu-24.04
     strategy:

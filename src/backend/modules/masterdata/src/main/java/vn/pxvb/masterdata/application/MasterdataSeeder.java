@@ -77,6 +77,21 @@ public class MasterdataSeeder implements ApplicationRunner {
         reason("STAMP_WASTE", "PRINT_ERROR", "Lỗi in");
         reason("STAMP_WASTE", "OTHER", "Khác");
 
+        reason("ORDER_ADJUST", "PRODUCT_CHANGE", "Đổi mác");
+        reason("ORDER_ADJUST", "FIBER_OUT", "Hết sợi");
+        reason("ORDER_ADJUST", "BREAKDOWN", "Máy hỏng");
+        reason("ORDER_ADJUST", "SIDE_RUN", "Chạy phụ");
+        reason("ORDER_ADJUST", "QTY_CHANGE", "Đổi sản lượng");
+        reason("ORDER_ADJUST", "OTHER", "Lý do khác");
+
+        // ⚠ Giả định: PXVB sẽ cung cấp danh sách nguyên nhân xử lý cảnh báo thực tế (L16)
+        reason("ALERT_CAUSE", "MACHINE_FAULT", "Máy hỏng/không ổn định");
+        reason("ALERT_CAUSE", "MATERIAL_SHORTAGE", "Thiếu nguyên vật liệu");
+        reason("ALERT_CAUSE", "MATERIAL_QUALITY", "Chất lượng nguyên vật liệu");
+        reason("ALERT_CAUSE", "OPERATOR_ERROR", "Sai thao tác");
+        reason("ALERT_CAUSE", "PLAN_CHANGE", "Thay đổi kế hoạch/đổi mác");
+        reason("ALERT_CAUSE", "OTHER", "Nguyên nhân khác");
+
         for (Threshold t : THRESHOLDS) {
             jdbc.update("INSERT INTO md_threshold(" + COMMON + ", metric_code, scope_type, threshold_value, unit, "
                             + "effective_from, status, change_reason) SELECT " + COMMON_VALUES

@@ -3,6 +3,7 @@ package vn.pxvb.alerting.application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -19,11 +20,14 @@ public class WorkflowEventSink implements OutboxSink {
     private final IdentityDirectory directory;
     private final NotificationService notifications;
     private final ObjectMapper mapper;
+    private final EmailService email;
 
-    public WorkflowEventSink(IdentityDirectory directory, NotificationService notifications, ObjectMapper mapper) {
+    public WorkflowEventSink(IdentityDirectory directory, NotificationService notifications, ObjectMapper mapper,
+                             EmailService email) {
         this.directory = directory;
         this.notifications = notifications;
         this.mapper = mapper;
+        this.email = email;
     }
 
     @Override
@@ -40,12 +44,17 @@ public class WorkflowEventSink implements OutboxSink {
         switch (type) {
             case "approval.requested" -> {
                 Set<UUID> targets = new LinkedHashSet<>();
-                p.path("roleCodes").forEach(r -> targets.addAll(directory.userIdsWithRole(r.asText())));
+                p.path("roleCodes").forEach(r -> {
+                    for (String role : r.asText().split(",")) {
+                        targets.addAll(directory.userIdsWithRole(role.trim()));
+                    }
+                });
                 p.path("userIds").forEach(u -> targets.add(UUID.fromString(u.asText())));
                 targets.remove(UUID.fromString(p.path("startedBy").asText()));
-                notifications.notifyUsers(targets, "APPROVAL_REQUESTED",
-                        "Có yêu cầu cần duyệt: " + p.path("flowCode").asText(), null,
-                        "/approvals/" + p.path("instanceId").asText(), null);
+                String title = "Có yêu cầu cần duyệt: " + p.path("flowCode").asText();
+                String link = "/approvals/" + p.path("instanceId").asText();
+                notifications.notifyUsers(targets, "APPROVAL_REQUESTED", title, null, link, null);
+                email.sendAfterCommit(targets, "[PXVB] " + title, title, link);
             }
             case "approval.completed" -> notifications.notifyUsers(
                     Set.of(UUID.fromString(p.path("startedBy").asText())), "APPROVAL_COMPLETED",
@@ -62,10 +71,13 @@ public class WorkflowEventSink implements OutboxSink {
                         "Yêu cầu duyệt quá hạn: " + p.path("flowCode").asText(), null,
                         "/approvals/" + p.path("instanceId").asText(), null);
             }
-            case "adjustment.requested" -> notifications.notifyUsers(
-                    directory.userIdsWithRole(p.path("approverRoleCode").asText()), "ADJUSTMENT_REQUESTED",
-                    "Có yêu cầu điều chỉnh dữ liệu chờ duyệt: " + p.path("code").asText(), null,
-                    "/adjustments/" + p.path("requestId").asText(), null);
+            case "adjustment.requested" -> {
+                List<UUID> approvers = directory.userIdsWithRole(p.path("approverRoleCode").asText());
+                String title = "Có yêu cầu điều chỉnh dữ liệu chờ duyệt: " + p.path("code").asText();
+                String link = "/adjustments/" + p.path("requestId").asText();
+                notifications.notifyUsers(approvers, "ADJUSTMENT_REQUESTED", title, null, link, null);
+                email.sendAfterCommit(approvers, "[PXVB] " + title, title, link);
+            }
             case "adjustment.decided" -> notifications.notifyUsers(
                     Set.of(UUID.fromString(p.path("requestedBy").asText())), "ADJUSTMENT_DECIDED",
                     "Yêu cầu điều chỉnh " + p.path("code").asText() + ": " + label(p.path("status").asText()), null,

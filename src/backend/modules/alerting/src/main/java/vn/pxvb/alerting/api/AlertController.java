@@ -83,6 +83,22 @@ public class AlertController {
         return PageResponse.of(service.search(module, severity, status, machineId, pageable), AlertDto::from);
     }
 
+    @GetMapping("/export")
+    @PreAuthorize("hasAuthority('alerting.alert.view')")
+    public org.springframework.http.ResponseEntity<byte[]> export(
+            @RequestParam(required = false) String module,
+            @RequestParam(required = false) Alert.Severity severity,
+            @RequestParam(required = false) Alert.Status status,
+            @RequestParam(required = false) UUID machineId) {
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.attachment().filename("canh-bao.xlsx").build()
+                                .toString())
+                .body(service.export(module, severity, status, machineId));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('alerting.alert.view')")
     public AlertDetailDto get(@PathVariable UUID id) {

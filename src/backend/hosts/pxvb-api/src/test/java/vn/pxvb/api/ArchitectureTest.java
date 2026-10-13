@@ -30,6 +30,32 @@ class ArchitectureTest {
                     "vn.pxvb.alerting..");
 
     @ArchTest
+    static final ArchRule alertingUsesMasterdataOnlyThroughContract = noClasses()
+            .that().resideInAPackage("vn.pxvb.alerting..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.masterdata.application..",
+                    "vn.pxvb.masterdata.api..");
+
+    /**
+     * Planning dùng workflow qua {@code ApprovalService}/{@code SignatureService} (application) và các kiểu giá trị
+     * mà API đó trả về ({@code workflow.domain}: trạng thái duyệt, phương thức ký) — nên không cấm {@code domain}.
+     */
+    @ArchTest
+    static final ArchRule planningUsesOtherModulesOnlyThroughContractsOrWorkflowServices = noClasses()
+            .that().resideInAPackage("vn.pxvb.planning..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity.domain..",
+                    "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..",
+                    "vn.pxvb.masterdata.application..", "vn.pxvb.masterdata.api..", "vn.pxvb.alerting..",
+                    "vn.pxvb.sync..", "vn.pxvb.workflow.infrastructure..", "vn.pxvb.workflow.api..");
+
+    @ArchTest
+    static final ArchRule syncUsesOtherModulesOnlyThroughContracts = noClasses()
+            .that().resideInAPackage("vn.pxvb.sync..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity.domain..",
+                    "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..",
+                    "vn.pxvb.masterdata..", "vn.pxvb.alerting.application..", "vn.pxvb.alerting.domain..",
+                    "vn.pxvb.alerting.api..", "vn.pxvb.planning..", "vn.pxvb.workflow..");
+
+    @ArchTest
     static final ArchRule dataioDoesNotDependOnMasterdata = noClasses()
             .that().resideInAPackage("vn.pxvb.dataio..")
             .should().dependOnClassesThat().resideInAPackage("vn.pxvb.masterdata..");

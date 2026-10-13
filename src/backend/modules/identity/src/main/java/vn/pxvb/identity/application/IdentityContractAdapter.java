@@ -21,7 +21,8 @@ import vn.pxvb.identity.infrastructure.UserRoleRepository;
 
 /** Hiện thực các contract công khai của identity. */
 @Service
-public class IdentityContractAdapter implements IdentityDirectory, AccessTokenVerifier {
+public class IdentityContractAdapter implements IdentityDirectory, AccessTokenVerifier,
+        vn.pxvb.identity.contract.DeviceRegistry {
 
     private final AccessProfileService profiles;
     private final UserRepository users;
@@ -30,10 +31,11 @@ public class IdentityContractAdapter implements IdentityDirectory, AccessTokenVe
     private final PasswordEncoder encoder;
     private final TokenService tokens;
     private final Clock clock;
+    private final vn.pxvb.identity.infrastructure.DeviceRepository devices;
 
     public IdentityContractAdapter(AccessProfileService profiles, UserRepository users, RoleRepository roles,
                                    UserRoleRepository userRoles, PasswordEncoder encoder, TokenService tokens,
-                                   Clock clock) {
+                                   Clock clock, vn.pxvb.identity.infrastructure.DeviceRepository devices) {
         this.profiles = profiles;
         this.users = users;
         this.roles = roles;
@@ -41,6 +43,22 @@ public class IdentityContractAdapter implements IdentityDirectory, AccessTokenVe
         this.encoder = encoder;
         this.tokens = tokens;
         this.clock = clock;
+        this.devices = devices;
+    }
+
+    @Override
+    @Transactional
+    public void recordSync(UUID deviceId, int pendingCount, Long clockOffsetMs, String appVersion) {
+        devices.findById(deviceId).ifPresent(d -> d.recordSync(clock.instant(), pendingCount, clockOffsetMs,
+                appVersion));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeviceInfo> devices() {
+        return devices.findAll().stream().map(d -> new DeviceInfo(d.getId(), d.getDeviceCode(), d.getName(),
+                d.isActive(), d.getLastSeenAt(), d.getLastSyncAt(), d.getPendingCount(), d.getAppVersion(),
+                d.getClockOffsetMs())).toList();
     }
 
     @Override
@@ -64,6 +82,16 @@ public class IdentityContractAdapter implements IdentityDirectory, AccessTokenVe
     @Transactional(readOnly = true)
     public Optional<String> fullNameOf(UUID userId) {
         return users.findById(userId).map(User::getFullName);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, String> emailsOf(java.util.Collection<UUID> userIds) {
+        java.util.Map<UUID, String> result = new java.util.LinkedHashMap<>();
+        users.findAllById(userIds).stream()
+                .filter(u -> u.isActive() && u.getEmail() != null && !u.getEmail().isBlank())
+                .forEach(u -> result.put(u.getId(), u.getEmail().trim()));
+        return result;
     }
 
     @Override

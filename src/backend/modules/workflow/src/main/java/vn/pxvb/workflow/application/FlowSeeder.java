@@ -53,9 +53,12 @@ public class FlowSeeder implements ApplicationRunner {
                             step(1, "QA_DEPT", "ALL", null, "NOTIFY"), step(1, "MNT_LEAD", "ALL", null, "NOTIFY"))),
             new Seed("QC_NC_DISPOSITION", "QC", "NonConformance",
                     steps(step(1, "QA_HEAD", "ANY", 480, "NOTIFY"))),
+            // Chốt ca: 4 bên bắt buộc (PO, 2026-10-13); mỗi bên là một nhóm vai trò "bất kỳ vai trò nào".
+            // Bên "không phát sinh" được module PR tự bỏ qua khi khởi tạo luồng.
             new Seed("SHIFT_CLOSE", "CC", "ShiftSession",
-                    steps(step(1, "SHIFT_LEADER", "ALL", 30, "NOTIFY"), step(1, "STAT_OUTPUT", "ALL", 30, "NOTIFY"),
-                            step(1, "QC_INLINE", "ALL", 30, "NOTIFY"),
+                    steps(step(1, "SHIFT_LEADER", "ALL", 30, "NOTIFY"),
+                            step(1, "STAT_OUTPUT,STAT_MATERIAL,STAT_STAMP", "ALL", 30, "NOTIFY"),
+                            step(1, "QC_INLINE,QA_INSPECTOR,QA_SUPERVISOR", "ALL", 30, "NOTIFY"),
                             step(1, "MATERIAL_ISSUER", "ALL", 30, "NOTIFY"))),
             new Seed("CC_ADJUSTMENT", "CC", "AdjustmentRequest",
                     steps(step(1, "DEPUTY_DIRECTOR", "ANY", 480, "NOTIFY"))));
@@ -72,8 +75,13 @@ public class FlowSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         tx.executeWithoutResult(status -> {
             for (Seed seed : SEEDS) {
-                if (flows.findByCode(seed.code()).isEmpty()) {
+                var existing = flows.findByCode(seed.code());
+                if (existing.isEmpty()) {
                     flows.save(new ApprovalFlowDef(seed.code(), seed.module(), seed.entityType(), seed.steps()));
+                } else if ("SHIFT_CLOSE".equals(seed.code())
+                        && existing.get().getSteps().contains("\"roleCode\":\"STAT_OUTPUT\",\"mode\"")) {
+                    // Cấu hình seed cũ (trước quyết định PO): nâng cấp, không đụng vào cấu hình đã chỉnh tay
+                    existing.get().update(seed.module(), seed.entityType(), seed.steps(), existing.get().isActive());
                 }
             }
         });

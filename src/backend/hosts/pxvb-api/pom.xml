@@ -43,6 +43,14 @@
       <artifactId>pxvb-masterdata</artifactId>
     </dependency>
     <dependency>
+      <groupId>vn.pxvb</groupId>
+      <artifactId>pxvb-sync</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>vn.pxvb</groupId>
+      <artifactId>pxvb-planning</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>

@@ -18,6 +18,9 @@ public interface IdentityDirectory {
 
     Optional<String> fullNameOf(UUID userId);
 
+    /** Email của các người dùng đang hoạt động (bỏ qua người chưa có email). */
+    java.util.Map<UUID, String> emailsOf(java.util.Collection<UUID> userIds);
+
     /** Xác thực lại mật khẩu/PIN (xác nhận điện tử, FR-CC-031). Không làm thay đổi bộ đếm khóa. */
     boolean verifySecret(UUID userId, SecretKind kind, String secret);
 }

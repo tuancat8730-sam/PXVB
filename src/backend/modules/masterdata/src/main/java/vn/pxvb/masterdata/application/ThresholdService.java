@@ -118,4 +118,83 @@ public class ThresholdService implements MasterdataQueries {
         return pairings.resolve(date, shiftCode);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, MachineInfo> machines(java.util.Collection<UUID> ids) {
+        java.util.Map<UUID, MachineInfo> result = new java.util.LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return result;
+        }
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model FROM md_machine "
+                + "WHERE id IN (" + inList(ids.size()) + ")", rs -> {
+            result.put(UUID.fromString(rs.getString("id")), new MachineInfo(UUID.fromString(rs.getString("id")),
+                    rs.getString("code"), rs.getString("machine_type"), rs.getString("status"),
+                    rs.getBoolean("is_active"), rs.getString("model")));
+        }, uuidArgs(ids));
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, ProductInfo> products(java.util.Collection<UUID> ids) {
+        java.util.Map<UUID, ProductInfo> result = new java.util.LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return result;
+        }
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, name, is_active, rods_per_pack FROM md_product "
+                + "WHERE id IN (" + inList(ids.size()) + ")", rs -> {
+            int rods = rs.getInt("rods_per_pack");
+            result.put(UUID.fromString(rs.getString("id")), new ProductInfo(UUID.fromString(rs.getString("id")),
+                    rs.getString("code"), rs.getString("name"), rs.getBoolean("is_active"),
+                    rs.wasNull() ? null : rods));
+        }, uuidArgs(ids));
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<UUID, EmployeeInfo> employees(java.util.Collection<UUID> ids) {
+        java.util.Map<UUID, EmployeeInfo> result = new java.util.LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return result;
+        }
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, full_name, is_active FROM md_employee "
+                + "WHERE id IN (" + inList(ids.size()) + ")", rs -> {
+            result.put(UUID.fromString(rs.getString("id")), new EmployeeInfo(UUID.fromString(rs.getString("id")),
+                    rs.getString("code"), rs.getString("full_name"), rs.getBoolean("is_active")));
+        }, uuidArgs(ids));
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> productIdByCode(String code) {
+        return jdbc.queryForList("SELECT BIN_TO_UUID(id) FROM md_product WHERE code = ?", String.class, code)
+                .stream().findFirst().map(UUID::fromString);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Set<UUID> allowedMachineIds(UUID productId) {
+        return jdbc.queryForList("SELECT BIN_TO_UUID(machine_id) FROM md_product_machine_allowed "
+                + "WHERE product_id = UUID_TO_BIN(?)", String.class, productId.toString()).stream()
+                .map(UUID::fromString).collect(java.util.stream.Collectors.toSet());
+    }
+
+    private static String inList(int n) {
+        return String.join(",", java.util.Collections.nCopies(n, "UUID_TO_BIN(?)"));
+    }
+
+    private static Object[] uuidArgs(java.util.Collection<UUID> ids) {
+        return ids.stream().map(UUID::toString).toArray();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean reasonExists(String group, String code) {
+        Long n = jdbc.queryForObject("SELECT COUNT(*) FROM md_reason_code WHERE group_code = ? AND code = ? "
+                + "AND is_active = 1", Long.class, group, code);
+        return n != null && n > 0;
+    }
+
 }

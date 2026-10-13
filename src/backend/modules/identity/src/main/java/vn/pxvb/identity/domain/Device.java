@@ -42,6 +42,8 @@ public class Device extends AuditableEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    private Long clockOffsetMs;
+
     private String activationCodeHash;
 
     private Instant activationExpiresAt;
@@ -77,6 +79,20 @@ public class Device extends AuditableEntity {
 
     public void touch(Instant now) {
         this.lastSeenAt = now;
+    }
+
+    public void recordSync(Instant now, int pending, Long offsetMs, String version) {
+        this.lastSeenAt = now;
+        this.lastSyncAt = now;
+        this.pendingCount = pending;
+        this.clockOffsetMs = offsetMs;
+        if (version != null && !version.isBlank()) {
+            this.appVersion = version;
+        }
+    }
+
+    public Long getClockOffsetMs() {
+        return clockOffsetMs;
     }
 
     public void deactivate() {

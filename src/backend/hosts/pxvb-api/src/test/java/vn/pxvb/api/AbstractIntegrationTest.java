@@ -23,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @SpringBootTest
 @Testcontainers
+@org.springframework.context.annotation.Import(MailTestConfig.class)
 abstract class AbstractIntegrationTest {
 
     static final String ADMIN_PASSWORD = "Adm1n#Pxvb2026!";
@@ -42,6 +43,7 @@ abstract class AbstractIntegrationTest {
     static void properties(DynamicPropertyRegistry registry) {
         registry.add("pxvb.security.jwt-secret", () -> "test-secret-test-secret-test-secret-0123456789");
         registry.add("pxvb.security.bootstrap-admin-password", () -> ADMIN_PASSWORD);
+        registry.add("pxvb.mail.enabled", () -> "true");
         registry.add("spring.datasource.url", () -> MYSQL.getJdbcUrl()
                 + "?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true");
     }
@@ -79,8 +81,9 @@ abstract class AbstractIntegrationTest {
         String username = prefix + UUID.randomUUID().toString().substring(0, 6);
         MvcResult created = mvc.perform(post("/api/v1/identity/users").header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"%s\",\"fullName\":\"%s\",\"initialPassword\":\"%s\"}"
-                                .formatted(username, "Nguoi dung " + roleCode, "Init#Passw0rd-Pxvb")))
+                        .content(("{\"username\":\"%s\",\"fullName\":\"%s\",\"initialPassword\":\"%s\","
+                                + "\"email\":\"%s@pxvb.test\"}").formatted(username, "Nguoi dung " + roleCode,
+                                "Init#Passw0rd-Pxvb", username)))
                 .andExpect(status().isCreated()).andReturn();
         String id = mapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
         mvc.perform(put("/api/v1/identity/users/" + id + "/roles").header("Authorization", "Bearer " + adminToken)

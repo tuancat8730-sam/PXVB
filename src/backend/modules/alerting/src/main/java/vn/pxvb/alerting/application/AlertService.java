@@ -29,7 +29,9 @@ import vn.pxvb.alerting.domain.AlertRule;
 import vn.pxvb.alerting.infrastructure.RealtimePublisher;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.dataio.application.ExportService;
 import vn.pxvb.identity.contract.IdentityDirectory;
+import vn.pxvb.masterdata.contract.MasterdataQueries;
 
 /**
  * Động cơ cảnh báo (FR-CC-050..053): khử trùng theo {@code dedupKey} trong {@code dedupWindowMin}, chọn người nhận
@@ -72,11 +74,14 @@ public class AlertService implements AlertRaiser {
     private final RealtimePublisher realtime;
     private final ObjectMapper mapper;
     private final Clock clock;
+    private final MasterdataQueries masterdata;
+    private final EmailService email;
+    private final ExportService exports;
 
     public AlertService(RuleRepository rules, AlertRepository alerts, HistoryRepository history,
                         RecipientRepository recipients, IdentityDirectory directory,
                         NotificationService notifications, RealtimePublisher realtime, ObjectMapper mapper,
-                        Clock clock) {
+                        Clock clock, MasterdataQueries masterdata, EmailService email, ExportService exports) {
         this.rules = rules;
         this.alerts = alerts;
         this.history = history;
@@ -86,6 +91,9 @@ public class AlertService implements AlertRaiser {
         this.realtime = realtime;
         this.mapper = mapper;
         this.clock = clock;
+        this.masterdata = masterdata;
+        this.email = email;
+        this.exports = exports;
     }
 
     // ---------- Phát cảnh báo ----------
@@ -139,6 +147,11 @@ public class AlertService implements AlertRaiser {
         if (cause == null || cause.isBlank()) {
             throw new BusinessException(ErrorCode.VALIDATION, "Cần chọn nguyên nhân khi xử lý xong cảnh báo",
                     Map.of("cause", List.of("Vui lòng chọn nguyên nhân")));
+        }
+        if (!masterdata.reasonExists("ALERT_CAUSE", cause.trim())) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Nguyên nhân không có trong danh mục",
+                    Map.of("cause", List.of("Mã nguyên nhân '" + cause.trim()
+                            + "' không thuộc danh mục ALERT_CAUSE")));
         }
         return move(id, Alert.Status.RESOLVED, userId, note, cause.trim());
     }
@@ -203,6 +216,26 @@ public class AlertService implements AlertRaiser {
         notifications.notifyUsers(targets, "ALERT", title, alert.getMessage(), "/alerts/" + alert.getId(),
                 alert.getId());
         realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(level == 0 ? "RAISED" : "ESCALATED", alert));
+        if (alert.getSeverity() == Alert.Severity.CRITICAL) {
+            email.sendAfterCommit(targets, "[PXVB][CRITICAL] " + title,
+                    alert.getMessage() == null ? alert.getTitle() : alert.getMessage(), "/alerts/" + alert.getId());
+        }
+    }
+
+    /** Xuất danh sách cảnh báo ra Excel theo bộ lọc (FR-CC-054), tối đa 50.000 dòng. */
+    @Transactional(readOnly = true)
+    public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId) {
+        Page<Alert> page = search(module, severity, status, machineId,
+                org.springframework.data.domain.PageRequest.of(0, 50_000,
+                        org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                                "raisedAt")));
+        List<List<Object>> rows = page.getContent().stream().map(a -> List.<Object>of(
+                a.getRaisedAt(), a.getRuleCode(), a.getSeverity().name(), a.getModule(),
+                a.getTitle(), a.getStatus().name(), a.getOccurrenceCount(), a.getEscalationLevel(),
+                a.getCause() == null ? "" : a.getCause(),
+                a.getResolvedAt() == null ? "" : a.getResolvedAt())).toList();
+        return exports.workbook("Cảnh báo", List.of("Thời điểm", "Mã rule", "Mức", "Phân hệ", "Tiêu đề",
+                "Trạng thái", "Số lần", "Cấp leo thang", "Nguyên nhân", "Xử lý lúc"), rows);
     }
 
     // ---------- Truy vấn ----------

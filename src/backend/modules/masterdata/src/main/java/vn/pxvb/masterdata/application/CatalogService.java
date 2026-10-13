@@ -378,6 +378,37 @@ public class CatalogService {
         }
     }
 
+    public record Slice(List<Map<String, Object>> rows, String nextCursor) {
+    }
+
+    /**
+     * Các dòng đổi sau {@code since} (khóa phân trang là id UUIDv7 tăng dần) — dùng cho đồng bộ tablet. Danh mục
+     * khóa mềm bằng {@code is_active} nên bản ghi bị ngừng vẫn xuất hiện (là tombstone mềm).
+     */
+    @Transactional(readOnly = true)
+    public Slice changedSince(String resource, java.time.Instant since, String cursor, int limit) {
+        CatalogSpec spec = spec(resource);
+        List<String> where = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+        if (since != null) {
+            where.add("t.updated_at > ?");
+            params.add(java.sql.Timestamp.from(since));
+        }
+        if (cursor != null && !cursor.isBlank()) {
+            where.add("t.id > UUID_TO_BIN(?)");
+            params.add(cursor);
+        }
+        params.add(limit + 1);
+        List<Map<String, Object>> rows = jdbc.query("SELECT " + selectList(spec) + " FROM " + spec.table() + " t"
+                + (where.isEmpty() ? "" : " WHERE " + String.join(" AND ", where)) + " ORDER BY t.id LIMIT ?",
+                (rs, i) -> mapRow(spec, rs), params.toArray());
+        if (rows.size() > limit) {
+            List<Map<String, Object>> page = new ArrayList<>(rows.subList(0, limit));
+            return new Slice(page, (String) page.get(page.size() - 1).get("id"));
+        }
+        return new Slice(rows, null);
+    }
+
     // ---------- Tiện ích dùng chung cho các dịch vụ khác ----------
 
     @Transactional(readOnly = true)

@@ -162,14 +162,17 @@ public class AuthService {
 
     private TokenPair issue(User user, UUID deviceId) {
         AccessProfile profile = profiles.profileOf(user.getId());
+        // Cờ "phải đổi mật khẩu" chỉ áp cho đăng nhập web bằng mật khẩu; đăng nhập PIN trên thiết bị đã kích hoạt
+        // dùng PIN do quản trị cấp nên không bị chặn (FR-CC-002).
+        boolean mustChange = deviceId == null && user.isMustChangePassword();
         IssuedToken access = tokens.issueAccessToken(user.getUsername(), user.getId(), deviceId,
-                List.copyOf(profile.permissions()), profile.scopes(), user.isMustChangePassword());
+                List.copyOf(profile.permissions()), profile.scopes(), mustChange);
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         Instant now = clock.instant();
         refreshTokens.save(new RefreshToken(user.getId(), hash(raw), deviceId, now, now.plus(props.refreshTtl())));
-        return new TokenPair(access.value(), raw, access.expiresAt(), user.isMustChangePassword());
+        return new TokenPair(access.value(), raw, access.expiresAt(), mustChange);
     }
 
     private void auditLogin(String action, String subject, UUID userId, UUID deviceId, String reason) {

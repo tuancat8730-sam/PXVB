@@ -100,9 +100,13 @@ class AlertingIT extends AbstractIntegrationTest {
 
         // Bắt buộc nguyên nhân khi xử lý xong
         assertThat(call(leader,base + "/resolve", "{\"note\":\"Xong\"}").getResponse().getStatus()).isEqualTo(400);
-        JsonNode resolved = json(call(leader,base + "/resolve", "{\"cause\":\"Thiếu điếu\",\"note\":\"Đã bổ sung\"}"));
+        // Nguyên nhân phải thuộc danh mục ALERT_CAUSE (quyết định PO, L16)
+        assertThat(call(leader, base + "/resolve", "{\"cause\":\"Tự đặt\",\"note\":\"Xong\"}").getResponse()
+                .getStatus()).isEqualTo(400);
+        JsonNode resolved = json(call(leader, base + "/resolve",
+                "{\"cause\":\"MATERIAL_SHORTAGE\",\"note\":\"Đã bổ sung\"}"));
         assertThat(resolved.get("status").asText()).isEqualTo("RESOLVED");
-        assertThat(resolved.get("cause").asText()).isEqualTo("Thiếu điếu");
+        assertThat(resolved.get("cause").asText()).isEqualTo("MATERIAL_SHORTAGE");
         assertThat(json(call(leader,base + "/close", "{}")).get("status").asText()).isEqualTo("CLOSED");
 
         JsonNode detail = json(mvc.perform(get(base).header("Authorization", "Bearer " + leader.token()))
@@ -150,6 +154,34 @@ class AlertingIT extends AbstractIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}"));
         }
         assertThatThrownBy(() -> raiser.raise(command("NO_SUCH_RULE", "x"))).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    void criticalAlertIsEmailedButWarningIsNot() throws Exception {
+        MailTestConfig.SENT.clear();
+        raiser.raise(command("MT_WASTE_HIGH", "M-" + UUID.randomUUID()));
+        assertThat(MailTestConfig.SENT).isEmpty();
+
+        raiser.raise(command("QC_DEFECT_A", "M-" + UUID.randomUUID()));
+        assertThat(MailTestConfig.SENT).isNotEmpty();
+        var mail = MailTestConfig.SENT.get(0);
+        assertThat(mail.getSubject()).contains("CRITICAL");
+        assertThat(mail.getTo()).isNotEmpty();
+        assertThat(java.util.Arrays.stream(mail.getTo()).anyMatch(t -> t.startsWith("dep"))).isTrue();
+    }
+
+    @Test
+    void alertsCanBeExportedToExcel() throws Exception {
+        raiser.raise(command("PR_BUFFER_HIGH", "M-" + UUID.randomUUID()));
+        MvcResult r = mvc.perform(get("/api/v1/alerting/alerts/export?module=PR")
+                .header("Authorization", "Bearer " + leader.token())).andReturn();
+        assertThat(r.getResponse().getStatus()).isEqualTo(200);
+        try (var wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
+                new java.io.ByteArrayInputStream(r.getResponse().getContentAsByteArray()))) {
+            var sheet = wb.getSheetAt(0);
+            assertThat(sheet.getRow(0).getCell(1).getStringCellValue()).isEqualTo("Mã rule");
+            assertThat(sheet.getLastRowNum()).isGreaterThanOrEqualTo(1);
+        }
     }
 
     @Test
