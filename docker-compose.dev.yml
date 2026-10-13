@@ -1,0 +1,45 @@
+# Môi trường phát triển cục bộ (SDD §18.1). Chạy: docker compose -f docker-compose.dev.yml up -d
+# Đổi PXVB_DEV_DB_PASSWORD bằng biến môi trường nếu cần; giá trị dưới chỉ dùng cho máy dev.
+services:
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --log-bin-trust-function-creators=1
+      - --transaction-isolation=READ-COMMITTED
+    environment:
+      MYSQL_DATABASE: pxvb
+      MYSQL_USER: pxvb
+      MYSQL_PASSWORD: ${PXVB_DEV_DB_PASSWORD:-pxvb_dev}
+      MYSQL_ROOT_PASSWORD: ${PXVB_DEV_DB_ROOT_PASSWORD:-root_dev}
+      TZ: UTC
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${PXVB_DEV_DB_ROOT_PASSWORD:-root_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql-data:

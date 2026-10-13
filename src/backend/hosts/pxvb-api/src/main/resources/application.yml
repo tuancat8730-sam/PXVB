@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: pxvb-api
+  datasource:
+    url: ${PXVB_DB_URL:jdbc:mysql://localhost:3306/pxvb?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=utf8mb4}
+    username: ${PXVB_DB_USER:pxvb}
+    password: ${PXVB_DB_PASSWORD:}
+    hikari:
+      # READ COMMITTED thay cho REPEATABLE READ mặc định của InnoDB để giảm gap-lock (SDD §2.5)
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    # Mỗi module thêm một location khi được tạo (db/migration/<module>)
+    locations: classpath:db/migration/common,classpath:db/migration/identity
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+pxvb:
+  security:
+    # Bắt buộc, >= 32 byte. Đặt qua biến môi trường PXVB_SECURITY_JWT_SECRET, không commit giá trị thật.
+    jwt-secret: ${PXVB_SECURITY_JWT_SECRET:}
+    bootstrap-admin-password: ${PXVB_BOOTSTRAP_ADMIN_PASSWORD:}
