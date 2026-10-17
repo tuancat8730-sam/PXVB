@@ -91,5 +91,16 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L49 | Mục BLOCK giải trình được | Hiện chỉ `CHK_OUTPUT_COMPLETE` (AC-PR-006): người có quyền nhập giải trình, Phó QĐ/QĐ duyệt mới gỡ chặn. Dung sai thời gian `CHK_DOWNTIME` không cần vì phút chạy được tính từ phút kế hoạch trừ dừng | PXVB |
 | L50 | Mở lại ca | Qua `AdjustmentRequest` (`ShiftSession`, `status` CLOSED → CLOSING); chốt lại sinh báo cáo ca revision mới. `FINALIZED` (sau khi RP/kế toán khóa hẳn) chưa có luồng. `ShiftCloseWatcher` (cảnh báo ca chưa chốt) chưa làm | Dev lead |
 
+## Phát sinh khi làm E13 (MT)
+
+| # | Vấn đề | Đang áp dụng | Cần |
+|---|---|---|---|
+| L51 | Loại phiếu & máy tiêu thụ | Loại phiếu lấy từ nhóm NVL (`FIBER`/`ROLLING`/`PACKING`, nhóm khác → `PACKING`); sợi/vấn → máy vấn, bao → máy bao, `consumerType` trên dòng định mức ghi đè (BR-MT-002) | PXVB xác nhận |
+| L52 | Xác nhận phiếu | STAT_MATERIAL xác nhận trực tiếp bằng quyền, **không** ký điện tử (L14: chỉ ký ở bước quan trọng) | PXVB xác nhận |
+| L53 | Sản lượng quy cho máy vấn | Sản lượng bao của máy bao × `FeedRatio` ghép cặp; tiêu hao lý thuyết theo mác thực tế ghi nhận (segment) | PXVB xác nhận cách quy đổi |
+| L54 | Không kiểm đếm (BR-MT-004) | Mặc định coi tồn cuối = tồn đầu + cấp − hoàn − lý thuyết; hao hụt chỉ phát hiện qua cấp vượt, chỉ đánh giá khi ca đã kết thúc. Cờ cấu hình `MT_REQUIRE_COUNT` theo nhóm chưa làm | PXVB |
+| L55 | Chưa làm trong E13 | Phân tích xu hướng (FR-MT-010) và đề xuất điều chỉnh định mức; đối chiếu ERP (FR-MT-011); truy vết lô nâng cao (FR-MT-012, mới lưu `LotNo`); xuất PDF/Excel báo cáo tiêu hao (AC-MT-006, hiện trả JSON); đổi mác trong ca sinh thêm phiếu theo segment (BR-MT-006); sinh lại phiếu khi lệnh đổi (chỉ có `regenerate` thủ công); phiếu `COMPLETED`/`CANCELLED` | Dev lead |
+| L56 | Handler sync `MT.*` | Đã có `MT.IssueMaterial/ConfirmReceipt/RecordReturn/RecordStockCount` nhưng chưa có test tích hợp qua `/sync/push` (logic dùng chung với API đã test) | Dev lead |
+
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

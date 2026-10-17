@@ -26,6 +26,7 @@
     <module>modules/sync</module>
     <module>modules/planning</module>
     <module>modules/production</module>
+    <module>modules/material</module>
     <module>hosts/pxvb-api</module>
     <module>hosts/pxvb-worker</module>
   </modules>
@@ -93,6 +94,11 @@
       <dependency>
         <groupId>vn.pxvb</groupId>
         <artifactId>pxvb-production</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>vn.pxvb</groupId>
+        <artifactId>pxvb-material</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -9,11 +9,11 @@ Cập nhật lần cuối: 2026-10-17.
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Backend (Spring Boot 3.5 / Java 21 / MySQL 8.0 & 8.4) | E00–E12, E14 đã làm (E13 chưa) |
+| Backend (Spring Boot 3.5 / Java 21 / MySQL 8.0 & 8.4) | E00–E14 đã làm (một số còn việc, xem bảng) |
 | Frontend web (React: quản trị + dashboard) | ⬜ chưa bắt đầu (`src/web` chưa tồn tại) |
 | Tablet (React Native) | 🟡 chỉ có lõi offline TypeScript đã test (`src/tablet`); UI + adapter SQLite thật chưa build/chạy |
-| Test backend | 31 unit · 15 ArchUnit · 66 integration (MySQL 8.0 và 8.4) · 10 test lõi tablet |
-| Commit chưa push | `2f60e93` (E14) — đã commit cục bộ, chờ xác nhận push |
+| Test backend | 39 unit · 16 ArchUnit · 72 integration (MySQL 8.0 và 8.4) · 10 test lõi tablet |
+| Commit chưa push | E13 (đang làm, chưa commit) |
 
 ## 2. Backlog theo epic
 
@@ -32,8 +32,8 @@ Cập nhật lần cuối: 2026-10-17.
 | E10 | PL: KHSX tháng/tuần, lệnh SX, bố trí nhân sự, điều chỉnh | 🟡 | `ba6e225` | Thuật toán gợi ý lệnh đơn giản (L32); theo dõi thực hiện kế hoạch FR-PL-007/008 chờ dữ liệu PR (L34) |
 | E11 | PR: phiên ca, sản lượng, dừng máy, đổi mác, tồn điếu | 🟡 | `97f1f02` | Chưa có: tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/nhập hộ UI (FR-PR-010), tạo yêu cầu sửa chữa 1 chạm (chờ PM), cảnh báo >110% công suất (L35–L41) |
 | E12 | OEE engine + công thức cấu hình + golden tests | 🟡 | `d3a92a0` | Mới có AC-PR-002 + 9 ca; cần 10 bộ golden của PO. Q chưa nối dữ liệu NC (QC); công suất 77 máy cần nhập (L42–L45) |
-| E13 | MT: phiếu cấp phát, cấp/nhận, kiểm đếm, tiêu hao, cảnh báo | ⬜ | – | Cần cho `CHK_MATERIAL`; sync handler `MT.*` |
-| E14 | Shift-close engine (CC-11) + báo cáo ca | 🟡 | `2f60e93` (chưa push) | Xong engine, giải trình, ký + duyệt `SHIFT_CLOSE` (3 bên), báo cáo ca, mở lại qua điều chỉnh. Còn: `CHK_MATERIAL/QUALITY/STAMP` (chờ E13/E18/E20), `ShiftCloseWatcher`, bước `FINALIZED`, tự bỏ qua bên "không phát sinh" (L46–L50) |
+| E13 | MT: phiếu cấp phát, cấp/nhận, kiểm đếm, tiêu hao, cảnh báo | 🟡 | (chưa commit) | Xong FR-MT-001..009 + `CHK_MATERIAL` (AC-MT-001..005 có test). Còn: xu hướng/đề xuất định mức (FR-MT-010), đối chiếu ERP (FR-MT-011), xuất PDF/Excel báo cáo, phiếu theo segment đổi mác, test sync `MT.*` (L51–L56) |
+| E14 | Shift-close engine (CC-11) + báo cáo ca | 🟡 | `2f60e93` | Xong engine, giải trình, ký + duyệt `SHIFT_CLOSE` (3 bên), báo cáo ca, mở lại qua điều chỉnh. Còn: `CHK_QUALITY/STAMP` (chờ E18/E20; `CHK_MATERIAL` đã có từ E13), `ShiftCloseWatcher`, bước `FINALIZED`, tự bỏ qua bên "không phát sinh" (L46–L50) |
 | E15 | RP core: projections/facts, `R_SHIFT`, `R_DAY` | ⬜ | – | Báo cáo ca hiện lưu JSON trong `pr_shift_report`, chờ RP tiêu thụ |
 | E16 | Dashboard v1: Trưởng ca, Phó QĐ | ⬜ | – | Cần khung frontend React; API dashboard thời gian thực đã có (`/pr/sessions/{id}/dashboard`) |
 | E17 | QC form engine (web + tablet renderer) + import schema | ⬜ | – | Phụ thuộc dữ liệu Q10 |

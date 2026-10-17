@@ -213,6 +213,33 @@ public class ThresholdService implements MasterdataQueries {
 
     @Override
     @Transactional(readOnly = true)
+    public java.util.Map<UUID, MaterialInfo> materials(java.util.Collection<UUID> ids) {
+        java.util.Map<UUID, MaterialInfo> result = new java.util.LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return result;
+        }
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, name, uom, category_code, group_code FROM md_material "
+                + "WHERE id IN (" + inList(ids.size()) + ")", rs -> {
+            result.put(UUID.fromString(rs.getString("id")), new MaterialInfo(UUID.fromString(rs.getString("id")),
+                    rs.getString("code"), rs.getString("name"), rs.getString("uom"), rs.getString("category_code"),
+                    rs.getString("group_code")));
+        }, uuidArgs(ids));
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueSlot> issueSlots(String shiftCode) {
+        return jdbc.query("SELECT slot_no, label, start_time, end_time, share_pct FROM md_issue_slot_def "
+                + "WHERE shift_code = ? AND is_active = 1 ORDER BY slot_no", (rs, i) -> new IssueSlot(
+                rs.getInt("slot_no"), rs.getString("label"),
+                rs.getTime("start_time") == null ? null : rs.getTime("start_time").toLocalTime(),
+                rs.getTime("end_time") == null ? null : rs.getTime("end_time").toLocalTime(),
+                rs.getBigDecimal("share_pct")), shiftCode);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ShiftWindow> shift(String code) {
         return jdbc.query("SELECT code, start_time, end_time, crosses_midnight FROM md_shift_def "
                 + "WHERE code = ? AND is_active = 1", (rs, i) -> new ShiftWindow(rs.getString("code"),

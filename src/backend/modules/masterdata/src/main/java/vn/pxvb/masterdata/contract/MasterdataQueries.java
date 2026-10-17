@@ -74,6 +74,18 @@ public interface MasterdataQueries {
                           boolean requiresTechConfirm, boolean canCreateRepairRequest) {
     }
 
+    record MaterialInfo(UUID id, String code, String name, String uom, String categoryCode, String groupCode) {
+    }
+
+    java.util.Map<UUID, MaterialInfo> materials(java.util.Collection<UUID> ids);
+
+    /** Khung giờ cấp phát của ca (1–4) với tỷ lệ phân bổ nhu cầu; đã sắp theo {@code slotNo}. */
+    record IssueSlot(int slotNo, String label, java.time.LocalTime start, java.time.LocalTime end,
+                     BigDecimal sharePct) {
+    }
+
+    List<IssueSlot> issueSlots(String shiftCode);
+
     /** Mã dừng máy đang hoạt động (A–I). */
     Optional<StopReasonInfo> stopReason(String code);
 
