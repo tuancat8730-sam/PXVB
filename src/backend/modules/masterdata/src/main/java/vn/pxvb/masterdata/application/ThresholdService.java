@@ -181,6 +181,35 @@ public class ThresholdService implements MasterdataQueries {
                 .map(UUID::fromString).collect(java.util.stream.Collectors.toSet());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<MachineInfo> activeMachines() {
+        return jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model FROM "
+                + "md_machine WHERE is_active = 1 ORDER BY code", (rs, i) -> new MachineInfo(
+                UUID.fromString(rs.getString("id")), rs.getString("code"), rs.getString("machine_type"),
+                rs.getString("status"), rs.getBoolean("is_active"), rs.getString("model")));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ShiftWindow> shift(String code) {
+        return jdbc.query("SELECT code, start_time, end_time, crosses_midnight FROM md_shift_def "
+                + "WHERE code = ? AND is_active = 1", (rs, i) -> new ShiftWindow(rs.getString("code"),
+                rs.getTime("start_time").toLocalTime(), rs.getTime("end_time").toLocalTime(),
+                rs.getBoolean("crosses_midnight")), code).stream().findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<StopReasonInfo> stopReason(String code) {
+        return jdbc.query("SELECT code, name, category, counts_as_planned_downtime, requires_tech_confirm, "
+                + "can_create_repair_request FROM md_stop_reason WHERE code = ? AND is_active = 1",
+                (rs, i) -> new StopReasonInfo(rs.getString("code"), rs.getString("name"),
+                        rs.getString("category"), rs.getBoolean("counts_as_planned_downtime"),
+                        rs.getBoolean("requires_tech_confirm"), rs.getBoolean("can_create_repair_request")),
+                code).stream().findFirst();
+    }
+
     private static String inList(int n) {
         return String.join(",", java.util.Collections.nCopies(n, "UUID_TO_BIN(?)"));
     }

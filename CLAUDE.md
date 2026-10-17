@@ -33,8 +33,9 @@
 E05 (module `dataio`: nhập/xuất Excel), E06–E08 (module `masterdata`: máy, cụm, ghép cặp, ca, SP, NVL, định mức
 có phiên bản, ngưỡng, mã dừng/lý do, mẫu KSCL, lỗi/luật, bảo trì, phụ tùng, liên kết).
 E09 (module `sync`: push/pull/xung đột/giám sát thiết bị; lõi ngoại tuyến tablet `src/tablet`), E10 (module
-`planning`: KHSX tháng/tuần, lệnh SX, bố trí nhân sự).
-Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E11 trở đi (xem SDD §18.2).
+`planning`: KHSX tháng/tuần, lệnh SX, bố trí nhân sự), E11 (module `production`: phiên ca, sản lượng, dừng máy,
+đổi mác, dashboard thời gian thực, cảnh báo `PR_OUTPUT_BEHIND`/`PR_STOP_LONG`, handler sync `PR.*`).
+Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E12 trở đi (OEE, MT, chốt ca… xem SDD §18.2).
 
 ## Đồng bộ ngoại tuyến & kế hoạch
 
@@ -42,6 +43,9 @@ Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E11 trở
   `ConflictException`/`RejectedException`). Dữ liệu kéo về: hiện thực `common.sync.SyncPullProvider`.
 - Lõi tablet kiểm thử: `cd src/tablet && npm test` (cần Node ≥ 22.5, dùng `node:sqlite`).
 - Lệnh SX xác nhận phát `PlanningEvents.OrderConfirmed` (+ outbox `pl.order.confirmed`) để MT/QC/PR sinh phiếu/lịch/phiên.
+- PR: ghi nhận chỉ khi phiên ca `OPEN` (BR-PR-001); thời gian lấy từ `OccurredAt`; dừng máy không chồng lấn
+  (ràng buộc cả ở DB: một sự kiện mở/máy). Lệnh sync: `PR.RecordOutput`, `PR.StartStop`, `PR.EndStop`, `PR.ChangeProduct`.
+  PR chỉ đọc PL qua `planning.contract.PlanningQueries`; mở ca tạo `MachineRun` cho mọi máy đang hoạt động.
 - Luồng duyệt có thể khai báo vai trò dạng danh sách (`"A,B"` = bất kỳ vai trò nào) trong `roleCode` của bước.
 
 ## Masterdata: thêm danh mục mới

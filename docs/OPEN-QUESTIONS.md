@@ -60,5 +60,17 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L33 | Lệnh RUNNING/COMPLETED | Do PR chuyển trạng thái khi mở/chốt ca (chưa có PR) | Dev lead |
 | L34 | Theo dõi thực hiện kế hoạch (FR-PL-007/008) | Chờ dữ liệu sản lượng từ PR; hiện chỉ có kế hoạch & tiến độ phân bổ | Dev lead |
 
+## Phát sinh khi làm E11 (PR)
+
+| # | Vấn đề | Đang áp dụng | Cần |
+|---|---|---|---|
+| L35 | Điều kiện mở ca (FR-PR-001) | Chỉ **cảnh báo** (lưu `warnings` trên phiên) khi chưa công bố bố trí nhân sự hoặc chưa có lệnh xác nhận; không chặn mở ca | PXVB chốt có chặn cứng không |
+| L36 | Kết ca | `end` chuyển phiên sang `CLOSING`, tự đóng dừng máy đang mở (`AutoClosed`), tính phút chạy/dừng, lệnh → `COMPLETED`. Bước `CLOSED/FINALIZED` (CC-11, báo cáo ca, OEE chính thức) làm ở E14/E12 | Dev lead |
+| L37 | Đổi mác | Tách segment nằm ở PR (`pr_product_change`, `segment_no`); chưa ghi ngược `OrderSegment` bên PL | Dev lead |
+| L38 | Xác nhận kỹ thuật (FR-PR-005) | `techCauseCode` là chuỗi tự do (chưa có danh mục nguyên nhân kỹ thuật); quyền MNT_LEAD/ENGINEER/Phó QĐ | PXVB cung cấp danh mục |
+| L39 | Tạo yêu cầu sửa chữa 1 chạm từ mã dừng C/D (FR-PR-004) | Chỉ trả cờ `canCreateRepairRequest`; liên kết `RepairRequest` chờ phân hệ PM | PM |
+| L40 | Chưa làm trong E11 | Tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/phạm vi dữ liệu (FR-PR-010), `PR_OEE_LOW`/`PR_BUFFER_*` (chờ OEE E12), cảnh báo dữ liệu > 110% công suất (BR-PR-004, chờ công thức E12) | Dev lead |
+| L41 | Giờ ca | `BusinessDate` + giờ ca tính theo múi giờ Asia/Ho_Chi_Minh, lưu UTC; chu kỳ ghi sản lượng `OUTPUT_INTERVAL_MIN` lấy từ ngưỡng (mặc định 120') | PXVB xác nhận |
+
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

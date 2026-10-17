@@ -18,7 +18,7 @@ spring:
           time_zone: UTC
   flyway:
     # Mỗi module thêm một location khi được tạo (db/migration/<module>)
-    locations: classpath:db/migration/common,classpath:db/migration/identity,classpath:db/migration/workflow,classpath:db/migration/alerting,classpath:db/migration/dataio,classpath:db/migration/masterdata,classpath:db/migration/sync,classpath:db/migration/planning
+    locations: classpath:db/migration/common,classpath:db/migration/identity,classpath:db/migration/workflow,classpath:db/migration/alerting,classpath:db/migration/dataio,classpath:db/migration/masterdata,classpath:db/migration/sync,classpath:db/migration/planning,classpath:db/migration/production
   servlet:
     multipart:
       max-file-size: 10MB
@@ -57,6 +57,9 @@ pxvb:
   sync:
     scanner:
       enabled: ${PXVB_SYNC_SCANNER:true}
+  production:
+    scanner:
+      enabled: ${PXVB_PRODUCTION_SCANNER:true}
   mail:
     # Gửi email nội bộ (CRITICAL, yêu cầu chờ duyệt). Cần spring.mail.host/port/username/password khi bật.
     enabled: ${PXVB_MAIL_ENABLED:false}

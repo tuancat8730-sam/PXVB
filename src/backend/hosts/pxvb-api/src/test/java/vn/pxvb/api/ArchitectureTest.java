@@ -48,12 +48,22 @@ class ArchitectureTest {
                     "vn.pxvb.sync..", "vn.pxvb.workflow.infrastructure..", "vn.pxvb.workflow.api..");
 
     @ArchTest
+    static final ArchRule productionUsesOtherModulesOnlyThroughContracts = noClasses()
+            .that().resideInAPackage("vn.pxvb.production..")
+            .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity.domain..",
+                    "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..",
+                    "vn.pxvb.masterdata.application..", "vn.pxvb.masterdata.api..", "vn.pxvb.masterdata.domain..",
+                    "vn.pxvb.planning.application..", "vn.pxvb.planning.api..", "vn.pxvb.alerting.application..",
+                    "vn.pxvb.alerting.domain..", "vn.pxvb.alerting.api..", "vn.pxvb.sync.application..",
+                    "vn.pxvb.sync.api..", "vn.pxvb.sync.domain..", "vn.pxvb.workflow..");
+
+    @ArchTest
     static final ArchRule syncUsesOtherModulesOnlyThroughContracts = noClasses()
             .that().resideInAPackage("vn.pxvb.sync..")
             .should().dependOnClassesThat().resideInAnyPackage("vn.pxvb.identity.domain..",
                     "vn.pxvb.identity.application..", "vn.pxvb.identity.infrastructure..", "vn.pxvb.identity.api..",
                     "vn.pxvb.masterdata..", "vn.pxvb.alerting.application..", "vn.pxvb.alerting.domain..",
-                    "vn.pxvb.alerting.api..", "vn.pxvb.planning..", "vn.pxvb.workflow..");
+                    "vn.pxvb.alerting.api..", "vn.pxvb.planning..", "vn.pxvb.production..", "vn.pxvb.workflow..");
 
     @ArchTest
     static final ArchRule dataioDoesNotDependOnMasterdata = noClasses()

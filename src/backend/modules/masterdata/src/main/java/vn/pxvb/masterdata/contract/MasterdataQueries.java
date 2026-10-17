@@ -55,6 +55,21 @@ public interface MasterdataQueries {
 
     Optional<UUID> productIdByCode(String code);
 
+    /** Toàn bộ máy đang hoạt động (dùng khi mở phiên ca: một dòng cho mỗi máy). */
+    List<MachineInfo> activeMachines();
+
+    record ShiftWindow(String code, java.time.LocalTime start, java.time.LocalTime end, boolean crossesMidnight) {
+    }
+
+    Optional<ShiftWindow> shift(String code);
+
+    record StopReasonInfo(String code, String name, String category, boolean countsAsPlannedDowntime,
+                          boolean requiresTechConfirm, boolean canCreateRepairRequest) {
+    }
+
+    /** Mã dừng máy đang hoạt động (A–I). */
+    Optional<StopReasonInfo> stopReason(String code);
+
     /** Máy được phép chạy sản phẩm; tập rỗng nghĩa là không giới hạn (chưa khai báo). */
     java.util.Set<UUID> allowedMachineIds(UUID productId);
 }
