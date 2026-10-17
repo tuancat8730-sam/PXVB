@@ -81,5 +81,15 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L44 | Công suất lý thuyết | Lấy từ `md_machine.theoretical_rate` (`K_RODS_PER_MIN` ×1000 → điếu/phút; `PACKS_PER_MIN`); máy chưa khai báo → Performance/OEE = N/A | PXVB nhập công suất 77 máy |
 | L45 | Gộp kỳ | DAY/WEEK/MONTH tính khi đọc từ kết quả theo ca (cộng dồn tử–mẫu), chưa lưu riêng; Performance chặn 100% áp ở cấp gộp. OEE luôn `IsProvisional` cho tới khi chốt ca (E14) và xác nhận hết dừng kỹ thuật | Dev lead |
 
+## Phát sinh khi làm E14 (chốt ca CC-11)
+
+| # | Vấn đề | Đang áp dụng | Cần |
+|---|---|---|---|
+| L46 | Bên Vận hành trong `SHIFT_CLOSE` | Engine duyệt cấm người đề nghị tự duyệt, nên Trưởng ca xác nhận bằng **chữ ký điện tử khi gửi chốt**; luồng chỉ còn 3 bên duyệt (Thống kê, KSCL, Cấp phát NVL). Đổi L28 tương ứng; bên "không phát sinh" vẫn chưa tự bỏ qua | PXVB xác nhận |
+| L47 | Kiểm tra chốt ca chưa có nguồn | `CHK_MATERIAL` (MT), `CHK_QUALITY` (QC), `CHK_STAMP` (TX) là SPI `ShiftCloseCheck`, chưa có hiện thực cho tới khi các phân hệ đó được làm | Dev lead |
+| L48 | `CHK_UNSYNCED` | Chặn khi bất kỳ thiết bị đang hoạt động còn `pendingCount > 0` hoặc còn xung đột đồng bộ `PR.*` mở (chưa gắn thiết bị với ca) | PXVB xác nhận |
+| L49 | Mục BLOCK giải trình được | Hiện chỉ `CHK_OUTPUT_COMPLETE` (AC-PR-006): người có quyền nhập giải trình, Phó QĐ/QĐ duyệt mới gỡ chặn. Dung sai thời gian `CHK_DOWNTIME` không cần vì phút chạy được tính từ phút kế hoạch trừ dừng | PXVB |
+| L50 | Mở lại ca | Qua `AdjustmentRequest` (`ShiftSession`, `status` CLOSED → CLOSING); chốt lại sinh báo cáo ca revision mới. `FINALIZED` (sau khi RP/kế toán khóa hẳn) chưa có luồng. `ShiftCloseWatcher` (cảnh báo ca chưa chốt) chưa làm | Dev lead |
+
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

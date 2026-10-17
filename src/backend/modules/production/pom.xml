@@ -23,6 +23,10 @@
     </dependency>
     <dependency>
       <groupId>vn.pxvb</groupId>
+      <artifactId>pxvb-workflow</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>vn.pxvb</groupId>
       <artifactId>pxvb-masterdata</artifactId>
     </dependency>
     <dependency>

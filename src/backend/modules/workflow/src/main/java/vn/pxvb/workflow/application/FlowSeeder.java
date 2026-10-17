@@ -53,11 +53,11 @@ public class FlowSeeder implements ApplicationRunner {
                             step(1, "QA_DEPT", "ALL", null, "NOTIFY"), step(1, "MNT_LEAD", "ALL", null, "NOTIFY"))),
             new Seed("QC_NC_DISPOSITION", "QC", "NonConformance",
                     steps(step(1, "QA_HEAD", "ANY", 480, "NOTIFY"))),
-            // Chốt ca: 4 bên bắt buộc (PO, 2026-10-13); mỗi bên là một nhóm vai trò "bất kỳ vai trò nào".
-            // Bên "không phát sinh" được module PR tự bỏ qua khi khởi tạo luồng.
+            // Chốt ca: 4 bên bắt buộc (PO, 2026-10-13). Bên Vận hành (Trưởng ca) xác nhận bằng chữ ký điện tử khi
+            // gửi chốt (người đề nghị không được tự duyệt), 3 bên còn lại duyệt trên luồng; mỗi bên là một nhóm
+            // vai trò "bất kỳ vai trò nào". Bên "không phát sinh" chưa được tự bỏ qua (L28).
             new Seed("SHIFT_CLOSE", "CC", "ShiftSession",
-                    steps(step(1, "SHIFT_LEADER", "ALL", 30, "NOTIFY"),
-                            step(1, "STAT_OUTPUT,STAT_MATERIAL,STAT_STAMP", "ALL", 30, "NOTIFY"),
+                    steps(step(1, "STAT_OUTPUT,STAT_MATERIAL,STAT_STAMP", "ALL", 30, "NOTIFY"),
                             step(1, "QC_INLINE,QA_INSPECTOR,QA_SUPERVISOR", "ALL", 30, "NOTIFY"),
                             step(1, "MATERIAL_ISSUER", "ALL", 30, "NOTIFY"))),
             new Seed("CC_ADJUSTMENT", "CC", "AdjustmentRequest",
@@ -79,7 +79,8 @@ public class FlowSeeder implements ApplicationRunner {
                 if (existing.isEmpty()) {
                     flows.save(new ApprovalFlowDef(seed.code(), seed.module(), seed.entityType(), seed.steps()));
                 } else if ("SHIFT_CLOSE".equals(seed.code())
-                        && existing.get().getSteps().contains("\"roleCode\":\"STAT_OUTPUT\",\"mode\"")) {
+                        && (existing.get().getSteps().contains("\"roleCode\":\"STAT_OUTPUT\",\"mode\"")
+                        || existing.get().getSteps().contains("\"roleCode\":\"SHIFT_LEADER\",\"mode\":\"ALL\""))) {
                     // Cấu hình seed cũ (trước quyết định PO): nâng cấp, không đụng vào cấu hình đã chỉnh tay
                     existing.get().update(seed.module(), seed.entityType(), seed.steps(), existing.get().isActive());
                 }

@@ -80,6 +80,11 @@ public class MasterdataSeeder implements ApplicationRunner {
         reason("ORDER_ADJUST", "PRODUCT_CHANGE", "Đổi mác");
         reason("ORDER_ADJUST", "FIBER_OUT", "Hết sợi");
         reason("ORDER_ADJUST", "BREAKDOWN", "Máy hỏng");
+        reason("PLAN_VARIANCE", "MACHINE_FAULT", "Máy hỏng/không ổn định");
+        reason("PLAN_VARIANCE", "MATERIAL_SHORTAGE", "Thiếu nguyên vật liệu");
+        reason("PLAN_VARIANCE", "PLAN_CHANGE", "Thay đổi kế hoạch/đổi mác");
+        reason("PLAN_VARIANCE", "OVER_PERFORMANCE", "Vượt công suất dự kiến");
+        reason("PLAN_VARIANCE", "OTHER", "Nguyên nhân khác");
         reason("ORDER_ADJUST", "SIDE_RUN", "Chạy phụ");
         reason("ORDER_ADJUST", "QTY_CHANGE", "Đổi sản lượng");
         reason("ORDER_ADJUST", "OTHER", "Lý do khác");

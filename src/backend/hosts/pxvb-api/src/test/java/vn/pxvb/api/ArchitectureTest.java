@@ -55,7 +55,8 @@ class ArchitectureTest {
                     "vn.pxvb.masterdata.application..", "vn.pxvb.masterdata.api..", "vn.pxvb.masterdata.domain..",
                     "vn.pxvb.planning.application..", "vn.pxvb.planning.api..", "vn.pxvb.alerting.application..",
                     "vn.pxvb.alerting.domain..", "vn.pxvb.alerting.api..", "vn.pxvb.sync.application..",
-                    "vn.pxvb.sync.api..", "vn.pxvb.sync.domain..", "vn.pxvb.workflow..");
+                    "vn.pxvb.sync.api..", "vn.pxvb.sync.domain..", "vn.pxvb.workflow.infrastructure..",
+                    "vn.pxvb.workflow.api..");
 
     @ArchTest
     static final ArchRule syncUsesOtherModulesOnlyThroughContracts = noClasses()

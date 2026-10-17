@@ -20,6 +20,10 @@ public final class ProductionEvents {
     public record ShiftEnded(UUID sessionId, LocalDate businessDate, String shiftCode, Instant endedAt) {
     }
 
+    /** Phiên ca đã chốt (CLOSED/SHIFT_LOCKED): RP, MT, TX, PR tổng hợp lắng nghe (outbox {@code pr.shift.closed}). */
+    public record ShiftClosed(UUID sessionId, LocalDate businessDate, String shiftCode, Instant closedAt) {
+    }
+
     public record StopStarted(UUID stopId, UUID sessionId, UUID machineId, String reasonCode, Instant startAt) {
     }
 

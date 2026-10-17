@@ -120,15 +120,14 @@ class WorkflowIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void shiftCloseNeedsAllFourPartiesEachByAnyOfItsRoles() throws Exception {
+    void shiftCloseNeedsStatQualityAndIssuerEachByAnyOfItsRoles() throws Exception {
+        // Bên Vận hành (Trưởng ca) xác nhận bằng chữ ký khi gửi chốt; luồng còn 3 bên duyệt
         TestUser deputy = createUser(mvc, mapper, admin, "dep", "DEPUTY_DIRECTOR");
-        TestUser leader = createUser(mvc, mapper, admin, "lead", "SHIFT_LEADER");
         TestUser stat = createUser(mvc, mapper, admin, "stat", "STAT_STAMP");
         TestUser qc = createUser(mvc, mapper, admin, "qc", "QA_SUPERVISOR");
         TestUser issuer = createUser(mvc, mapper, admin, "iss", "MATERIAL_ISSUER");
         String id = body(start(deputy, "SHIFT_CLOSE", UUID.randomUUID())).get("id").asText();
 
-        assertThat(body(decide(leader, id, "approve", null)).get("status").asText()).isEqualTo("PENDING");
         assertThat(body(decide(stat, id, "approve", null)).get("status").asText()).isEqualTo("PENDING");
         assertThat(body(decide(qc, id, "approve", null)).get("status").asText()).isEqualTo("PENDING");
         assertThat(body(decide(issuer, id, "approve", null)).get("status").asText()).isEqualTo("APPROVED");

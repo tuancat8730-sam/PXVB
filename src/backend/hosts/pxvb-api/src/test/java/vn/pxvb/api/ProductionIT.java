@@ -473,6 +473,116 @@ class ProductionIT extends AbstractIntegrationTest {
         assertThat(provisional).isTrue();
     }
 
+    // ---------- Chốt ca (CC-11, AC-PR-006) ----------
+
+    private JsonNode checkItem(JsonNode checks, String code, String subject) {
+        for (JsonNode i : checks.get("items")) {
+            if (code.equals(i.get("checkCode").asText()) && subject.equals(i.get("subjectKey").asText())) {
+                return i;
+            }
+        }
+        throw new AssertionError("Không có mục " + code + " / " + subject + " trong " + checks);
+    }
+
+    private void approve(String instanceId, TestUser user) throws Exception {
+        MvcResult r = call(post("/api/v1/workflow/approvals/" + instanceId + "/approve"), user.token(), "{}");
+        assertThat(r.getResponse().getStatus()).as(r.getResponse().getContentAsString()).isEqualTo(200);
+    }
+
+    @Test
+    void shiftCloseRequiresExplanationsThenMultiPartyApprovalAndProducesReport() throws Exception {
+        jdbc.update("UPDATE sys_device SET pending_count = 0"); // thiết bị của các test khác không được chặn chốt ca
+        TestUser stat = createUser(mvc, mapper, admin, "stat", "STAT_OUTPUT");
+        TestUser qc = createUser(mvc, mapper, admin, "qc", "QC_INLINE");
+        TestUser issuer = createUser(mvc, mapper, admin, "iss", "MATERIAL_ISSUER");
+        String session = openRewoundSession();
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+
+        // AC-PR-006: máy có lệnh chưa đủ lượt ghi sản lượng → chặn, có danh sách máy thiếu
+        JsonNode checks = json(call(get("/api/v1/pr/sessions/" + session + "/close-checks"), leader.token(), null));
+        assertThat(checks.get("closable").asBoolean()).isFalse();
+        assertThat(checks.get("blocking").asInt()).isEqualTo(2);
+        assertThat(checkItem(checks, "CHK_OUTPUT_COMPLETE", packer).get("level").asText()).isEqualTo("BLOCK");
+        assertThat(checkItem(checks, "CHK_OUTPUT_PLAN", packer).get("level").asText()).isEqualTo("EXPLAIN");
+        MvcResult early = call(post("/api/v1/pr/sessions/" + session + "/close-request"), leader.token(),
+                "{\"method\":\"PASSWORD\",\"secret\":\"" + USER_PASSWORD + "\"}");
+        assertThat(early.getResponse().getStatus()).isEqualTo(422);
+        assertThat(early.getResponse().getContentAsString()).contains("CHK_OUTPUT_COMPLETE");
+
+        // Giải trình: vận hành viên không có quyền; mục BLOCK cần Phó QĐ duyệt giải trình
+        String explainUrl = "/api/v1/pr/sessions/" + session + "/explanations";
+        assertThat(call(post(explainUrl), operator.token(), ("{\"checkCode\":\"CHK_OUTPUT_COMPLETE\","
+                + "\"subjectKey\":\"%s\",\"note\":\"Ghi bù\"}").formatted(packer)).getResponse().getStatus())
+                .isEqualTo(403);
+        for (String machine : new String[]{packer, maker}) {
+            JsonNode after = json(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_OUTPUT_COMPLETE\","
+                    + "\"subjectKey\":\"%s\",\"note\":\"Máy chạy thử, ghi bù cuối ca\"}").formatted(machine)));
+            JsonNode item = checkItem(after, "CHK_OUTPUT_COMPLETE", machine);
+            assertThat(item.get("resolved").asBoolean()).isFalse(); // chưa duyệt → vẫn chặn
+            assertThat(call(post(explainUrl + "/" + item.get("explanationId").asText() + "/decision"),
+                    leader.token(), "{\"approve\":true}").getResponse().getStatus()).isEqualTo(403);
+            JsonNode approved = json(call(post(explainUrl + "/" + item.get("explanationId").asText()
+                    + "/decision"), deputy.token(), "{\"approve\":true}"));
+            assertThat(checkItem(approved, "CHK_OUTPUT_COMPLETE", machine).get("resolved").asBoolean()).isTrue();
+        }
+        // Lệch kế hoạch phải chọn nguyên nhân từ danh mục
+        assertThat(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_OUTPUT_PLAN\",\"subjectKey\":"
+                + "\"%s\",\"reasonCode\":\"KHONG_CO\"}").formatted(packer)).getResponse().getStatus())
+                .isEqualTo(400);
+        JsonNode explained = json(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_OUTPUT_PLAN\","
+                + "\"subjectKey\":\"%s\",\"reasonCode\":\"MACHINE_FAULT\"}").formatted(packer)));
+        assertThat(explained.get("closable").asBoolean()).isTrue();
+
+        // Gửi chốt: cần quyền + xác nhận điện tử
+        String closeUrl = "/api/v1/pr/sessions/" + session + "/close-request";
+        assertThat(call(post(closeUrl), operator.token(), "{\"method\":\"PASSWORD\",\"secret\":\"x\"}")
+                .getResponse().getStatus()).isEqualTo(403);
+        assertThat(call(post(closeUrl), leader.token(), "{\"method\":\"PASSWORD\",\"secret\":\"sai\"}")
+                .getResponse().getStatus()).isEqualTo(401);
+        JsonNode requested = json(call(post(closeUrl), leader.token(),
+                "{\"method\":\"PASSWORD\",\"secret\":\"" + USER_PASSWORD + "\"}"));
+        String instance = requested.get("approvalInstanceId").asText();
+        assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
+                .isEqualTo("CLOSING");
+        assertThat(call(post(closeUrl), leader.token(), "{\"method\":\"PASSWORD\",\"secret\":\""
+                + USER_PASSWORD + "\"}").getResponse().getStatus()).isEqualTo(409);
+
+        // Bốn bên bắt buộc xác nhận → CLOSED
+        approve(instance, stat);
+        approve(instance, qc);
+        assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
+                .isEqualTo("CLOSING");
+        approve(instance, issuer);
+        JsonNode closed = json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null));
+        assertThat(closed.get("status").asText()).isEqualTo("CLOSED");
+
+        // Báo cáo ca + OEE chính thức + khóa ghi nhận
+        JsonNode report = json(call(get("/api/v1/pr/sessions/" + session + "/report"), leader.token(), null));
+        assertThat(report.get("sessionId").asText()).isEqualTo(session);
+        assertThat(report.get("oee")).isNotEmpty();
+        assertThat(report.get("closeChecks")).isNotEmpty();
+        Boolean provisional = jdbc.queryForObject("SELECT is_provisional FROM pr_oee_result WHERE run_id = ("
+                + "SELECT id FROM pr_machine_run WHERE session_id = UUID_TO_BIN(?) AND machine_id = UUID_TO_BIN(?))",
+                Boolean.class, session, packer);
+        assertThat(provisional).isFalse();
+        assertThat(output(packer, session, "\"qty\":1", operator.token()).getResponse().getStatus())
+                .isEqualTo(423);
+
+        // Mở lại ca chỉ qua điều chỉnh được Phó QĐ/quản trị duyệt
+        MvcResult adj = call(post("/api/v1/workflow/adjustments"), deputy.token(), ("{\"module\":\"pr\","
+                + "\"entityType\":\"ShiftSession\",\"entityId\":\"%s\",\"fieldPath\":\"status\","
+                + "\"newValue\":\"CLOSING\",\"reason\":\"Sửa sản lượng ghi nhầm\"}").formatted(session));
+        assertThat(adj.getResponse().getStatus()).as(adj.getResponse().getContentAsString()).isEqualTo(201);
+        TestUser deputy2 = createUser(mvc, mapper, admin, "dep2", "DEPUTY_DIRECTOR");
+        MvcResult approvedAdj = call(post("/api/v1/workflow/adjustments/" + json(adj).get("id").asText()
+                + "/approve"), deputy2.token(), "{}");
+        assertThat(approvedAdj.getResponse().getStatus()).as(approvedAdj.getResponse().getContentAsString())
+                .isEqualTo(200);
+        assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
+                .isEqualTo("CLOSING");
+    }
+
     private JsonNode oeeRow(String session, String machineId) throws Exception {
         JsonNode rows = json(call(get("/api/v1/pr/sessions/" + session + "/oee"), leader.token(), null));
         for (JsonNode r : rows) {
