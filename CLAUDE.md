@@ -28,6 +28,8 @@
 
 ## Trạng thái triển khai
 
+Bảng theo dõi chi tiết từng epic: `docs/PROGRESS.md` (cập nhật khi hoàn thành/đổi trạng thái một epic).
+
 Đã làm: Sprint 0 phần backend (E00), E01 (building blocks), E02 (identity), E03 (module `workflow`: luồng duyệt,
 ủy quyền, xác nhận điện tử, điều chỉnh sau khóa), E04 (module `alerting`: rule, cảnh báo, thông báo, STOMP).
 E05 (module `dataio`: nhập/xuất Excel), E06–E08 (module `masterdata`: máy, cụm, ghép cặp, ca, SP, NVL, định mức
