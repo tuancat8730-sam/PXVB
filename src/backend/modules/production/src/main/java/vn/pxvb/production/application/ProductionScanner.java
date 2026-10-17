@@ -33,14 +33,16 @@ public class ProductionScanner {
     private final JdbcTemplate jdbc;
     private final MasterdataQueries masterdata;
     private final AlertRaiser alerts;
+    private final OeeService oee;
     private final Clock clock;
     private final boolean enabled;
 
-    public ProductionScanner(JdbcTemplate jdbc, MasterdataQueries masterdata, AlertRaiser alerts, Clock clock,
-                             @Value("${pxvb.production.scanner.enabled:false}") boolean enabled) {
+    public ProductionScanner(JdbcTemplate jdbc, MasterdataQueries masterdata, AlertRaiser alerts, OeeService oee,
+                             Clock clock, @Value("${pxvb.production.scanner.enabled:false}") boolean enabled) {
         this.jdbc = jdbc;
         this.masterdata = masterdata;
         this.alerts = alerts;
+        this.oee = oee;
         this.clock = clock;
         this.enabled = enabled;
     }
@@ -64,6 +66,7 @@ public class ProductionScanner {
             Instant end = instant(s.get("planned_end"));
             raised += scanBehind(sessionId, date, start, end, now);
             raised += scanLongStops(sessionId, date, now);
+            raised += oee.evaluateLow(sessionId, date, start, now);
         }
         return raised;
     }

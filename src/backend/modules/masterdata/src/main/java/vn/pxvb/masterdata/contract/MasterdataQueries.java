@@ -63,6 +63,13 @@ public interface MasterdataQueries {
 
     Optional<ShiftWindow> shift(String code);
 
+    /** Công suất lý thuyết chuẩn hóa theo phút: {@code unit} = {@code RODS} (điếu) hoặc {@code PACKS} (bao). */
+    record MachineRate(BigDecimal perMinute, String unit) {
+    }
+
+    /** Chỉ chứa máy đã khai báo công suất lý thuyết (> 0). */
+    java.util.Map<UUID, MachineRate> machineRates(java.util.Collection<UUID> ids);
+
     record StopReasonInfo(String code, String name, String category, boolean countsAsPlannedDowntime,
                           boolean requiresTechConfirm, boolean canCreateRepairRequest) {
     }

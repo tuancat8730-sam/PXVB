@@ -414,5 +414,72 @@ class ProductionIT extends AbstractIntegrationTest {
                 + "AND machine_id = UUID_TO_BIN(?)", Integer.class, maker);
         assertThat(behind).isEqualTo(1);
         assertThat(longStop).isGreaterThanOrEqualTo(1);
+        Integer low = jdbc.queryForObject("SELECT COUNT(*) FROM sys_alert WHERE rule_code = 'PR_OEE_LOW' "
+                + "AND subject_id = ?", Integer.class, packer);
+        assertThat(low).isGreaterThanOrEqualTo(1);
+    }
+
+    // ---------- OEE (AC-PR-002) ----------
+
+    @Test
+    void oeeMatchesAcPr002AndIsAggregatedByDayAndFormulaIsVersioned() throws Exception {
+        assertThat(call(put("/api/v1/md/machines/" + packer), admin,
+                "{\"theoreticalRate\":400,\"rateUnit\":\"PACKS_PER_MIN\"}").getResponse().getStatus())
+                .isEqualTo(200);
+        String session = openRewoundSession();
+        Instant t0 = Instant.now().minusSeconds(5 * 3600);
+        assertThat(stop(packer, session, "E", t0, t0.plusSeconds(30 * 60), operator.token()).getResponse()
+                .getStatus()).isEqualTo(201);
+        assertThat(stop(packer, session, "C", t0.plusSeconds(40 * 60), t0.plusSeconds(80 * 60), operator.token())
+                .getResponse().getStatus()).isEqualTo(201);
+        assertThat(output(packer, session, "\"qty\":150000,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(4 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+
+        JsonNode row = oeeRow(session, packer);
+        assertThat(row.get("plannedMinutes").asInt()).isEqualTo(450);
+        assertThat(row.get("runMinutes").asInt()).isEqualTo(410);
+        assertThat(row.get("availability").asDouble()).isCloseTo(0.911111, org.assertj.core.data.Offset.offset(1e-6));
+        assertThat(row.get("performance").asDouble()).isCloseTo(0.914634, org.assertj.core.data.Offset.offset(1e-6));
+        assertThat(row.get("oeePct").asDouble()).isCloseTo(83.33, org.assertj.core.data.Offset.offset(0.01));
+        assertThat(row.get("isProvisional").asBoolean()).isTrue();
+
+        // Gộp theo ngày: dòng của máy và dòng tổng; một ca → trùng giá trị ca
+        JsonNode day = json(call(get("/api/v1/pr/oee?grain=DAY&from=%s&to=%s&machineId=%s".formatted(date, date,
+                packer)), leader.token(), null));
+        assertThat(day).hasSize(2);
+        assertThat(day.get(0).get("oeePct").asDouble()).isCloseTo(83.33, org.assertj.core.data.Offset.offset(0.01));
+
+        // Công thức có phiên bản: chỉ Phó QĐ/quản trị được đổi; FULL_SHIFT tính dừng kế hoạch là thời gian mất
+        assertThat(call(put("/api/v1/pr/oee-formula"), leader.token(), "{\"plannedTimeMode\":\"FULL_SHIFT\","
+                + "\"qualityMode\":\"ASSUME_100\",\"capPerformanceAt100\":false}").getResponse().getStatus())
+                .isEqualTo(403);
+        int before = json(call(get("/api/v1/pr/oee-formula"), leader.token(), null)).get("versionNo").asInt();
+        try {
+            JsonNode changed = json(call(put("/api/v1/pr/oee-formula"), deputy.token(), ("{\"plannedTimeMode\":"
+                    + "\"FULL_SHIFT\",\"qualityMode\":\"ASSUME_100\",\"capPerformanceAt100\":false}")));
+            assertThat(changed.get("versionNo").asInt()).isEqualTo(before + 1);
+            assertThat(oeeRow(session, packer).get("plannedMinutes").asInt()).isEqualTo(480);
+        } finally {
+            call(put("/api/v1/pr/oee-formula"), deputy.token(), "{\"plannedTimeMode\":\"EXCLUDE_PLANNED_STOPS\","
+                    + "\"qualityMode\":\"ASSUME_100\",\"capPerformanceAt100\":false}");
+        }
+
+        // Kết ca vẫn tạm tính (chưa chốt ca) và lưu kết quả
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+        Boolean provisional = jdbc.queryForObject("SELECT is_provisional FROM pr_oee_result r JOIN pr_machine_run m "
+                + "ON m.id = r.run_id WHERE m.session_id = UUID_TO_BIN(?) AND r.machine_id = UUID_TO_BIN(?)",
+                Boolean.class, session, packer);
+        assertThat(provisional).isTrue();
+    }
+
+    private JsonNode oeeRow(String session, String machineId) throws Exception {
+        JsonNode rows = json(call(get("/api/v1/pr/sessions/" + session + "/oee"), leader.token(), null));
+        for (JsonNode r : rows) {
+            if (machineId.equals(r.get("machineId").asText())) {
+                return r;
+            }
+        }
+        throw new AssertionError("Không có OEE cho máy " + machineId);
     }
 }

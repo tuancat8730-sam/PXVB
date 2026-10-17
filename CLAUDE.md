@@ -34,8 +34,8 @@ E05 (module `dataio`: nhập/xuất Excel), E06–E08 (module `masterdata`: máy
 có phiên bản, ngưỡng, mã dừng/lý do, mẫu KSCL, lỗi/luật, bảo trì, phụ tùng, liên kết).
 E09 (module `sync`: push/pull/xung đột/giám sát thiết bị; lõi ngoại tuyến tablet `src/tablet`), E10 (module
 `planning`: KHSX tháng/tuần, lệnh SX, bố trí nhân sự), E11 (module `production`: phiên ca, sản lượng, dừng máy,
-đổi mác, dashboard thời gian thực, cảnh báo `PR_OUTPUT_BEHIND`/`PR_STOP_LONG`, handler sync `PR.*`).
-Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E12 trở đi (OEE, MT, chốt ca… xem SDD §18.2).
+đổi mác, dashboard thời gian thực, cảnh báo `PR_OUTPUT_BEHIND`/`PR_STOP_LONG`, handler sync `PR.*`), E12 (OEE: `OeeCalculator` thuần miền + golden test, công thức có phiên bản, `PR_OEE_LOW`).
+Chưa làm: khung frontend React (`src/web`, dashboard, UI tablet RN), E13 trở đi (MT, chốt ca… xem SDD §18.2).
 
 ## Đồng bộ ngoại tuyến & kế hoạch
 

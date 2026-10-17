@@ -192,6 +192,27 @@ public class ThresholdService implements MasterdataQueries {
 
     @Override
     @Transactional(readOnly = true)
+    public java.util.Map<UUID, MachineRate> machineRates(java.util.Collection<UUID> ids) {
+        java.util.Map<UUID, MachineRate> result = new java.util.LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return result;
+        }
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, theoretical_rate, rate_unit, machine_type FROM md_machine "
+                + "WHERE theoretical_rate IS NOT NULL AND theoretical_rate > 0 AND id IN (" + inList(ids.size())
+                + ")", rs -> {
+            java.math.BigDecimal rate = rs.getBigDecimal("theoretical_rate");
+            String unit = rs.getString("rate_unit");
+            boolean rods = "K_RODS_PER_MIN".equals(unit)
+                    || (unit == null && "MAKER".equals(rs.getString("machine_type")));
+            result.put(UUID.fromString(rs.getString("id")), new MachineRate(
+                    rods && "K_RODS_PER_MIN".equals(unit) ? rate.multiply(java.math.BigDecimal.valueOf(1000)) : rate,
+                    rods ? "RODS" : "PACKS"));
+        }, uuidArgs(ids));
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ShiftWindow> shift(String code) {
         return jdbc.query("SELECT code, start_time, end_time, crosses_midnight FROM md_shift_def "
                 + "WHERE code = ? AND is_active = 1", (rs, i) -> new ShiftWindow(rs.getString("code"),

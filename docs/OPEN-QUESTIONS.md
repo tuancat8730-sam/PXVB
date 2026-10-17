@@ -72,5 +72,14 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L40 | Chưa làm trong E11 | Tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/phạm vi dữ liệu (FR-PR-010), `PR_OEE_LOW`/`PR_BUFFER_*` (chờ OEE E12), cảnh báo dữ liệu > 110% công suất (BR-PR-004, chờ công thức E12) | Dev lead |
 | L41 | Giờ ca | `BusinessDate` + giờ ca tính theo múi giờ Asia/Ho_Chi_Minh, lưu UTC; chu kỳ ghi sản lượng `OUTPUT_INTERVAL_MIN` lấy từ ngưỡng (mặc định 120') | PXVB xác nhận |
 
+## Phát sinh khi làm E12 (OEE)
+
+| # | Vấn đề | Đang áp dụng | Cần |
+|---|---|---|---|
+| L42 | Công thức OEE mặc định | `EXCLUDE_PLANNED_STOPS` + `ASSUME_100` (chất lượng 100%) + không chặn Performance ở 100%; đổi bằng `PUT /api/v1/pr/oee-formula` (tạo phiên bản mới, quyền Phó QĐ/quản trị) | PXVB xác nhận quy ước + 10 bộ số liệu golden (AC-PR-002) |
+| L43 | Chất lượng (Q) | Chưa nối dữ liệu NC/SPKPH (QC) nên GoodQty = TotalQty; chế độ `FROM_NC_RECORDS`/`FROM_INLINE_REJECT_RATE` chờ QC | QC |
+| L44 | Công suất lý thuyết | Lấy từ `md_machine.theoretical_rate` (`K_RODS_PER_MIN` ×1000 → điếu/phút; `PACKS_PER_MIN`); máy chưa khai báo → Performance/OEE = N/A | PXVB nhập công suất 77 máy |
+| L45 | Gộp kỳ | DAY/WEEK/MONTH tính khi đọc từ kết quả theo ca (cộng dồn tử–mẫu), chưa lưu riêng; Performance chặn 100% áp ở cấp gộp. OEE luôn `IsProvisional` cho tới khi chốt ca (E14) và xác nhận hết dừng kỹ thuật | Dev lead |
+
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).
