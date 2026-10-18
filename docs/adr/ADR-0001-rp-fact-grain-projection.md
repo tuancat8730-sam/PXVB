@@ -50,7 +50,9 @@ phút chạy, phút kế hoạch và OEE là của **(ca × máy)**; khi máy đ
 - `StopMinByReason` chuyển từ JSON sang bảng con để `GROUP BY reason_code` (Pareto A–I, drill-down) và AC-RP-003 kiểm được bằng SQL thuần.
 - **Chỉ lưu đại lượng cộng dồn là nguồn sự thật.** Tỷ lệ A/P/Q/OEE lưu ở grain (ca × máy) để đọc nhanh; **mọi gộp (ngày/tuần/tháng/dòng máy) tính lại tỷ lệ từ tổng**, không trung bình cộng phần trăm (SDD §8.3).
 - Không cộng chéo `unit` (điếu vs bao): gộp luôn `GROUP BY unit`.
-- `perf_num` = tử số hiệu năng **sau khi áp trần** (`min(total, theoretical)` khi `CapPerformanceAt100`), để gộp là phép cộng thuần. Xem câu hỏi O1.
+- `perf_num` = tử số hiệu năng **sau khi áp trần** (`min(total, theoretical)` khi `CapPerformanceAt100`), để gộp là phép cộng thuần: `Performance = Σperf_num / Σtheoretical_qty`.
+  Lưu kèm `total_qty` (thô) và `formula_id`; gộp nhiều ngày dùng `formula_id` của **từng dòng**, tháng đổi cờ giữa chừng phải ghi nhãn rõ.
+  Trần chỉ áp cho hiệu năng; chất lượng vẫn tính trên sản lượng thô. **Khuyến nghị của hội đồng (2026-10-18), chờ PO xác nhận** — xem O1.
 - Các bảng `FactDaily/Weekly/MonthlyKpi` trong SDD **hoãn** sang E24; E15 chỉ cần gộp lúc đọc (dữ liệu nhỏ).
 - Phân vùng `RANGE COLUMNS(business_date)` theo tháng + phân vùng `p_future` (`MAXVALUE`) để insert không bao giờ lỗi 1526. Job `PartitionMaintainer` mỗi ngày
   `REORGANIZE PARTITION p_future` để luôn có ≥ 3 tháng phía trước; cùng hàm `ensureRange(from, to)` dùng cho fixture 3 năm của AC-RP-005.
@@ -76,7 +78,8 @@ Hợp đồng nguồn cần bổ sung (điều kiện tiên quyết):
 - Sự kiện mới: `pr.output.recorded` (khóa phiên ca) và `mt.consumption.computed` / `mt.issue.*` (khóa phiên ca). Được hợp nhất (coalesce) ở D4 nên tần suất không đáng lo.
 
 Sự kiện kích hoạt đánh dấu bẩn: `pr.session.opened/ended`, `pr.stop.*`, `pr.output.recorded`, `pr.shift.closed`, `pr.shift.finalized`, `mt.*`, và `adjustment.applied`
-với `entityType = ShiftSession` (khóa = `entityId`). `adjustment.applied` cho loại thực thể khác chưa có cách ánh xạ về phiên ca → ghi nhận ở O3, tạm thời do đối soát đêm bắt.
+với `entityType = ShiftSession` (khóa = `entityId`). `adjustment.applied` cho loại thực thể khác chưa có cách ánh xạ về phiên ca → ghi nhận ở O3. Ánh xạ qua **registry theo `entityType`** (mỗi module sở hữu `AdjustmentApplier` đăng ký bộ phân giải về phiên ca). **Loại chưa ánh xạ phải lỗi lớn tiếng**
+(log + cảnh báo `RP_ADJUSTMENT_UNMAPPED` + hàng dead-letter), không bỏ qua âm thầm; đối soát đêm chỉ là lưới an toàn thứ hai, không thay thế.
 
 ### D4. Hàng đợi riêng của RP, tách khỏi vòng retry chung của outbox
 
@@ -85,7 +88,9 @@ với `entityType = ShiftSession` (khóa = `entityId`). `adjustment.applied` cho
   Không có nghiệp vụ nên không thể gây lỗi làm outbox gọi lại các sink khác (ví dụ `WorkflowEventSink` gửi thông báo lặp). Sink bắt buộc idempotent theo hợp đồng `OutboxSink`; upsert đáp ứng.
 - `ProjectionWorker` (`@Scheduled`, cờ `pxvb.rp.projection.enabled`) nhận bản ghi bằng `FOR UPDATE SKIP LOCKED`, tính lại, rồi xóa bản ghi bẩn **chỉ khi `dirty_seq` không đổi** từ lúc đọc (CAS);
   nếu sự kiện đến trong lúc đang tính thì `dirty_seq` đã tăng → bản ghi còn lại và được tính lại vòng sau. Nhiều đợt sự kiện dồn dập (ghi sản lượng liên tục) tự gộp thành một lần tính.
-- Lỗi: `attempts`, `next_attempt_at` lùi theo cấp số nhân, sau N lần (mặc định 5) đặt `FAILED` và bắn cảnh báo `RP_PROJECTION_FAILED`. Chỉ số độ trễ = `now - min(marked_at)` của hàng chưa xong → dùng cho "dữ liệu cũ > 5 phút" ở E16.
+- **Gộp/debounce:** `ProjectionWorker` không nhận hàng có `marked_at` mới hơn `min-interval` (cấu hình, mặc định 10s) để một loạt sự kiện sản lượng dồn thành một lần tính; hàng của phiên ca đã `CLOSED`
+  (sự kiện `pr.shift.closed`) được bỏ qua khoảng đợi để không làm chậm SLA. `source_hash` chỉ tránh ghi, không tránh đọc, nên debounce là biện pháp chính chống bão tính lại.
+- Lỗi: `attempts`, `next_attempt_at` lùi theo cấp số nhân, sau N lần (mặc định 5) đặt `FAILED` và bắn cảnh báo `RP_PROJECTION_FAILED`. Chỉ số độ trễ = `now - min(marked_at)` của hàng chưa xong → dùng cho "dữ liệu cũ > 5 phút" ở E16. Hàng lỗi mãi chuyển `FAILED` và **không chặn** hàng khác (nhận việc theo `next_attempt_at`, không theo thứ tự cứng). Ghi `enqueued_at` và `started_at` để tách thời gian chờ khỏi thời gian tính.
 - Vị trí chạy: sink chỉ là upsert nên chạy ở host nào có dispatcher cũng được; `ProjectionWorker` bật ở host đang nạp module `reporting` (hiện là `pxvb-api`, theo L11) và chuyển sang worker khi L11 xong.
   `SKIP LOCKED` làm cho chạy hai nơi vẫn an toàn.
 
@@ -123,6 +128,7 @@ Chỉ phụ thuộc `production.contract`, `material.contract`, `masterdata.cont
 
 ## 4. Kiểm thử bắt buộc
 
+0. **Oracle viết trước, độc lập:** bộ tổng hợp SQL của AC-RP-003 viết trước khi có mã projection và không dùng lại logic truy vấn production, nếu không AC-RP-003 đạt theo cấu tạo.
 1. Phát lại: chạy projection hai lần / theo thứ tự xáo trộn → `source_hash` giống nhau (property test).
 2. Sự kiện đến giữa lúc đang tính → hàng còn lại, vòng sau tính lại (CAS).
 3. Đổi mác trong ca: `SUM(run_min)` ở `rp_fact_shift_machine` không đổi so với `pr_oee_result`.
@@ -130,10 +136,19 @@ Chỉ phụ thuộc `production.contract`, `material.contract`, `masterdata.cont
 5. Oracle SQL 30 ngày sai số 0; EXPLAIN xác nhận cắt tỉa phân vùng; fixture 3 năm cho AC-RP-005.
 6. Sink lỗi/DB lỗi: không gọi lại `WorkflowEventSink`; hàng chuyển `FAILED` sau N lần.
 7. ArchUnit: `reporting` chỉ phụ thuộc gói `contract` của module khác.
+8. **Tương đương contract:** truy vấn PR/MT mới trả cùng tổng với báo cáo ca E11/E12/E14 (`pr_shift_report`) trên cùng dữ liệu.
+9. **Sập giữa chừng:** worker chết khi đang tính một phiên ca → hàng bẩn còn nguyên và được tính lại; không để fact nửa vời (giao dịch hoàn tác).
+10. **Phiên ca lỗi mãi (poison):** hết số lần thử → `FAILED` + cảnh báo, các phiên ca khác vẫn được xử lý (không chặn đầu hàng).
+11. **Ranh giới `p_future`:** fixture ngày đầu tháng; `PartitionMaintainer` chạy lặp lại vẫn idempotent; chèn vào tháng chưa có phân vùng không lỗi.
+12. **Ca qua nửa đêm:** `business_date` khác ngày UTC của dấu thời gian; sự kiện/ghi nhận sau 00:00 vẫn rơi đúng `business_date` và đúng phân vùng.
+13. **`source_hash` đủ trường:** biến đổi từng trường nguồn (một lần một trường) → hash phải đổi và fact được ghi; không trường nào bị bỏ sót.
+14. **Loại thực thể chưa ánh xạ:** `adjustment.applied` với `entityType` lạ → lỗi lớn tiếng (cảnh báo + dead-letter), không bỏ qua.
+15. **Debounce:** nhiều sự kiện trong cửa sổ `min-interval` → một lần tính; `pr.shift.closed` bỏ qua cửa sổ đợi.
+16. **OEE (L57):** golden test ví dụ A 120/100 và B 60/100 (kỳ vọng 0,80); cờ trần bật/tắt × hai chế độ thời gian kế hoạch × tháng trộn hai phiên bản công thức.
 
 ## 5. Thứ tự thực hiện đề xuất
 
-1. Contract nguồn + sự kiện mới (PR, MT) – kèm test.
+1. **Story tiên quyết riêng (PR/MT sở hữu, có AC riêng, ước lượng riêng, đặt trước việc RP):** contract nguồn + sự kiện mới (`pr.output.recorded`, `mt.*`) – kèm test tương đương (§4.8). Chạm vào đường đồng bộ tablet nóng (`PR.RecordOutput`), nên coi là sub-epic; ước lượng lại E15 sau khi tách story.
 2. Migration `reporting` (bảng fact, `rp_projection_dirty`, phân vùng) + `PartitionMaintainer`.
 3. `RpOutboxSink` + `ProjectionWorker` + fact PR/OEE/dừng máy, oracle SQL (cắt dọc đầu tiên).
 4. Fact NVL, `ProjectionRebuilder`, đối soát đêm.
@@ -158,11 +173,16 @@ Chỉ phụ thuộc `production.contract`, `material.contract`, `masterdata.cont
 
 ## 8. Câu hỏi mở
 
-- **O1 (Dev lead PR):** `OeeCalculator.aggregate` áp trần hiệu năng ở mức **tổng gộp** (`min(1, Σtotal/Σtheoretical)`), còn `compute` áp trần **từng máy/ca**. Với `CapPerformanceAt100 = true` (mặc định từ L42),
-  OEE ngày tính từ tổng gộp có thể khác OEE tính từ các dòng đã bị trần. Cần chốt quy ước gộp trước khi viết AC-RP-003 cho OEE; ADR này giả định gộp theo `perf_num` (tổng các tử số đã trần).
-  *(Mới đọc mã, chưa chạy số liệu để xác nhận mức chênh.)*
+- **O1 (PO chốt, Dev lead PR thực hiện) — hội đồng khuyến nghị Option P, chờ PO xác nhận:** `OeeCalculator.aggregate` áp trần hiệu năng ở mức **tổng gộp**
+  (`min(1, Σtotal/Σtheoretical)`), còn `compute` áp trần **từng máy/ca**. Ví dụ (suy từ mã, chưa chạy): máy A 120/100, máy B 60/100 → Option P (trần từng máy/ca, cộng tử số đã trần) = 0,80;
+  Option A (trần ở tổng) = 0,90. Hội đồng (Architect, Skeptic, Pragmatist, Critic) nhất trí **P**: chỉ P cho gộp cộng dồn thuần (`SUM`), khoan từ ngày xuống ca × máy khớp, khớp yêu cầu sai số 0 và
+  "một công thức duy nhất"; A phụ thuộc cấp gộp và để máy có công suất sai che máy khác. Điều kiện/hệ quả:
+  - PO chấp nhận OEE nghĩa là "OEE sau khi bỏ phần vượt công suất" và thấp hơn Excel cộng thô (0,80 so với 0,90); ghi ví dụ này vào tài liệu công thức.
+  - Lưu `actual` thô, `capped_actual`, `theoretical`, `formula_id`; thêm cờ "hiệu năng > 100%" và báo cáo "máy/ca bị áp trần" để kiểm tra chất lượng nhập công suất (công suất 77 máy còn đang nhập, L42–L45).
+  - Sửa `aggregate()` cộng tử số đã trần được lưu thay vì trần lại; golden test: ví dụ A/B, cờ bật/tắt × hai chế độ thời gian kế hoạch × tháng trộn hai phiên bản công thức; test chất lượng vẫn tính trên sản lượng thô.
+  - **Chưa chốt:** máy/ca chưa có công suất lý thuyết (`theoretical = null`) — hiện `aggregate()` cho cả nhóm N/A; cần chọn loại dòng đó khỏi mẫu số kèm cảnh báo, hay giữ N/A cả nhóm.
 - **O2 (PO):** Chính sách revision/gửi lại R_SHIFT/R_DAY khi fact đổi sau lúc đã sinh (điều chỉnh, đồng bộ muộn); "ngày trước" của R_DAY dùng số gốc hay số mới nhất; có thông báo revision không.
   ADR này chỉ bảo đảm fact luôn mới nhất và snapshot bất biến (D1).
 - **O3 (Dev lead):** Ánh xạ `adjustment.applied` của các `entityType` khác `ShiftSession` về phiên ca (module nào cung cấp `SessionResolver`?). Khi `FINALIZED` được sửa (L15/L50) thì ai kích hoạt tính lại?
 - **O4 (PXVB/CNTT):** `RECONCILE_DAYS`, thời hạn giữ `rp_fact_*` online (3 năm, Q18) và chính sách archive phân vùng cũ.
-- **O5 (Dev lead):** Thời điểm đo bắt đầu của SLA READY 5': đề xuất tính từ `created_at` của bản ghi outbox `pr.shift.closed` đến `generated_at` của snapshot `READY`, đã gồm trễ dispatcher và projection.
+- **O5 (Dev lead):** Thời điểm đo bắt đầu của SLA READY 5': đề xuất tính từ `created_at` của bản ghi outbox `pr.shift.closed` đến `generated_at` của snapshot `READY`, đã gồm trễ dispatcher và projection; ghi thêm `enqueued_at` để tách thời gian chờ và thời gian tính. Dùng làm chỉ số P95 + cảnh báo, không phải bảo đảm cứng; AC phải nêu rõ profile tải (kể cả nhiều ca chốt đồng thời).
