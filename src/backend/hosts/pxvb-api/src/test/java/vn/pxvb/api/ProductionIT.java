@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import vn.pxvb.production.application.ProductionScanner;
+import vn.pxvb.production.application.ShiftFinalizer;
 
 /** PR (E11): phiên ca, sản lượng, dừng máy, đổi mác, đồng bộ offline, cảnh báo (AC-PR-001/003/004/005). */
 @AutoConfigureMockMvc
@@ -35,6 +36,8 @@ class ProductionIT extends AbstractIntegrationTest {
     JdbcTemplate jdbc;
     @Autowired
     ProductionScanner scanner;
+    @Autowired
+    ShiftFinalizer finalizer;
 
     private String admin;
     private TestUser leader;
@@ -461,7 +464,7 @@ class ProductionIT extends AbstractIntegrationTest {
             assertThat(oeeRow(session, packer).get("plannedMinutes").asInt()).isEqualTo(480);
         } finally {
             call(put("/api/v1/pr/oee-formula"), deputy.token(), "{\"plannedTimeMode\":\"EXCLUDE_PLANNED_STOPS\","
-                    + "\"qualityMode\":\"ASSUME_100\",\"capPerformanceAt100\":false}");
+                    + "\"qualityMode\":\"ASSUME_100\",\"capPerformanceAt100\":true}");
         }
 
         // Kết ca vẫn tạm tính (chưa chốt ca) và lưu kết quả
@@ -549,11 +552,12 @@ class ProductionIT extends AbstractIntegrationTest {
                 + USER_PASSWORD + "\"}").getResponse().getStatus()).isEqualTo(409);
 
         // Bốn bên bắt buộc xác nhận → CLOSED
+        // Ca không phát sinh cấp phát NVL → bên Cấp phát NVL tự bỏ qua, chỉ còn Thống kê + KSCL
+        assertThat(requested.get("skippedParties").toString()).contains("Cấp phát NVL");
         approve(instance, stat);
-        approve(instance, qc);
         assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
                 .isEqualTo("CLOSING");
-        approve(instance, issuer);
+        approve(instance, qc);
         JsonNode closed = json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null));
         assertThat(closed.get("status").asText()).isEqualTo("CLOSED");
 
@@ -581,6 +585,30 @@ class ProductionIT extends AbstractIntegrationTest {
                 .isEqualTo(200);
         assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
                 .isEqualTo("CLOSING");
+    }
+
+    @Test
+    void closedShiftIsFinalizedAfterConfiguredDays() throws Exception {
+        String session = openRewoundSession();
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+        jdbc.update("UPDATE pr_shift_session SET status = 'CLOSED', closed_at = ? WHERE id = UUID_TO_BIN(?)",
+                java.sql.Timestamp.from(Instant.now().minusSeconds(3600)), session);
+
+        finalizer.finalizeDue(Instant.now());
+        assertThat(jdbc.queryForObject("SELECT status FROM pr_shift_session WHERE id = UUID_TO_BIN(?)",
+                String.class, session)).isEqualTo("CLOSED"); // mới 1 giờ, chưa tới 7 ngày
+
+        assertThat(finalizer.finalizeDue(Instant.now().plusSeconds(8 * 86400L))).isGreaterThanOrEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT status FROM pr_shift_session WHERE id = UUID_TO_BIN(?)",
+                String.class, session)).isEqualTo("FINALIZED");
+        // Đã FINALIZED: không còn mở lại được bằng điều chỉnh cấp ca
+        MvcResult adj = call(post("/api/v1/workflow/adjustments"), deputy.token(), ("{\"module\":\"pr\","
+                + "\"entityType\":\"ShiftSession\",\"entityId\":\"%s\",\"fieldPath\":\"status\","
+                + "\"newValue\":\"CLOSING\",\"reason\":\"Thử mở lại\"}").formatted(session));
+        TestUser deputy2 = createUser(mvc, mapper, admin, "dep2", "DEPUTY_DIRECTOR");
+        assertThat(call(post("/api/v1/workflow/adjustments/" + json(adj).get("id").asText() + "/approve"),
+                deputy2.token(), "{}").getResponse().getStatus()).isEqualTo(422);
     }
 
     private JsonNode oeeRow(String session, String machineId) throws Exception {

@@ -32,6 +32,7 @@ import vn.pxvb.identity.contract.IdentityDirectory;
 import vn.pxvb.masterdata.contract.MasterdataQueries;
 import vn.pxvb.production.contract.ProductionEvents.ShiftClosed;
 import vn.pxvb.production.contract.ShiftCloseCheck;
+import vn.pxvb.production.contract.ShiftCloseParty;
 import vn.pxvb.production.contract.ShiftCloseCheck.Item;
 import vn.pxvb.production.contract.ShiftCloseCheck.Level;
 import vn.pxvb.workflow.application.ApprovalService;
@@ -51,6 +52,7 @@ public class ShiftCloseService {
 
     private final JdbcTemplate jdbc;
     private final List<ShiftCloseCheck> checks;
+    private final List<ShiftCloseParty> parties;
     private final MasterdataQueries masterdata;
     private final ApprovalService approvals;
     private final SignatureService signatures;
@@ -64,13 +66,15 @@ public class ShiftCloseService {
     private final ObjectMapper mapper;
     private final Clock clock;
 
-    public ShiftCloseService(JdbcTemplate jdbc, List<ShiftCloseCheck> checks, MasterdataQueries masterdata,
+    public ShiftCloseService(JdbcTemplate jdbc, List<ShiftCloseCheck> checks, List<ShiftCloseParty> parties,
+                             MasterdataQueries masterdata,
                              ApprovalService approvals, SignatureService signatures, IdentityDirectory directory,
                              OeeService oee, ProductionQueryService queries, OutboxPublisher outbox,
                              ApplicationEventPublisher events, AuditLogWriter audit, CurrentUser currentUser,
                              ObjectMapper mapper, Clock clock) {
         this.jdbc = jdbc;
         this.checks = checks;
+        this.parties = parties;
         this.masterdata = masterdata;
         this.approvals = approvals;
         this.signatures = signatures;
@@ -255,13 +259,21 @@ public class ShiftCloseService {
                         "Chỉ Trưởng ca/Phó Quản đốc được gửi chốt ca"));
         signatures.sign(ENTITY_TYPE, sessionId, Signature.Purpose.CONFIRM, role, userId,
                 currentUser.deviceId().orElse(null), method, secret, SignatureService.hashOf(canonical(sessionId)));
-        UUID instanceId = approvals.start("SHIFT_CLOSE", sessionId, userId, note).instance().getId();
+        // Bên "không phát sinh" (theo dữ liệu ca) tự bỏ qua; có ghi audit
+        List<ShiftCloseParty> skipped = parties.stream()
+                .filter(p -> !p.hasActivity(sessionId, s.date(), s.shift())).toList();
+        java.util.Set<String> skippedRoles = skipped.stream().map(ShiftCloseParty::roleCode)
+                .collect(java.util.stream.Collectors.toSet());
+        UUID instanceId = approvals.start("SHIFT_CLOSE", sessionId, userId, note, skippedRoles).instance().getId();
         jdbc.update("UPDATE pr_shift_session SET approval_instance_id = UUID_TO_BIN(?), row_version = "
                 + "row_version + 1 WHERE id = UUID_TO_BIN(?)", instanceId.toString(), sessionId.toString());
-        audit(sessionId, "REQUEST_CLOSE", List.of(new FieldChange("approvalInstanceId", null,
-                instanceId.toString())), note);
+        List<FieldChange> changes = new ArrayList<>();
+        changes.add(new FieldChange("approvalInstanceId", null, instanceId.toString()));
+        skipped.forEach(p -> changes.add(new FieldChange("skippedParty", null, p.label() + " (không phát sinh)")));
+        audit(sessionId, "REQUEST_CLOSE", changes, note);
         Map<String, Object> out = new LinkedHashMap<>(result);
         out.put("approvalInstanceId", instanceId.toString());
+        out.put("skippedParties", skipped.stream().map(ShiftCloseParty::label).toList());
         return out;
     }
 

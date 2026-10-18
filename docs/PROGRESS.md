@@ -64,10 +64,10 @@ Nguồn: `OPEN-QUESTIONS.md` mục "Quyết định đã chốt (PO, 2026-10-18)
 
 | Việc | Epic | Trạng thái |
 |---|---|---|
-| OEE: Performance chặn tối đa 100% (công thức mặc định phiên bản mới) + cập nhật golden test (L42) | E12 | ⬜ |
-| Chốt ca: cho giải trình + duyệt với giao nhận NVL trễ, tranh chấp nhận NVL, thiết bị chưa đồng bộ (L49) | E14, E13 | ⬜ |
-| Chốt ca: tự bỏ qua bên "không phát sinh" theo dữ liệu (engine duyệt hỗ trợ bỏ bước + audit) (L28/L46) | E03, E14 | ⬜ |
-| Tự động `CLOSED` → `FINALIZED` sau N ngày (N cấu hình, đề xuất 7; **cần PXVB chọn N**) (L50) | E14 | ⬜ |
+| OEE: Performance chặn tối đa 100% (công thức mặc định phiên bản mới) + cập nhật golden test (L42) | E12 | ✅ |
+| Chốt ca: cho giải trình + duyệt với giao nhận NVL trễ, tranh chấp nhận NVL, thiết bị chưa đồng bộ (L49) | E14, E13 | ✅ |
+| Chốt ca: tự bỏ qua bên "không phát sinh" theo dữ liệu (engine duyệt hỗ trợ bỏ bước + audit) (L28/L46) | E03, E14 | ✅ |
+| Tự động `CLOSED` → `FINALIZED` sau N ngày (N cấu hình, đề xuất 7; **cần PXVB chọn N**) (L50) | E14 | ✅ |
 | MT: xuất PDF/Excel báo cáo tiêu hao (AC-MT-006) (L55) | E13 | ⬜ |
 | MT: xu hướng tiêu hao + đề xuất điều chỉnh định mức (FR-MT-010) (L55) | E13 | ⬜ |
 | MT: phiếu cấp phát theo segment khi đổi mác (BR-MT-006) (L55) | E13 | ⬜ |

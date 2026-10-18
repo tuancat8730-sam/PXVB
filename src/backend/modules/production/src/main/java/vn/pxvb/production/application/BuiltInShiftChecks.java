@@ -134,13 +134,13 @@ class BuiltInShiftChecks {
             for (DeviceRegistry.DeviceInfo d : devices.devices()) {
                 if (d.active() && d.pendingCount() > 0) {
                     items.add(new Item("CHK_UNSYNCED", d.id().toString(), d.name(), Level.BLOCK,
-                            "Thiết bị " + d.name() + " còn " + d.pendingCount() + " lệnh chưa đồng bộ", false));
+                            "Thiết bị " + d.name() + " còn " + d.pendingCount() + " lệnh chưa đồng bộ", true));
                 }
             }
             long conflicts = sync.openConflicts("PR.");
             if (conflicts > 0) {
                 items.add(new Item("CHK_UNSYNCED", "conflicts", "Xung đột đồng bộ", Level.BLOCK,
-                        "Còn " + conflicts + " xung đột đồng bộ PR chưa xử lý", false));
+                        "Còn " + conflicts + " xung đột đồng bộ PR chưa xử lý", true));
             }
             return items;
         });

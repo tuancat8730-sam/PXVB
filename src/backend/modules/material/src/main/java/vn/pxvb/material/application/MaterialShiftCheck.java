@@ -34,12 +34,12 @@ class MaterialShiftCheck implements ShiftCloseCheck {
         List<Item> items = new ArrayList<>();
         for (Map<String, Object> d : consumption.disputed(businessDate, shiftCode)) {
             items.add(new Item(code(), "dispute:" + d.get("id"), "Tranh chấp nhận NVL", Level.BLOCK,
-                    "Còn tranh chấp nhận NVL chưa xử lý (máy " + d.get("machineId") + ")", false));
+                    "Còn tranh chấp nhận NVL chưa xử lý (máy " + d.get("machineId") + ")", true));
         }
         for (Map<String, Object> l : consumption.lateLines(businessDate, shiftCode, clock.instant())) {
             items.add(new Item(code(), "late:" + l.get("lineId"), "Khung " + l.get("slotNo"), Level.BLOCK,
                     "Khung giờ " + l.get("slotNo") + " đã qua nhưng " + l.get("reason") + " (máy "
-                    + l.get("machineId") + ")", false));
+                    + l.get("machineId") + ")", true));
         }
         for (Map<String, Object> s : consumption.summaries(sessionId)) {
             String flag = (String) s.get("flag");

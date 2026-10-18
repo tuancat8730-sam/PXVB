@@ -74,12 +74,26 @@ public class ApprovalService {
 
     @Transactional
     public ApprovalView start(String flowCode, UUID entityId, UUID startedBy, String note) {
+        return start(flowCode, entityId, startedBy, note, java.util.Set.of());
+    }
+
+    /**
+     * Khởi tạo luồng nhưng bỏ qua các bước có {@code roleCode} nằm trong {@code skippedRoleCodes} (vd chốt ca bỏ
+     * bên "không phát sinh"). Người gọi chịu trách nhiệm ghi audit lý do bỏ qua; không được bỏ hết các bước.
+     */
+    @Transactional
+    public ApprovalView start(String flowCode, UUID entityId, UUID startedBy, String note,
+                              java.util.Set<String> skippedRoleCodes) {
         ApprovalFlowDef def = flows.findByCode(flowCode).filter(ApprovalFlowDef::isActive).orElseThrow(
                 () -> new BusinessException(ErrorCode.VALIDATION, "Luồng duyệt không tồn tại hoặc đã tắt: " + flowCode));
         if (instances.existsByFlowCodeAndEntityIdAndStatus(flowCode, entityId, ApprovalInstance.Status.PENDING)) {
             throw new BusinessException(ErrorCode.CONFLICT, "Đối tượng đang có yêu cầu duyệt chưa hoàn tất");
         }
-        List<StepSpec> specs = parseSteps(def.getSteps());
+        List<StepSpec> specs = parseSteps(def.getSteps()).stream()
+                .filter(sp -> !skippedRoleCodes.contains(sp.roleCode())).toList();
+        if (specs.isEmpty()) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Không thể bỏ qua toàn bộ các bước duyệt");
+        }
         int first = specs.stream().mapToInt(StepSpec::no).min().orElseThrow();
         Instant now = clock.instant();
         ApprovalInstance instance = instances.save(new ApprovalInstance(flowCode, def.getEntityType(), entityId,

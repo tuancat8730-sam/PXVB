@@ -334,6 +334,51 @@ class MaterialIT extends AbstractIntegrationTest {
                 "8", "")).getResponse().getStatus()).isEqualTo(201);
     }
 
+    // ---------- Chốt ca: tranh chấp NVL giải trình được (L49) ----------
+
+    @Test
+    void disputedReceiptCanBeExplainedAndApprovedAtShiftClose() throws Exception {
+        JsonNode slip = slipDetail(packer);
+        confirmSlip(slip.get("id").asText());
+        String issueId = json(issue(slip.get("lines").get(0).get("id").asText(), "12.5", null, issuer.token()))
+                .get("id").asText();
+        String receiptId = json(call(post("/api/v1/mt/receipts"), operator.token(), ("{\"issueRecordId\":\"%s\","
+                + "\"receivedQty\":12,\"note\":\"Thiếu 0,5 kg\"}").formatted(issueId))).get("id").asText();
+        String session = openRewoundSession();
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+
+        String subject = "dispute:" + receiptId;
+        JsonNode item = null;
+        for (JsonNode i : json(call(get("/api/v1/pr/sessions/" + session + "/close-checks"), leader.token(), null))
+                .get("items")) {
+            if ("CHK_MATERIAL".equals(i.get("checkCode").asText()) && subject.equals(i.get("subjectKey").asText())) {
+                item = i;
+            }
+        }
+        assertThat(item).isNotNull();
+        assertThat(item.get("level").asText()).isEqualTo("BLOCK");
+        assertThat(item.get("approvable").asBoolean()).isTrue();
+
+        String explainUrl = "/api/v1/pr/sessions/" + session + "/explanations";
+        JsonNode explained = json(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_MATERIAL\","
+                + "\"subjectKey\":\"%s\",\"note\":\"Đã cân lại, chấp nhận chênh 0,5 kg\"}").formatted(subject)));
+        String explanationId = null;
+        for (JsonNode i : explained.get("items")) {
+            if (subject.equals(i.get("subjectKey").asText())) {
+                assertThat(i.get("resolved").asBoolean()).isFalse(); // chờ Phó QĐ duyệt
+                explanationId = i.get("explanationId").asText();
+            }
+        }
+        JsonNode approved = json(call(post(explainUrl + "/" + explanationId + "/decision"), deputy.token(),
+                "{\"approve\":true}"));
+        for (JsonNode i : approved.get("items")) {
+            if (subject.equals(i.get("subjectKey").asText())) {
+                assertThat(i.get("resolved").asBoolean()).isTrue();
+            }
+        }
+    }
+
     // ---------- Khung giờ trễ (BR-MT-005) ----------
 
     @Test
