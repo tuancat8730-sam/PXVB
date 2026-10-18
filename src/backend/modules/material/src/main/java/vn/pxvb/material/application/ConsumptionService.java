@@ -27,6 +27,7 @@ import vn.pxvb.alerting.contract.AlertRaiser.AlertCommand;
 import vn.pxvb.common.audit.AuditLogWriter.FieldChange;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.common.outbox.OutboxPublisher;
 import vn.pxvb.common.security.CurrentUser;
 import vn.pxvb.masterdata.contract.MasterdataQueries;
 import vn.pxvb.masterdata.contract.MasterdataQueries.IssueSlot;
@@ -62,9 +63,11 @@ public class ConsumptionService {
     private final MtAudit audit;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final OutboxPublisher outbox;
 
     public ConsumptionService(JdbcTemplate jdbc, MasterdataQueries masterdata, ProductionQueries production,
-                              AlertRaiser alerts, MtAudit audit, CurrentUser currentUser, Clock clock) {
+                              AlertRaiser alerts, MtAudit audit, CurrentUser currentUser, Clock clock,
+                              OutboxPublisher outbox) {
         this.jdbc = jdbc;
         this.masterdata = masterdata;
         this.production = production;
@@ -72,6 +75,7 @@ public class ConsumptionService {
         this.audit = audit;
         this.currentUser = currentUser;
         this.clock = clock;
+        this.outbox = outbox;
     }
 
     @EventListener
@@ -136,6 +140,7 @@ public class ConsumptionService {
         Map<UUID, MaterialInfo> materials = masterdata.materials(keys.stream().map(Key::materialId).distinct()
                 .toList());
         Instant now = clock.instant();
+        Map<String, String> before = summarySignatures(sessionId);
         List<Map<String, Object>> out = new ArrayList<>();
         for (Key key : keys) {
             BigDecimal opening = openingFor(key, date, shift);
@@ -165,7 +170,28 @@ public class ConsumptionService {
                         r.flag() == Flag.CRIT ? "CRITICAL" : null));
             }
         }
+        // Chỉ phát khi nội dung đổi (không tính computed_at): scanner tính lại định kỳ, tránh dồn sự kiện cho RP
+        if (!before.equals(summarySignatures(sessionId))) {
+            publishChanged(session);
+        }
         return out;
+    }
+
+    /** Chữ ký nội dung các dòng tiêu hao của phiên ca (bỏ {@code computed_at}) để biết lần tính có làm đổi số liệu. */
+    private Map<String, String> summarySignatures(UUID sessionId) {
+        Map<String, String> out = new HashMap<>();
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, CONCAT_WS('|', opening_qty, issued_qty, returned_qty, closing_qty, "
+                + "counted, actual_consumed, theoretical_consumed, waste_qty, IFNULL(waste_pct, '~'), threshold_pct, "
+                + "flag, status, IFNULL(explanation, '~')) AS sig FROM mt_consumption_summary WHERE session_id = "
+                + "UUID_TO_BIN(?)", rs -> {
+            out.put(rs.getString("id"), rs.getString("sig"));
+        }, sessionId.toString());
+        return out;
+    }
+
+    private void publishChanged(SessionRef session) {
+        outbox.publish("mt.consumption.computed", Map.of("sessionId", session.id().toString(), "businessDate",
+                session.businessDate().toString(), "shiftCode", session.shiftCode()));
     }
 
     /** Định mức hiệu lực × sản lượng đạt (bao) theo mác; máy vấn nhận phần sản lượng của máy bao × FeedRatio. */
@@ -297,7 +323,9 @@ public class ConsumptionService {
                     "Không tìm thấy dòng tiêu hao hoặc đã được chốt");
         }
         audit.write("ConsumptionSummary", summaryId, "EXPLAIN", List.of(), text);
-        return summaryOf(summaryId);
+        Map<String, Object> summary = summaryOf(summaryId);
+        production.session(UUID.fromString((String) summary.get("sessionId"))).ifPresent(this::publishChanged);
+        return summary;
     }
 
     /** Chốt tiêu hao ca: không còn tranh chấp/khung trễ; dòng vượt ngưỡng đã có giải trình (BR-MT-005/007). */
@@ -330,6 +358,7 @@ public class ConsumptionService {
                 + "'DRAFT'", userId.toString(), ts(clock.instant()), sessionId.toString());
         audit.write("ConsumptionSummary", sessionId, "CONFIRM_SHIFT", List.of(new FieldChange("rows", null,
                 String.valueOf(rows.size()))), null);
+        publishChanged(session);
         return summaries(sessionId);
     }
 

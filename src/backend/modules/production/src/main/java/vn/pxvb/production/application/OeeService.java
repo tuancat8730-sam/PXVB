@@ -30,6 +30,7 @@ import vn.pxvb.common.audit.AuditLogWriter;
 import vn.pxvb.common.audit.AuditLogWriter.FieldChange;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.common.outbox.OutboxPublisher;
 import vn.pxvb.common.security.CurrentUser;
 import vn.pxvb.masterdata.contract.MasterdataQueries;
 import vn.pxvb.masterdata.contract.MasterdataQueries.MachineInfo;
@@ -61,15 +62,17 @@ public class OeeService {
     private final AuditLogWriter audit;
     private final CurrentUser currentUser;
     private final Clock clock;
+    private final OutboxPublisher outbox;
 
     public OeeService(JdbcTemplate jdbc, MasterdataQueries masterdata, AlertRaiser alerts, AuditLogWriter audit,
-                      CurrentUser currentUser, Clock clock) {
+                      CurrentUser currentUser, Clock clock, OutboxPublisher outbox) {
         this.jdbc = jdbc;
         this.masterdata = masterdata;
         this.alerts = alerts;
         this.audit = audit;
         this.currentUser = currentUser;
         this.clock = clock;
+        this.outbox = outbox;
     }
 
     // ---------- Công thức ----------
@@ -162,6 +165,7 @@ public class OeeService {
         boolean techPending = hasUnconfirmedTechStops(sessionId);
         boolean provisional = !("CLOSED".equals(status) || "FINALIZED".equals(status)) || techPending;
 
+        Map<String, String> before = resultSignatures(sessionId);
         List<Map<String, Object>> out = new ArrayList<>();
         for (Map<String, Object> run : runs) {
             UUID runId = UUID.fromString((String) run.get("id"));
@@ -188,6 +192,23 @@ public class OeeService {
                     provisional, config.id().toString(), ts(now));
             out.add(row(machineId, date, shift, unit, r, provisional));
         }
+        // Chỉ phát khi kết quả đổi (không tính computed_at): GET /oee của UI cũng gọi tính lại, tránh dồn sự kiện
+        if (!before.equals(resultSignatures(sessionId))) {
+            outbox.publish("pr.oee.computed", Map.of("sessionId", sessionId.toString(), "businessDate",
+                    date.toString(), "shiftCode", shift));
+        }
+        return out;
+    }
+
+    /** Chữ ký nội dung kết quả OEE theo run (bỏ {@code computed_at}) để biết lần tính có làm đổi số liệu không. */
+    private Map<String, String> resultSignatures(UUID sessionId) {
+        Map<String, String> out = new HashMap<>();
+        jdbc.query("SELECT BIN_TO_UUID(run_id) AS run_id, CONCAT_WS('|', planned_minutes, run_minutes, total_qty, "
+                + "good_qty, IFNULL(theoretical_qty, '~'), IFNULL(availability, '~'), IFNULL(performance, '~'), "
+                + "IFNULL(quality, '~'), IFNULL(oee, '~'), is_provisional, BIN_TO_UUID(formula_id)) AS sig "
+                + "FROM pr_oee_result WHERE session_id = UUID_TO_BIN(?)", rs -> {
+            out.put(rs.getString("run_id"), rs.getString("sig"));
+        }, sessionId.toString());
         return out;
     }
 

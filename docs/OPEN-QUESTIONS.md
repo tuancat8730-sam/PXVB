@@ -139,7 +139,7 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L59 | Ánh xạ `adjustment.applied` về phiên ca | Chỉ `entityType = ShiftSession` đánh dấu bẩn. Đề xuất (review 2026-10-18, nhất trí): registry theo `entityType`, loại chưa ánh xạ **lỗi lớn tiếng** (cảnh báo `RP_ADJUSTMENT_UNMAPPED` + dead-letter), RP sở hữu bộ kích hoạt; đối soát đêm chỉ là lưới thứ hai. `FINALIZED` bị sửa chưa có người kích hoạt tính lại | RP, L50 | Dev lead |
 | L60 | Thời hạn lưu online & đối soát | ⚠ GIẢ ĐỊNH: `RECONCILE_DAYS = 35`, `rp_fact_*` online 3 năm (Q18), archive phân vùng cũ theo chính sách sao lưu | RP, vận hành | CNTT / PXVB |
 | L61 | Mốc đo SLA READY ≤ 5' (AC-RP-001) | Đề xuất: từ `created_at` outbox `pr.shift.closed` đến `generated_at` snapshot `READY` (gồm trễ dispatcher + projection), ghi thêm `enqueued_at` để tách chờ/tính; chỉ số P95 + cảnh báo, AC nêu rõ profile tải | AC-RP-001 | Dev lead + PO |
-| L62 | Sự kiện/contract nguồn còn thiếu cho RP | Chưa có `pr.output.recorded`, sự kiện `mt.*`, `ProductionQueries.shiftFacts/sessionsBetween`, `MaterialQueries` | Đường găng E15 | Dev lead |
+| L62 | Sự kiện/contract nguồn còn thiếu cho RP | **Đã làm (Pha 1):** `pr.output.recorded`, `pr.oee.computed`, `mt.consumption.computed`, `ProductionQueries.shiftFacts/sessionsBetween`, `MaterialQueries.consumption`. Đã có test tương đương `shiftFacts` ↔ `pr_shift_report` tại lúc chốt và `MaterialQueries` ↔ API tiêu hao. Còn: sửa `OeeCalculator.aggregate` (chờ PO xác nhận L57) | Đường găng E15 | Dev lead |
 
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

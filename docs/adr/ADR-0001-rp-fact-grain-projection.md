@@ -75,7 +75,9 @@ Hợp đồng nguồn cần bổ sung (điều kiện tiên quyết):
 - `production.contract.ProductionQueries#shiftFacts(UUID sessionId)` → `ShiftFacts` (các `RunFact` kèm `SegmentFact`, `StopFact`), và `#sessionsBetween(LocalDate, LocalDate)`.
 - `material.contract.MaterialQueries#consumption(UUID sessionId)` (tạo gói `contract`).
 - Hàm gộp OEE thuần đưa vào `production.contract` (hoặc RP dùng công thức từ `perf_num` – O1) để không nhân đôi công thức.
-- Sự kiện mới: `pr.output.recorded` (khóa phiên ca) và `mt.consumption.computed` / `mt.issue.*` (khóa phiên ca). Được hợp nhất (coalesce) ở D4 nên tần suất không đáng lo.
+- Sự kiện mới (**đã làm ở Pha 1**, payload luôn có `sessionId`, `businessDate`): `pr.output.recorded` (khi ghi sản lượng), `pr.oee.computed` (chỉ khi kết quả OEE đổi),
+  `mt.consumption.computed` (chỉ khi dòng tiêu hao đổi, hoặc giải trình/chốt tiêu hao; `adjustment.applied` và `pr.shift.*` đã có). Vì mọi sự kiện đều mang `sessionId`,
+  **khóa hàng đợi bẩn nên là `session_id`** (1–1 với `(business_date, shift_code)`), không cần tra ngược.
 
 Sự kiện kích hoạt đánh dấu bẩn: `pr.session.opened/ended`, `pr.stop.*`, `pr.output.recorded`, `pr.shift.closed`, `pr.shift.finalized`, `mt.*`, và `adjustment.applied`
 với `entityType = ShiftSession` (khóa = `entityId`). `adjustment.applied` cho loại thực thể khác chưa có cách ánh xạ về phiên ca → ghi nhận ở O3. Ánh xạ qua **registry theo `entityType`** (mỗi module sở hữu `AdjustmentApplier` đăng ký bộ phân giải về phiên ca). **Loại chưa ánh xạ phải lỗi lớn tiếng**

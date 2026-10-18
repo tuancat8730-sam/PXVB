@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import vn.pxvb.material.application.ConsumptionService;
+import vn.pxvb.material.contract.MaterialQueries;
 
 /** MT (E13): phiếu cấp phát tự sinh, cấp/nhận, tiêu hao, kiểm đếm, chốt ca (AC-MT-001..005). */
 @AutoConfigureMockMvc
@@ -36,6 +37,8 @@ class MaterialIT extends AbstractIntegrationTest {
     JdbcTemplate jdbc;
     @Autowired
     ConsumptionService consumption;
+    @Autowired
+    MaterialQueries materialQueries;
 
     private String admin;
     private TestUser planner;
@@ -400,5 +403,85 @@ class MaterialIT extends AbstractIntegrationTest {
         assertThat(call(post("/api/v1/mt/receipts"), operator.token(), ("{\"issueRecordId\":\"%s\","
                 + "\"receivedQty\":12.5}").formatted(issueId)).getResponse().getStatus()).isEqualTo(201);
         assertThat(consumption.lateLines(past, "A", Instant.now())).hasSize(3);
+    }
+
+    // ---------- Contract cho RP (E15, ADR-0001 D3) ----------
+
+    private long outboxCount(String type, String sessionId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM sys_outbox_message WHERE type = ? AND "
+                + "JSON_UNQUOTE(JSON_EXTRACT(payload, '$.sessionId')) = ?", Long.class, type, sessionId);
+    }
+
+    @Test
+    void consumptionContractMirrorsStoredSummariesAndPublishesEventOnlyWhenChanged() throws Exception {
+        JsonNode slip = slipDetail(packer);
+        confirmSlip(slip.get("id").asText());
+        String session = openRewoundSession();
+        assertThat(outboxCount("mt.consumption.computed", session)).isZero();
+        assertThat(call(post("/api/v1/pr/machines/" + packer + "/output"), operator.token(), ("{\"sessionId\":\"%s\","
+                + "\"qty\":20000,\"periodTo\":\"%s\"}").formatted(session, Instant.now().minusSeconds(4 * 3600)))
+                .getResponse().getStatus()).isEqualTo(201);
+        for (JsonNode line : slip.get("lines")) {
+            assertThat(issue(line.get("id").asText(), "13.125", null, issuer.token()).getResponse().getStatus())
+                    .isEqualTo(201);
+        }
+        assertThat(call(post("/api/v1/mt/stock-counts"), operator.token(), ("{\"businessDate\":\"%s\",\"shiftCode\":"
+                + "\"A\",\"machineId\":\"%s\",\"materialId\":\"%s\",\"kind\":\"CLOSING\",\"qty\":0}").formatted(date,
+                packer, packingMat)).getResponse().getStatus()).isEqualTo(201);
+
+        var line = materialQueries.consumption(UUID.fromString(session)).stream()
+                .filter(l -> l.machineId().toString().equals(packer) && l.materialId().toString().equals(packingMat))
+                .findFirst().orElseThrow();
+        assertThat(line.theoreticalConsumed()).isEqualByComparingTo("50");
+        assertThat(line.actualConsumed()).isEqualByComparingTo("52.5");
+        assertThat(line.wastePct()).isEqualByComparingTo("5");
+        assertThat(line.flag()).isEqualTo("WARN");
+        assertThat(line.status()).isEqualTo("DRAFT");
+        assertThat(line.counted()).isTrue();
+        assertThat(line.explanation()).isNull();
+
+        // Khớp từng dòng với bảng lưu của MT (contract không tính lại)
+        assertThat(materialQueries.consumption(UUID.fromString(session))).hasSize(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM mt_consumption_summary WHERE session_id = UUID_TO_BIN(?)", Integer.class,
+                session));
+
+        // Tương đương API tiêu hao hiện có của MT: cùng tập dòng, cùng số liệu và cờ
+        var contractLines = materialQueries.consumption(UUID.fromString(session));
+        var apiRows = consumption.summaries(UUID.fromString(session));
+        assertThat(contractLines).hasSameSizeAs(apiRows);
+        for (var row : apiRows) {
+            var l = contractLines.stream().filter(x -> x.machineId().toString().equals(row.get("machineId"))
+                    && x.materialId().toString().equals(row.get("materialId"))).findFirst().orElseThrow();
+            assertThat(l.openingQty()).isEqualByComparingTo((java.math.BigDecimal) row.get("openingQty"));
+            assertThat(l.issuedQty()).isEqualByComparingTo((java.math.BigDecimal) row.get("issuedQty"));
+            assertThat(l.returnedQty()).isEqualByComparingTo((java.math.BigDecimal) row.get("returnedQty"));
+            assertThat(l.closingQty()).isEqualByComparingTo((java.math.BigDecimal) row.get("closingQty"));
+            assertThat(l.actualConsumed()).isEqualByComparingTo((java.math.BigDecimal) row.get("actualConsumed"));
+            assertThat(l.theoreticalConsumed()).isEqualByComparingTo(
+                    (java.math.BigDecimal) row.get("theoreticalConsumed"));
+            assertThat(l.wasteQty()).isEqualByComparingTo((java.math.BigDecimal) row.get("wasteQty"));
+            assertThat(l.flag()).isEqualTo(row.get("flag"));
+            assertThat(l.status()).isEqualTo(row.get("status"));
+        }
+
+        long published = outboxCount("mt.consumption.computed", session);
+        assertThat(published).isGreaterThanOrEqualTo(1);
+
+        // Tính lại khi số liệu không đổi (vd scanner/GET) không phát thêm sự kiện
+        consumption.compute(UUID.fromString(session));
+        assertThat(outboxCount("mt.consumption.computed", session)).isEqualTo(published);
+
+        // Giải trình làm đổi dòng → phát sự kiện
+        assertThat(call(post("/api/v1/mt/consumption/" + jdbc.queryForObject("SELECT BIN_TO_UUID(id) FROM "
+                + "mt_consumption_summary WHERE session_id = UUID_TO_BIN(?) AND consumer_machine_id = "
+                + "UUID_TO_BIN(?) AND material_id = UUID_TO_BIN(?)", String.class, session, packer, packingMat)
+                + "/explain"), stat.token(), "{\"explanation\":\"Hủy giấy rách\"}").getResponse().getStatus())
+                .isEqualTo(200);
+        assertThat(outboxCount("mt.consumption.computed", session)).isEqualTo(published + 1);
+    }
+
+    @Test
+    void consumptionContractIsEmptyForUnknownSession() {
+        assertThat(materialQueries.consumption(UUID.randomUUID())).isEmpty();
     }
 }

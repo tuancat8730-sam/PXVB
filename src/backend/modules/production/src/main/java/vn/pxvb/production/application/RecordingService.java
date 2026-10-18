@@ -132,6 +132,8 @@ public class RecordingService {
                 in.counterReading(), run.runId().toString());
         audit("OutputEntry", id, "RECORD", List.of(new FieldChange("qty", null, String.valueOf(qty)),
                 new FieldChange("machineId", null, run.machineId().toString())), actor);
+        outbox.publish("pr.output.recorded", Map.of("sessionId", run.sessionId().toString(), "businessDate",
+                run.businessDate().toString(), "machineId", run.machineId().toString(), "entryId", id.toString()));
         return jdbc.queryForList(entrySql() + " WHERE e.id = UUID_TO_BIN(?)", id.toString()).get(0);
     }
 

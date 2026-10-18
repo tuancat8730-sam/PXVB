@@ -1,6 +1,7 @@
 package vn.pxvb.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -23,6 +24,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import vn.pxvb.production.application.ProductionScanner;
 import vn.pxvb.production.application.ShiftFinalizer;
+import vn.pxvb.production.contract.ProductionQueries;
+import vn.pxvb.production.contract.ProductionQueries.RunFact;
+import vn.pxvb.production.contract.ProductionQueries.ShiftFacts;
 
 /** PR (E11): phiên ca, sản lượng, dừng máy, đổi mác, đồng bộ offline, cảnh báo (AC-PR-001/003/004/005). */
 @AutoConfigureMockMvc
@@ -38,6 +42,8 @@ class ProductionIT extends AbstractIntegrationTest {
     ProductionScanner scanner;
     @Autowired
     ShiftFinalizer finalizer;
+    @Autowired
+    ProductionQueries production;
 
     private String admin;
     private TestUser leader;
@@ -609,6 +615,248 @@ class ProductionIT extends AbstractIntegrationTest {
         TestUser deputy2 = createUser(mvc, mapper, admin, "dep2", "DEPUTY_DIRECTOR");
         assertThat(call(post("/api/v1/workflow/adjustments/" + json(adj).get("id").asText() + "/approve"),
                 deputy2.token(), "{}").getResponse().getStatus()).isEqualTo(422);
+    }
+
+    // ---------- Contract cho RP (E15, ADR-0001 D3) ----------
+
+    private long outboxCount(String type, String sessionId) {
+        return jdbc.queryForObject("SELECT COUNT(*) FROM sys_outbox_message WHERE type = ? AND "
+                + "JSON_UNQUOTE(JSON_EXTRACT(payload, '$.sessionId')) = ?", Long.class, type, sessionId);
+    }
+
+    /** Ca có đổi mác, dừng kế hoạch/ngoài kế hoạch, đã kết ca: dựng dữ liệu cho các test contract RP. */
+    private String endedSessionWithTwoSegments() throws Exception {
+        assertThat(call(put("/api/v1/md/machines/" + packer), admin,
+                "{\"theoreticalRate\":400,\"rateUnit\":\"PACKS_PER_MIN\"}").getResponse().getStatus())
+                .isEqualTo(200);
+        String session = openRewoundSession();
+        Instant t0 = Instant.now().minusSeconds(5 * 3600);
+        assertThat(stop(packer, session, "E", t0, t0.plusSeconds(30 * 60), operator.token()).getResponse()
+                .getStatus()).isEqualTo(201);
+        assertThat(stop(packer, session, "C", t0.plusSeconds(40 * 60), t0.plusSeconds(80 * 60), operator.token())
+                .getResponse().getStatus()).isEqualTo(201);
+        assertThat(output(packer, session, "\"qty\":150000,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(4 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+        MvcResult change = call(post("/api/v1/pr/machines/" + packer + "/product-change"), operator.token(),
+                "{\"sessionId\":\"%s\",\"toProductId\":\"%s\",\"changedAt\":\"%s\"}".formatted(session,
+                        productB, Instant.now().minusSeconds(3 * 3600 + 1800)));
+        assertThat(change.getResponse().getStatus()).as(change.getResponse().getContentAsString()).isEqualTo(201);
+        assertThat(output(packer, session, "\"qty\":1000,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(3 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+        return session;
+    }
+
+    @Test
+    void shiftFactsExposeRunSegmentsAndStopsConsistentWithOee() throws Exception {
+        String session = endedSessionWithTwoSegments();
+
+        ShiftFacts facts = production.shiftFacts(UUID.fromString(session)).orElseThrow();
+        assertThat(facts.sessionId()).isEqualTo(UUID.fromString(session));
+        assertThat(facts.businessDate()).isEqualTo(date);
+        assertThat(facts.shiftCode()).isEqualTo(shift);
+        assertThat(facts.status()).isEqualTo("CLOSING");
+
+        // Chỉ các máy có kết quả OEE (loại NO_ORDER), khớp pr_oee_result
+        java.util.Set<UUID> oeeMachines = new java.util.HashSet<>(jdbc.query("SELECT BIN_TO_UUID(machine_id) FROM "
+                + "pr_oee_result WHERE session_id = UUID_TO_BIN(?)", (rs, i) -> UUID.fromString(rs.getString(1)),
+                session));
+        assertThat(facts.runs()).extracting(RunFact::machineId).containsExactlyInAnyOrderElementsOf(oeeMachines);
+        assertThat(facts.runs()).extracting(RunFact::machineId).doesNotContain(UUID.fromString(idleMachine));
+
+        RunFact r = facts.runs().stream().filter(x -> x.machineId().equals(UUID.fromString(packer))).findFirst()
+                .orElseThrow();
+        assertThat(r.unit()).isEqualTo("PACKS");
+        assertThat(r.plannedPacks()).isEqualTo(100_000L);
+        assertThat(r.totalQty()).isEqualTo(151_000L);
+
+        // Số liệu OEE lấy đúng từ pr_oee_result (không tính lại ở contract)
+        var oee = jdbc.queryForMap("SELECT planned_minutes, run_minutes, good_qty, theoretical_qty, availability, "
+                + "performance, quality, oee, is_provisional, BIN_TO_UUID(formula_id) AS formula FROM pr_oee_result "
+                + "WHERE session_id = UUID_TO_BIN(?) AND machine_id = UUID_TO_BIN(?)", session, packer);
+        assertThat(r.plannedMinutes()).isEqualTo(((Number) oee.get("planned_minutes")).intValue());
+        assertThat(r.runMinutes()).isEqualTo(((Number) oee.get("run_minutes")).intValue());
+        assertThat(r.goodQty()).isEqualTo(((Number) oee.get("good_qty")).longValue());
+        assertThat(r.theoreticalQty()).isEqualByComparingTo((java.math.BigDecimal) oee.get("theoretical_qty"));
+        assertThat(r.availability()).isEqualByComparingTo((java.math.BigDecimal) oee.get("availability"));
+        assertThat(r.performance()).isEqualByComparingTo((java.math.BigDecimal) oee.get("performance"));
+        assertThat(r.quality()).isEqualByComparingTo((java.math.BigDecimal) oee.get("quality"));
+        assertThat(r.oee()).isEqualByComparingTo((java.math.BigDecimal) oee.get("oee"));
+        assertThat(r.provisional()).isEqualTo(Boolean.TRUE.equals(oee.get("is_provisional")));
+        assertThat(r.formulaId()).isEqualTo(UUID.fromString((String) oee.get("formula")));
+
+        // Đổi mác: hai segment, tổng khớp sản lượng máy (không nhân đôi phút/sản lượng)
+        assertThat(r.segments()).hasSize(2);
+        assertThat(r.segments().get(0).segmentNo()).isEqualTo(1);
+        assertThat(r.segments().get(0).productId()).isEqualTo(UUID.fromString(productA));
+        assertThat(r.segments().get(0).qty()).isEqualTo(150_000L);
+        assertThat(r.segments().get(1).segmentNo()).isEqualTo(2);
+        assertThat(r.segments().get(1).productId()).isEqualTo(UUID.fromString(productB));
+        assertThat(r.segments().get(1).qty()).isEqualTo(1_000L);
+        assertThat(r.segments().stream().mapToLong(ProductionQueries.SegmentFact::qty).sum())
+                .isEqualTo(r.totalQty());
+
+        // Dừng máy theo lý do: E (kế hoạch) 30', C (ngoài kế hoạch) 40'; tổng khớp phút dừng của máy
+        assertThat(r.stops()).hasSize(2);
+        var e = r.stops().stream().filter(x -> x.reasonCode().equals("E")).findFirst().orElseThrow();
+        var c = r.stops().stream().filter(x -> x.reasonCode().equals("C")).findFirst().orElseThrow();
+        assertThat(e.planned()).isTrue();
+        assertThat(e.durationSeconds()).isEqualTo(30 * 60L);
+        assertThat(e.events()).isEqualTo(1);
+        assertThat(c.planned()).isFalse();
+        assertThat(c.durationSeconds()).isEqualTo(40 * 60L);
+        assertThat(r.plannedStopMinutes()).isEqualTo(30);
+        assertThat(r.unplannedStopMinutes()).isEqualTo(40);
+    }
+
+    @Test
+    void shiftFactsAreEmptyForUnknownSession() {
+        assertThat(production.shiftFacts(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    void sessionsBetweenReturnsOnlySessionsInRangeOrderedByDateAndShift() throws Exception {
+        String session = openSession();
+        assertThat(production.sessionsBetween(date, date)).extracting(ProductionQueries.SessionRef::id)
+                .containsExactly(UUID.fromString(session));
+        assertThat(production.sessionsBetween(date.plusDays(1), date.plusDays(2))).isEmpty();
+        assertThat(production.sessionsBetween(date.minusDays(1), date.plusDays(1)))
+                .extracting(ProductionQueries.SessionRef::id).contains(UUID.fromString(session));
+        assertThatThrownBy(() -> production.sessionsBetween(date.plusDays(1), date))
+                .isInstanceOf(vn.pxvb.common.error.BusinessException.class);
+    }
+
+    @Test
+    void outputAndOeeComputationPublishOutboxEventsKeyedBySession() throws Exception {
+        String session = openRewoundSession();
+        assertThat(outboxCount("pr.output.recorded", session)).isZero();
+        assertThat(output(packer, session, "\"qty\":500,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(4 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+        assertThat(outboxCount("pr.output.recorded", session)).isEqualTo(1);
+        String payload = jdbc.queryForObject("SELECT CAST(payload AS CHAR) FROM sys_outbox_message WHERE type = "
+                + "'pr.output.recorded' AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.sessionId')) = ?", String.class,
+                session);
+        assertThat(mapper.readTree(payload).get("businessDate").asText()).isEqualTo(date.toString());
+        assertThat(mapper.readTree(payload).get("machineId").asText()).isEqualTo(packer);
+
+        // Tính OEE (kết ca) phát pr.oee.computed để RP cập nhật fact
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+        long computed = outboxCount("pr.oee.computed", session);
+        assertThat(computed).isGreaterThanOrEqualTo(1);
+
+        // Tính lại khi số liệu không đổi (vd UI mở lại màn OEE) không phát thêm sự kiện
+        assertThat(call(get("/api/v1/pr/sessions/" + session + "/oee"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+        assertThat(outboxCount("pr.oee.computed", session)).isEqualTo(computed);
+    }
+
+    /**
+     * Tương đương với báo cáo ca đã chốt (E14): các con số RP sẽ dựng từ {@code shiftFacts} phải khớp bản chụp
+     * {@code pr_shift_report} tại thời điểm chốt, nếu không RP và báo cáo ca sẽ âm thầm bất đồng.
+     */
+    @Test
+    void shiftFactsMatchTheShiftReportSnapshotTakenAtClose() throws Exception {
+        jdbc.update("UPDATE sys_device SET pending_count = 0");
+        TestUser stat = createUser(mvc, mapper, admin, "stat", "STAT_OUTPUT");
+        TestUser qc = createUser(mvc, mapper, admin, "qc", "QC_INLINE");
+        assertThat(call(put("/api/v1/md/machines/" + packer), admin,
+                "{\"theoreticalRate\":400,\"rateUnit\":\"PACKS_PER_MIN\"}").getResponse().getStatus())
+                .isEqualTo(200);
+        String session = openRewoundSession();
+        Instant t0 = Instant.now().minusSeconds(5 * 3600);
+        assertThat(stop(packer, session, "E", t0, t0.plusSeconds(30 * 60), operator.token()).getResponse()
+                .getStatus()).isEqualTo(201);
+        assertThat(stop(packer, session, "G", t0.plusSeconds(40 * 60), t0.plusSeconds(55 * 60), operator.token())
+                .getResponse().getStatus()).isEqualTo(201);
+        assertThat(output(packer, session, "\"qty\":150000,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(4 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+        assertThat(call(post("/api/v1/pr/machines/" + packer + "/product-change"), operator.token(),
+                "{\"sessionId\":\"%s\",\"toProductId\":\"%s\",\"changedAt\":\"%s\"}".formatted(session,
+                        productB, Instant.now().minusSeconds(3 * 3600 + 1800))).getResponse().getStatus())
+                .isEqualTo(201);
+        assertThat(output(packer, session, "\"qty\":1000,\"periodTo\":\"%s\"".formatted(Instant.now()
+                .minusSeconds(3 * 3600)), operator.token()).getResponse().getStatus()).isEqualTo(201);
+        assertThat(call(post("/api/v1/pr/sessions/" + session + "/end"), leader.token(), null).getResponse()
+                .getStatus()).isEqualTo(200);
+
+        String explainUrl = "/api/v1/pr/sessions/" + session + "/explanations";
+        for (String machine : new String[]{packer, maker}) {
+            JsonNode after = json(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_OUTPUT_COMPLETE\","
+                    + "\"subjectKey\":\"%s\",\"note\":\"Ghi bù cuối ca\"}").formatted(machine)));
+            call(post(explainUrl + "/" + checkItem(after, "CHK_OUTPUT_COMPLETE", machine).get("explanationId")
+                    .asText() + "/decision"), deputy.token(), "{\"approve\":true}");
+        }
+        JsonNode explained = json(call(post(explainUrl), leader.token(), ("{\"checkCode\":\"CHK_OUTPUT_PLAN\","
+                + "\"subjectKey\":\"%s\",\"reasonCode\":\"MACHINE_FAULT\"}").formatted(packer)));
+        assertThat(explained.get("closable").asBoolean()).as(explained.toString()).isTrue();
+        JsonNode requested = json(call(post("/api/v1/pr/sessions/" + session + "/close-request"), leader.token(),
+                "{\"method\":\"PASSWORD\",\"secret\":\"" + USER_PASSWORD + "\"}"));
+        String instance = requested.get("approvalInstanceId").asText();
+        approve(instance, stat);
+        approve(instance, qc);
+        assertThat(json(call(get("/api/v1/pr/sessions/" + session), leader.token(), null)).get("status").asText())
+                .isEqualTo("CLOSED");
+
+        JsonNode report = json(call(get("/api/v1/pr/sessions/" + session + "/report"), leader.token(), null));
+        ShiftFacts facts = production.shiftFacts(UUID.fromString(session)).orElseThrow();
+        assertThat(facts.status()).isEqualTo("CLOSED");
+
+        // OEE: cùng tập máy và cùng số liệu từng máy
+        assertThat(facts.runs()).hasSize(report.get("oee").size());
+        for (JsonNode o : report.get("oee")) {
+            RunFact f = facts.runs().stream().filter(x -> x.machineId().toString().equals(o.get("machineId")
+                    .asText())).findFirst().orElseThrow();
+            assertThat(f.unit()).isEqualTo(o.get("unit").asText());
+            assertThat(f.plannedMinutes()).isEqualTo(o.get("plannedMinutes").asInt());
+            assertThat(f.runMinutes()).isEqualTo(o.get("runMinutes").asInt());
+            assertThat(f.totalQty()).isEqualTo(o.get("totalQty").asLong());
+            assertThat(f.goodQty()).isEqualTo(o.get("goodQty").asLong());
+            assertThat(f.provisional()).isEqualTo(o.get("isProvisional").asBoolean());
+            for (var pair : new Object[][]{{"availability", f.availability()}, {"performance", f.performance()},
+                    {"quality", f.quality()}, {"oee", f.oee()}}) {
+                JsonNode expected = o.get((String) pair[0]);
+                if (expected == null || expected.isNull()) {
+                    assertThat(pair[1]).as((String) pair[0]).isNull();
+                } else {
+                    assertThat((java.math.BigDecimal) pair[1]).as((String) pair[0])
+                            .isEqualByComparingTo(expected.decimalValue());
+                }
+            }
+        }
+
+        // Sản lượng theo mác: tổng các segment theo (mác, đơn vị) khớp outputByProduct của báo cáo
+        java.util.Map<String, Long> factQty = new java.util.TreeMap<>();
+        for (RunFact f : facts.runs()) {
+            for (ProductionQueries.SegmentFact sg : f.segments()) {
+                factQty.merge(sg.productId() + "|" + f.unit(), sg.qty(), Long::sum);
+            }
+        }
+        java.util.Map<String, Long> reportQty = new java.util.TreeMap<>();
+        for (JsonNode p : report.get("outputByProduct")) {
+            reportQty.merge(p.get("productId").asText() + "|" + p.get("unit").asText(), p.get("qty").asLong(),
+                    Long::sum);
+        }
+        assertThat(factQty).isEqualTo(reportQty);
+        assertThat(factQty).hasSize(2);
+
+        // Dừng máy theo lý do: phút = tổng giây / 60 như báo cáo; số sự kiện khớp
+        java.util.Map<String, long[]> factStops = new java.util.TreeMap<>();
+        for (RunFact f : facts.runs()) {
+            for (ProductionQueries.StopFact st : f.stops()) {
+                long[] acc = factStops.computeIfAbsent(st.reasonCode(), k -> new long[2]);
+                acc[0] += st.durationSeconds();
+                acc[1] += st.events();
+            }
+        }
+        assertThat(factStops.keySet()).containsExactlyInAnyOrder("E", "G");
+        for (JsonNode st : report.get("stopsByReason")) {
+            long[] acc = factStops.get(st.get("reasonCode").asText());
+            assertThat(acc[0] / 60).as(st.get("reasonCode").asText()).isEqualTo(st.get("minutes").asLong());
+            assertThat(acc[1]).isEqualTo(st.get("events").asLong());
+        }
+        assertThat(report.get("stopsByReason")).hasSize(factStops.size());
     }
 
     private JsonNode oeeRow(String session, String machineId) throws Exception {
