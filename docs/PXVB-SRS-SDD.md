@@ -1167,8 +1167,12 @@ TDT gồm 3 hình thức: **BT** (bảo trì) · **TT** (trung tu) · **ĐT** (�
 ### 14.1 Mô hình dữ liệu (nhóm bảng `rp`, vật lý `rp_*`)
 | Bảng | Cột chính | Ghi chú |
 |---|---|---|
-| `rp.FactShiftMachine` | ShiftSessionId, BusinessDate, ShiftCode, MachineId, ProductId, PlanQty, OutputQty, GoodQty, RunMin, PlannedMin, StopMinByReason(json), Availability, Performance, Quality, Oee, MaterialWastePct, DefectRatePct, StampWastePer1000, IsProvisional, UpdatedAt | Bảng sự kiện tổng hợp theo (ca × máy × SP); cập nhật bởi projection từ các sự kiện module; index phủ `(business_date, machine_id, shift_code)`; **phân vùng `RANGE COLUMNS(business_date)` theo tháng** (khóa phân vùng nằm trong PRIMARY KEY phức hợp); MySQL không có columnstore |
-| `rp.FactShiftMaterial` | ShiftSessionId, MachineId, MaterialId, Issued, Consumed, Theoretical, WastePct | |
+| `rp.FactShiftMachine` | PK `(BusinessDate, ShiftCode, MachineId)`; ShiftSessionId, Unit(`RODS`/`PACKS`), PlanQty, PlannedMin, RunMin, PlannedStopMin, UnplannedStopMin, TotalQty, GoodQty, TheoreticalQty, PerfNum, Availability, Performance, Quality, Oee, FormulaId, IsProvisional, SessionStatus, SourceHash, ProjectedAt | Grain **(ca × máy)** — nguồn `pr_oee_result`; chỉ đại lượng cộng dồn là nguồn sự thật, gộp ngày/tuần/tháng tính lại tỷ lệ từ tổng; **phân vùng `RANGE COLUMNS(business_date)` theo tháng** + phân vùng `p_future`; không FK; MySQL không có columnstore. Xem **ADR-0001** |
+| `rp.FactShiftMachineProduct` | PK `(BusinessDate, ShiftCode, MachineId, SegmentNo)`; ProductId, Qty, PlanQty?, Entries | Grain (ca × máy × mác/segment) — tách khỏi bảng trên để không nhân đôi phút/OEE khi đổi mác |
+| `rp.FactShiftStop` | PK `(BusinessDate, ShiftCode, MachineId, ReasonCode)`; Minutes, Events, Planned | Thay `StopMinByReason(json)` để `GROUP BY` lý do (Pareto A–I) và đối soát bằng SQL |
+| `rp.FactShiftMaterial` | PK `(BusinessDate, ShiftCode, MachineId, MaterialId)`; Issued, Consumed, Theoretical, WastePct (+ Opening, Returned, Closing, WasteQty, Flag, Counted) | Nguồn `mt_consumption_summary` |
+| `rp.ProjectionDirty` | PK `(BusinessDate, ShiftCode)`; Reason, DirtySeq, MarkedAt, Attempts, NextAttemptAt, Status | Hàng đợi tính lại phiên ca (ADR-0001 D4) |
+| `rp.ReconciliationIssue` | Id, BusinessDate, ShiftCode, Kind, Detail, DetectedAt, ResolvedAt? | Kết quả đối soát đêm (ADR-0001 D6) |
 | `rp.FactShiftQuality` | ShiftSessionId, MachineId, ProductId, DefectCode, Count, Grade, Inspections, FailedInspections | |
 | `rp.FactDailyKpi` / `FactWeeklyKpi` / `FactMonthlyKpi` | Grain keys + KPI chính (sản lượng, % KH, OEE, hao hụt NVL, lỗi, tem, MTTR/MTBF, hoàn thành bảo trì) | Tính từ Fact ca |
 | `rp.ReportSnapshot` | Id, ReportCode, Grain(`SHIFT`/`DAY`/`WEEK`/`MONTH`/`CUSTOM`), PeriodKey, ShiftSessionId?, Revision, Status(`BUILDING`/`READY`/`FINAL`/`SUPERSEDED`), Payload(json), XlsxPath?, PdfPath?, GeneratedAt, DurationMs | Bất biến theo `Revision`; sửa đổi → revision mới |
@@ -1177,7 +1181,7 @@ TDT gồm 3 hình thức: **BT** (bảo trì) · **TT** (trung tu) · **ĐT** (�
 | `rp.DashboardDef` | Code, Name, RoleCodes, Layout(json widgets), RefreshSec | |
 | `rp.KpiBaseline` | KpiCode, Value, Source(`TLSG-QT-ĐBCL-01`/`MANUAL`), EffectiveFrom | KPI baseline (vd tỷ lệ lỗi) |
 
-**Chiến lược dữ liệu**: nghiệp vụ ghi vào schema gốc → sự kiện (outbox) → `ProjectionWorker` cập nhật `rp.Fact*` (idempotent theo key) → dashboard/báo cáo **đọc từ Fact**, không quét bảng giao dịch (đảm bảo ≤ 5 phút & P95 < 3s). Lưu **≥ 3 năm** trực tuyến, chỉ các bảng `rp_fact_*` phân vùng theo tháng (MySQL yêu cầu cột phân vùng nằm trong mọi unique key nên bảng giao dịch dùng `BINARY(16)` PK **không** phân vùng; dùng index + archive); archive cũ hơn theo chính sách sao lưu.
+**Chiến lược dữ liệu**: nghiệp vụ ghi vào schema gốc → sự kiện (outbox) đánh dấu phiên ca "bẩn" → `ProjectionWorker` **tính lại cả phiên ca qua `contract`** và thay thế `rp.Fact*` (idempotent theo key; chi tiết ADR-0001) → dashboard/báo cáo **đọc từ Fact**, không quét bảng giao dịch (đảm bảo ≤ 5 phút & P95 < 3s). Lưu **≥ 3 năm** trực tuyến, chỉ các bảng `rp_fact_*` phân vùng theo tháng (MySQL yêu cầu cột phân vùng nằm trong mọi unique key nên bảng giao dịch dùng `BINARY(16)` PK **không** phân vùng; dùng index + archive); archive cũ hơn theo chính sách sao lưu.
 
 ### 14.2 Dashboard theo vai trò (nguồn: 2.11.c, d)
 | Mã | Dashboard | Đối tượng | Nội dung (widget chính) | Làm mới |

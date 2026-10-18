@@ -18,7 +18,7 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L12 | Realtime nhiều tiến trình | STOMP dùng broker trong tiến trình; cảnh báo phát từ worker chưa đẩy được tới tablet (client dùng polling 60s dự phòng). Cần relay RabbitMQ (cùng L08) | FR-CC-053 | Dev lead |
 | L13 | Vai trò/SLA của các luồng duyệt seed (Q15) | `FlowSeeder` đặt vai trò + SLA theo giả định (vd `SHIFT_CLOSE` = ALL của 4 bên; chưa tự bỏ qua bên "không phát sinh") | E03, PL/PR/OH | PXVB |
 | L14 | Xác nhận điện tử khi duyệt | Engine duyệt chưa bắt re-auth; `SignatureService` cung cấp ký (hash do server tính) để module nghiệp vụ gọi tại bước cần ký | FR-CC-031 | PXVB + Pháp chế (Q13) |
-| L15 | "Bản sửa đổi báo cáo" khi điều chỉnh bản ghi đã FINALIZED (FR-CC-011) | Mới có điều chỉnh + audit + sự kiện `adjustment.applied`; tạo `Revision+1` do phân hệ RP thực hiện khi có | RP | Dev lead |
+| L15 | "Bản sửa đổi báo cáo" khi điều chỉnh bản ghi đã FINALIZED (FR-CC-011) | Mới có điều chỉnh + audit + sự kiện `adjustment.applied`; tạo `Revision+1` do phân hệ RP thực hiện khi có (xem ADR-0001, câu hỏi L58) | RP | Dev lead |
 | L16 | Nguyên nhân xử lý cảnh báo | Hiện là chuỗi tự do (bắt buộc); chuyển sang danh mục `md.ReasonCode(ALERT_CAUSE)` khi có MD | FR-CC-051 | PXVB |
 | L17 | Snooze cảnh báo (FR-CC-055, P2), xuất Excel trung tâm cảnh báo (FR-CC-054) | Chưa làm | Alerting | PO |
 | L18 | Kênh email cho thông báo (Q22) | Chỉ có in-app + realtime; `Notification.channel` đã sẵn | Alerting | CNTT |
@@ -129,6 +129,17 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L54 | Không kiểm đếm (BR-MT-004) | Mặc định coi tồn cuối = tồn đầu + cấp − hoàn − lý thuyết; hao hụt chỉ phát hiện qua cấp vượt, chỉ đánh giá khi ca đã kết thúc. Cờ cấu hình `MT_REQUIRE_COUNT` theo nhóm chưa làm | PXVB |
 | L55 | Chưa làm trong E13 | Phân tích xu hướng (FR-MT-010) và đề xuất điều chỉnh định mức; đối chiếu ERP (FR-MT-011); truy vết lô nâng cao (FR-MT-012, mới lưu `LotNo`); xuất PDF/Excel báo cáo tiêu hao (AC-MT-006, hiện trả JSON); đổi mác trong ca sinh thêm phiếu theo segment (BR-MT-006); sinh lại phiếu khi lệnh đổi (chỉ có `regenerate` thủ công); phiếu `COMPLETED`/`CANCELLED` | Dev lead |
 | L56 | Handler sync `MT.*` | Đã có `MT.IssueMaterial/ConfirmReceipt/RecordReturn/RecordStockCount` nhưng chưa có test tích hợp qua `/sync/push` (logic dùng chung với API đã test) | Dev lead |
+
+## Phát sinh khi thiết kế E15 (RP) — xem `docs/adr/ADR-0001-rp-fact-grain-projection.md`
+
+| # | Vấn đề | Đang áp dụng | Ảnh hưởng | Cần ai chốt |
+|---|---|---|---|---|
+| L57 | Gộp OEE khi `CapPerformanceAt100 = true` | `OeeCalculator.compute` trần hiệu năng **từng máy/ca**, `aggregate` trần ở **tổng gộp**. Ví dụ (suy từ mã, chưa chạy): máy A 120/100, máy B 60/100 → gộp từ dòng đã trần = (100+60)/200 = 0,8; `aggregate` = 180/200 → trần 1 → 0,9. ADR giả định gộp theo `perf_num` (tử số đã trần) | AC-RP-003 (OEE), báo cáo ngày/tuần/tháng | Dev lead PR + PXVB |
+| L58 | Chính sách revision báo cáo khi fact đổi sau lúc đã sinh (điều chỉnh, đồng bộ muộn) | Fact luôn mới nhất, `ReportSnapshot` bất biến; chưa quyết ghi đè hay thay thế, có gửi lại/thông báo không, "ngày trước" của R_DAY dùng số gốc hay mới nhất | FR-RP-008, L15 | PO |
+| L59 | Ánh xạ `adjustment.applied` về phiên ca | Chỉ `entityType = ShiftSession` đánh dấu bẩn; loại khác do đối soát đêm bắt. `FINALIZED` bị sửa chưa có người kích hoạt tính lại | RP, L50 | Dev lead |
+| L60 | Thời hạn lưu online & đối soát | ⚠ GIẢ ĐỊNH: `RECONCILE_DAYS = 35`, `rp_fact_*` online 3 năm (Q18), archive phân vùng cũ theo chính sách sao lưu | RP, vận hành | CNTT / PXVB |
+| L61 | Mốc đo SLA READY ≤ 5' (AC-RP-001) | Đề xuất: từ `created_at` outbox `pr.shift.closed` đến `generated_at` snapshot `READY` (gồm trễ dispatcher + projection) | AC-RP-001 | Dev lead + PO |
+| L62 | Sự kiện/contract nguồn còn thiếu cho RP | Chưa có `pr.output.recorded`, sự kiện `mt.*`, `ProductionQueries.shiftFacts/sessionsBetween`, `MaterialQueries` | Đường găng E15 | Dev lead |
 
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

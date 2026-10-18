@@ -34,7 +34,7 @@ Cập nhật lần cuối: 2026-10-18.
 | E12 | OEE engine + công thức cấu hình + golden tests | 🟡 | `d3a92a0` | Mới có AC-PR-002 + 9 ca; cần 10 bộ golden của PO. Q chưa nối dữ liệu NC (QC); công suất 77 máy cần nhập (L42–L45) |
 | E13 | MT: phiếu cấp phát, cấp/nhận, kiểm đếm, tiêu hao, cảnh báo | 🟡 | (chưa commit) | Xong FR-MT-001..009 + `CHK_MATERIAL` (AC-MT-001..005 có test). Còn: xu hướng/đề xuất định mức (FR-MT-010), đối chiếu ERP (FR-MT-011), xuất PDF/Excel báo cáo, phiếu theo segment đổi mác, test sync `MT.*` (L51–L56) |
 | E14 | Shift-close engine (CC-11) + báo cáo ca | 🟡 | `2f60e93` | Xong engine, giải trình, ký + duyệt `SHIFT_CLOSE` (3 bên), báo cáo ca, mở lại qua điều chỉnh. Còn: `CHK_QUALITY/STAMP` (chờ E18/E20; `CHK_MATERIAL` đã có từ E13), `ShiftCloseWatcher`, bước `FINALIZED`, tự bỏ qua bên "không phát sinh" (L46–L50) |
-| E15 | RP core: projections/facts, `R_SHIFT`, `R_DAY` | ⬜ | – | Báo cáo ca hiện lưu JSON trong `pr_shift_report`, chờ RP tiêu thụ |
+| E15 | RP core: projections/facts, `R_SHIFT`, `R_DAY` | ⬜ | – | Báo cáo ca hiện lưu JSON trong `pr_shift_report`, chờ RP tiêu thụ. Đã có ADR-0001 (grain fact + khung projection, trạng thái Đề xuất). Việc tiên quyết: contract nguồn PR/MT + sự kiện `pr.output.recorded`/`mt.*` (L62); câu hỏi L57–L61 |
 | E16 | Dashboard v1: Trưởng ca, Phó QĐ | ⬜ | – | Cần khung frontend React; API dashboard thời gian thực đã có (`/pr/sessions/{id}/dashboard`) |
 | E17 | QC form engine (web + tablet renderer) + import schema | ⬜ | – | Phụ thuộc dữ liệu Q10 |
 | E18 | QC inline (lịch 30', phân cấp A/B/C, cảnh báo, leo thang) | ⬜ | – | |
