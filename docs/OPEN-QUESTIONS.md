@@ -140,6 +140,7 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L60 | Thời hạn lưu online & đối soát | ⚠ GIẢ ĐỊNH: `RECONCILE_DAYS = 35`, `rp_fact_*` online 3 năm (Q18), archive phân vùng cũ theo chính sách sao lưu | RP, vận hành | CNTT / PXVB |
 | L61 | Mốc đo SLA READY ≤ 5' (AC-RP-001) | Đề xuất: từ `created_at` outbox `pr.shift.closed` đến `generated_at` snapshot `READY` (gồm trễ dispatcher + projection), ghi thêm `enqueued_at` để tách chờ/tính; chỉ số P95 + cảnh báo, AC nêu rõ profile tải | AC-RP-001 | Dev lead + PO |
 | L62 | Sự kiện/contract nguồn còn thiếu cho RP | **Đã làm (Pha 1):** `pr.output.recorded`, `pr.oee.computed`, `mt.consumption.computed`, `ProductionQueries.shiftFacts/sessionsBetween`, `MaterialQueries.consumption`. Đã có test tương đương `shiftFacts` ↔ `pr_shift_report` tại lúc chốt và `MaterialQueries` ↔ API tiêu hao. Còn: sửa `OeeCalculator.aggregate` (chờ PO xác nhận L57) | Đường găng E15 | Dev lead |
+| L63 | Test không ổn định `AlertingIT.notificationsCanBeMarkedRead` | Gọi "đánh dấu đã đọc hết" rồi đếm ngay `unread == 0`; scanner nền có thể tạo thông báo mới giữa hai bước. Quan sát (chưa chứng minh nguyên nhân): đỏ 1 lần ở lượt chạy toàn bộ trên MySQL 8.4, xanh khi chạy riêng 2 lần, trên `HEAD` sạch và ở lượt chạy toàn bộ lại | CI có thể đỏ ngẫu nhiên | Dev lead |
 
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).

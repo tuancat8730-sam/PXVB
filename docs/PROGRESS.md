@@ -1,7 +1,7 @@
 # PXVB – Theo dõi tiến độ triển khai
 
-Nguồn backlog: `docs/PXVB-SRS-SDD.md` §18.2. Điểm cần chốt/giả định: `docs/OPEN-QUESTIONS.md` (mã L01–L50).
-Cập nhật lần cuối: 2026-10-18.
+Nguồn backlog: `docs/PXVB-SRS-SDD.md` §18.2. Điểm cần chốt/giả định: `docs/OPEN-QUESTIONS.md` (mã L01–L63). Quyết định kiến trúc: `docs/adr/`.
+Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
 
 **Chú giải trạng thái:** ✅ Xong · 🟡 Xong một phần (còn việc, xem cột Ghi chú) · ⬜ Chưa làm
 
@@ -9,11 +9,11 @@ Cập nhật lần cuối: 2026-10-18.
 
 | Hạng mục | Trạng thái |
 |---|---|
-| Backend (Spring Boot 3.5 / Java 21 / MySQL 8.0 & 8.4) | E00–E14 đã làm (một số còn việc, xem bảng) |
+| Backend (Spring Boot 3.5 / Java 21 / MySQL 8.0 & 8.4) | E00–E14 đã làm (một số còn việc, xem bảng); E15 đang làm (Pha 1 xong, xem §3c) |
 | Frontend web (React: quản trị + dashboard) | ⬜ chưa bắt đầu (`src/web` chưa tồn tại) |
 | Tablet (React Native) | 🟡 chỉ có lõi offline TypeScript đã test (`src/tablet`); UI + adapter SQLite thật chưa build/chạy |
-| Test backend | 39 unit · 16 ArchUnit · 72 integration (MySQL 8.0 và 8.4) · 10 test lõi tablet |
-| Commit chưa push | E13 (đang làm, chưa commit) |
+| Test backend | 39 unit · 16 ArchUnit · 81 integration (toàn bộ xanh trên MySQL 8.4; các IT của PR/MT cũng xanh trên 8.0) · 10 test lõi tablet |
+| Commit chưa push | 4 commit trên `main` (từ `67923c3`: quyết định PO L42/L49/L28/L46/L50, ADR-0001 và Pha 1 E15) |
 
 ## 2. Backlog theo epic
 
@@ -32,9 +32,9 @@ Cập nhật lần cuối: 2026-10-18.
 | E10 | PL: KHSX tháng/tuần, lệnh SX, bố trí nhân sự, điều chỉnh | 🟡 | `ba6e225` | Thuật toán gợi ý lệnh đơn giản (L32); theo dõi thực hiện kế hoạch FR-PL-007/008 chờ dữ liệu PR (L34) |
 | E11 | PR: phiên ca, sản lượng, dừng máy, đổi mác, tồn điếu | 🟡 | `97f1f02` | Chưa có: tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/nhập hộ UI (FR-PR-010), tạo yêu cầu sửa chữa 1 chạm (chờ PM), cảnh báo >110% công suất (L35–L41) |
 | E12 | OEE engine + công thức cấu hình + golden tests | 🟡 | `d3a92a0` | Mới có AC-PR-002 + 9 ca; cần 10 bộ golden của PO. Q chưa nối dữ liệu NC (QC); công suất 77 máy cần nhập (L42–L45) |
-| E13 | MT: phiếu cấp phát, cấp/nhận, kiểm đếm, tiêu hao, cảnh báo | 🟡 | (chưa commit) | Xong FR-MT-001..009 + `CHK_MATERIAL` (AC-MT-001..005 có test). Còn: xu hướng/đề xuất định mức (FR-MT-010), đối chiếu ERP (FR-MT-011), xuất PDF/Excel báo cáo, phiếu theo segment đổi mác, test sync `MT.*` (L51–L56) |
+| E13 | MT: phiếu cấp phát, cấp/nhận, kiểm đếm, tiêu hao, cảnh báo | 🟡 | `d608733` | Xong FR-MT-001..009 + `CHK_MATERIAL` (AC-MT-001..005 có test). Còn: xu hướng/đề xuất định mức (FR-MT-010), đối chiếu ERP (FR-MT-011), xuất PDF/Excel báo cáo, phiếu theo segment đổi mác, test sync `MT.*` (L51–L56) |
 | E14 | Shift-close engine (CC-11) + báo cáo ca | 🟡 | `2f60e93` | Xong engine, giải trình, ký + duyệt `SHIFT_CLOSE` (3 bên), báo cáo ca, mở lại qua điều chỉnh. Còn: `CHK_QUALITY/STAMP` (chờ E18/E20; `CHK_MATERIAL` đã có từ E13), `ShiftCloseWatcher`, bước `FINALIZED`, tự bỏ qua bên "không phát sinh" (L46–L50) |
-| E15 | RP core: projections/facts, `R_SHIFT`, `R_DAY` | ⬜ | – | Báo cáo ca hiện lưu JSON trong `pr_shift_report`, chờ RP tiêu thụ. Đã có ADR-0001 (grain fact + khung projection, trạng thái Đề xuất). Pha 1 (contract nguồn PR/MT + sự kiện `pr.output.recorded`/`pr.oee.computed`/`mt.consumption.computed`) đã xong, chờ L57 để sửa `aggregate()`; câu hỏi L57–L61 |
+| E15 | RP core: projections/facts, `R_SHIFT`, `R_DAY` | 🟡 | `b728ba9`, `1b763ef`, `6760c63` | Đã có ADR-0001 (grain fact + khung projection, trạng thái **Đề xuất**) và Pha 1 (contract nguồn PR/MT + sự kiện `pr.output.recorded`/`pr.oee.computed`/`mt.consumption.computed`). Chưa có module `reporting`, bảng fact, projection, báo cáo. Chờ PO/Dev lead: duyệt ADR, L57–L61. Chi tiết: §3c |
 | E16 | Dashboard v1: Trưởng ca, Phó QĐ | ⬜ | – | Cần khung frontend React; API dashboard thời gian thực đã có (`/pr/sessions/{id}/dashboard`) |
 | E17 | QC form engine (web + tablet renderer) + import schema | ⬜ | – | Phụ thuộc dữ liệu Q10 |
 | E18 | QC inline (lịch 30', phân cấp A/B/C, cảnh báo, leo thang) | ⬜ | – | |
@@ -77,6 +77,22 @@ Nguồn: `OPEN-QUESTIONS.md` mục "Quyết định đã chốt (PO, 2026-10-18)
 | PR: phân tích hiệu suất thiết bị — Pareto dừng máy, xu hướng OEE, so sánh dòng máy (FR-PR-013) (L40) | E12 | ⬜ |
 | MT: đối chiếu ERP (FR-MT-011) — hoãn theo quyết định | E13 | ⏸ hoãn |
 
+## 3c. E15 – RP core: tiến độ theo pha
+
+Kế hoạch theo `docs/adr/ADR-0001-rp-fact-grain-projection.md` §5. Câu hỏi mở: `OPEN-QUESTIONS.md` L57–L62 (và L63 về test không ổn định).
+
+| Pha | Nội dung | Trạng thái | Ghi chú |
+|---|---|---|---|
+| 0 | Chốt quyết định chặn: L57 (cách gộp OEE khi trần hiệu năng), bố cục `R_SHIFT` v1, người nhận `R_DAY`, L58 (revision) | 🟡 | Hội đồng khuyến nghị L57 = trần từng máy/ca (0,80 thay vì 0,90); **chờ PO xác nhận** |
+| 1 | Story tiên quyết ở PR/MT: contract nguồn + sự kiện | 🟡 | Xong: `ProductionQueries.sessionsBetween/shiftFacts`, `MaterialQueries.consumption`, sự kiện `pr.output.recorded`, `pr.oee.computed` (chỉ khi kết quả đổi), `mt.consumption.computed` (chỉ khi dòng đổi hoặc giải trình/chốt); test contract, sự kiện và tương đương với `pr_shift_report` / API tiêu hao. **Còn:** sửa `OeeCalculator.aggregate()` theo L57 (chờ PO) |
+| 2 | Nền module `reporting`: migration (4 bảng fact, `rp_projection_dirty`, phân vùng tháng + `p_future`), `PartitionMaintainer`, luật ArchUnit | ⬜ | |
+| 3 | Cắt dọc đầu tiên: oracle SQL độc lập + dữ liệu 30 ngày, `RpOutboxSink`, `ProjectionWorker` (nhận việc `SKIP LOCKED`, CAS `dirty_seq`, debounce, back-off), fact PR/OEE/dừng máy | ⬜ | |
+| 4 | Fact NVL, `ProjectionRebuilder`, đối soát đêm, registry ánh xạ `adjustment.applied`, báo cáo "máy/ca bị áp trần" | ⬜ | |
+| 5 | Báo cáo: `ReportSnapshot`, bộ dựng theo mục, renderer PDF/XLSX, `R_SHIFT`, `R_DAY`, tự gửi, revision (L58) | ⬜ | |
+| 6 | Nghiệm thu AC-RP-001/003/005 (MySQL 8.0 và 8.4), OpenAPI, tài liệu | ⬜ | |
+
+**Ghi chú kiểm thử:** `AlertingIT.notificationsCanBeMarkedRead` không ổn định (xem L63): đỏ một lần trong lượt chạy toàn bộ trên 8.4, xanh khi chạy riêng, trên `HEAD` sạch và ở lượt chạy toàn bộ lại.
+
 ## 4. Chưa làm (không thuộc epic backend)
 
 | Việc | Ghi chú |
@@ -101,6 +117,8 @@ Nguồn: `OPEN-QUESTIONS.md` mục "Quyết định đã chốt (PO, 2026-10-18)
 | Chọn số ngày N để tự động chuyển ca `CLOSED` → `FINALIZED` (đề xuất 7) | L50 |
 | Xác nhận nhóm vai trò các bên chốt ca (Thống kê / KSCL / Cấp phát NVL) | L28 |
 | Xác nhận giả định giờ ca, ngưỡng, mã dừng | L25 |
+| PO duyệt ADR-0001 và trả lời L57 (gộp OEE khi trần hiệu năng), L58 (revision báo cáo), L60 (thời hạn lưu/đối soát) | E15, AC-RP-003 |
+| Dev lead trả lời L59 (ánh xạ điều chỉnh về phiên ca) và L61 (mốc đo SLA READY ≤ 5') | E15, AC-RP-001 |
 
 ## 6. Cách chạy kiểm thử
 
