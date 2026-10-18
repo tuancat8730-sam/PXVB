@@ -1,7 +1,7 @@
 # PXVB – Theo dõi tiến độ triển khai
 
 Nguồn backlog: `docs/PXVB-SRS-SDD.md` §18.2. Điểm cần chốt/giả định: `docs/OPEN-QUESTIONS.md` (mã L01–L50).
-Cập nhật lần cuối: 2026-10-17.
+Cập nhật lần cuối: 2026-10-18.
 
 **Chú giải trạng thái:** ✅ Xong · 🟡 Xong một phần (còn việc, xem cột Ghi chú) · ⬜ Chưa làm
 
@@ -58,6 +58,25 @@ Cập nhật lần cuối: 2026-10-17.
 | Luồng `SHIFT_CLOSE` theo quyết định L13 (nay 3 bên duyệt + chữ ký Trưởng ca, L46) | ✅ | `ba6e225`, `2f60e93` |
 | ArchUnit kiểm tra ranh giới module (15 luật) | ✅ | cập nhật theo từng epic |
 
+## 3b. Việc cần làm từ quyết định PO 2026-10-18
+
+Nguồn: `OPEN-QUESTIONS.md` mục "Quyết định đã chốt (PO, 2026-10-18)".
+
+| Việc | Epic | Trạng thái |
+|---|---|---|
+| OEE: Performance chặn tối đa 100% (công thức mặc định phiên bản mới) + cập nhật golden test (L42) | E12 | ⬜ |
+| Chốt ca: cho giải trình + duyệt với giao nhận NVL trễ, tranh chấp nhận NVL, thiết bị chưa đồng bộ (L49) | E14, E13 | ⬜ |
+| Chốt ca: tự bỏ qua bên "không phát sinh" theo dữ liệu (engine duyệt hỗ trợ bỏ bước + audit) (L28/L46) | E03, E14 | ⬜ |
+| Tự động `CLOSED` → `FINALIZED` sau N ngày (N cấu hình, đề xuất 7; **cần PXVB chọn N**) (L50) | E14 | ⬜ |
+| MT: xuất PDF/Excel báo cáo tiêu hao (AC-MT-006) (L55) | E13 | ⬜ |
+| MT: xu hướng tiêu hao + đề xuất điều chỉnh định mức (FR-MT-010) (L55) | E13 | ⬜ |
+| MT: phiếu cấp phát theo segment khi đổi mác (BR-MT-006) (L55) | E13 | ⬜ |
+| PR: tồn điếu tại máy bao + `PR_BUFFER_HIGH/LOW` (FR-PR-007) (L40) | E11 | ⬜ |
+| PR: đối chiếu sản lượng thống kê (FR-PR-011) (L40) | E11 | ⬜ |
+| PR: giám sát khu vực + nhập hộ + phạm vi dữ liệu (FR-PR-010) (L40) | E11 | ⬜ |
+| PR: phân tích hiệu suất thiết bị — Pareto dừng máy, xu hướng OEE, so sánh dòng máy (FR-PR-013) (L40) | E12 | ⬜ |
+| MT: đối chiếu ERP (FR-MT-011) — hoãn theo quyết định | E13 | ⏸ hoãn |
+
 ## 4. Chưa làm (không thuộc epic backend)
 
 | Việc | Ghi chú |
@@ -79,7 +98,8 @@ Cập nhật lần cuối: 2026-10-17.
 | Quy cách tem | Q11, E20 |
 | Công suất lý thuyết của 77 máy | L44, OEE |
 | 10 bộ số liệu golden OEE | L42, AC-PR-002 |
-| Xác nhận nhóm vai trò các bên chốt ca; có chặn cứng khi mở ca thiếu lệnh/nhân sự không | L28, L35, L46 |
+| Chọn số ngày N để tự động chuyển ca `CLOSED` → `FINALIZED` (đề xuất 7) | L50 |
+| Xác nhận nhóm vai trò các bên chốt ca (Thống kê / KSCL / Cấp phát NVL) | L28 |
 | Xác nhận giả định giờ ca, ngưỡng, mã dừng | L25 |
 
 ## 6. Cách chạy kiểm thử

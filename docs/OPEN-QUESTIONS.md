@@ -46,6 +46,34 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L02 | DBA **bật `log_bin_trust_function_creators=1`** (hoặc cấp quyền) để migration tạo trigger append-only | Ghi vào hướng dẫn triển khai |
 | L16 | Nguyên nhân xử lý cảnh báo **chọn từ danh mục** `ALERT_CAUSE` | Đổi `resolve` sang mã lý do + **PXVB cung cấp danh sách nguyên nhân** |
 
+## Quyết định đã chốt (PO, 2026-10-18)
+
+**Giữ nguyên hiện trạng (đã xác nhận):**
+
+| # | Quyết định |
+|---|---|
+| L35 | Mở ca thiếu bố trí nhân sự hoặc thiếu lệnh xác nhận: **chỉ cảnh báo**, không chặn |
+| L46 | Bên Vận hành (Trưởng ca) xác nhận bằng **chữ ký điện tử khi gửi chốt**; luồng `SHIFT_CLOSE` giữ 3 bên duyệt (Thống kê, KSCL, Cấp phát NVL) |
+| L52 | Xác nhận phiếu cấp phát NVL **không ký điện tử**, chỉ bằng quyền |
+| L29 | Đăng nhập PIN trên tablet **không** bắt đổi PIN lần đầu |
+| L32 | Gợi ý lệnh SX **giữ phân bổ đều** (chưa xét công suất/lịch bảo trì) |
+| L54 | **Không bắt buộc** kiểm đếm tồn NVL giữa/cuối ca (giữ cách tính theo cấp vượt định mức) |
+| L48 | `CHK_UNSYNCED` **giữ chặn theo mọi thiết bị** đang hoạt động |
+| L41 | Chu kỳ ghi sản lượng **giữ 120 phút** (tối thiểu 4 lần/ca) |
+| L53 | Tiêu hao lý thuyết máy vấn = định mức × bao của máy bao × `FeedRatio` ghép cặp: **đúng, giữ** |
+| L51 | Loại phiếu theo nhóm NVL (sợi/vấn → máy vấn; bao và nhóm khác → máy bao): **xác nhận** |
+
+**Thay đổi so với hiện trạng — cần làm tiếp (đã đưa vào `docs/PROGRESS.md` §3b):**
+
+| # | Quyết định | Việc cần làm |
+|---|---|---|
+| L42 | Performance của OEE **chặn tối đa 100%** | Đặt `CapPerformanceAt100 = true` cho công thức mặc định (phiên bản mới), cập nhật golden test |
+| L49 | Ngoài thiếu lượt ghi sản lượng, **cho giải trình + Phó QĐ/QĐ duyệt** thay vì chặn hẳn với: giao nhận NVL trễ (`CHK_MATERIAL`), tranh chấp nhận NVL, thiết bị chưa đồng bộ (`CHK_UNSYNCED`) | Đổi các mục BLOCK tương ứng sang `approvable = true`; kiểm thử |
+| L28/L46 | Bên "không phát sinh" **tự bỏ qua theo dữ liệu**: ca không có bản ghi cấp phát NVL → bỏ bước Cấp phát NVL; không có lượt KSCL → bỏ bước KSCL; tương tự Thống kê | Engine duyệt hỗ trợ khởi tạo luồng với danh sách bước được bỏ qua; PR xác định bên không phát sinh khi gửi chốt; ghi audit các bước bị bỏ qua |
+| L50 | `FINALIZED`: **tự động sau N ngày** kể từ `CLOSED` | Job định kỳ chuyển ca `CLOSED` quá hạn sang `FINALIZED` (N cấu hình `sys.Setting`; **PXVB chọn N**, đề xuất 7 ngày); sau đó chỉ sửa bằng điều chỉnh cấp cao hơn |
+| L55 | MT cần làm sớm (R1): **xuất PDF/Excel báo cáo tiêu hao**, **xu hướng tiêu hao + đề xuất điều chỉnh định mức**, **phiếu theo segment khi đổi mác**. Đối chiếu ERP (FR-MT-011) để sau | Làm trong đợt hoàn thiện E13 |
+| L40 | PR cần làm sớm (R1) cả 4: **tồn điếu** (+ `PR_BUFFER_HIGH/LOW`), **đối chiếu sản lượng thống kê**, **giám sát khu vực + nhập hộ**, **phân tích hiệu suất thiết bị** (Pareto, xu hướng OEE, so sánh dòng máy) | Làm trong đợt hoàn thiện E11/E12 |
+
 ## Phát sinh khi làm E09/E10 và các việc nhỏ đã chốt
 
 | # | Vấn đề | Đang áp dụng | Cần |
