@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>T-02 Trang chủ theo vị trí</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf:#fff;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:4px solid #F2B01E;outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:999px;font-size:18px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:12px;height:12px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:11px;width:14px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:3px solid currentColor;border-radius:50%;box-sizing:border-box}
+.tile{display:flex;flex-direction:column;justify-content:space-between;text-align:left;border:2px solid var(--line2);background:#fff;border-radius:12px;padding:20px 24px;color:var(--ink);min-height:0}
+.tile b{font-size:28px;line-height:34px}
+.tile span{font-size:18px;line-height:26px;color:var(--ink2)}
+.task{display:flex;align-items:center;gap:14px;min-height:72px;padding:8px 16px;border:2px solid var(--line);border-radius:12px;background:#fff;font-size:20px;text-align:left;color:var(--ink);width:100%}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column">
+  <div style="height:64px;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:28px;font-size:20px;flex:none">
+    <b class="mono" style="font-size:22px">VM-04</b>
+    <span>Ca 2 · 18/10/2026</span>
+    <span style="color:var(--ink2)">Mác: <b style="color:var(--ink)">Mác A</b></span>
+    <span style="flex:1"></span>
+    <span class="chip c-ok">Đã đồng bộ 15:28</span>
+    <span class="chip c-warn" aria-label="2 cảnh báo chưa xác nhận">Chuông 2</span>
+    <b style="font-size:22px">15:30</b>
+  </div>
+  <div style="background:var(--warns);border-bottom:2px solid #F2B01E;padding:12px 24px;display:flex;align-items:center;gap:16px;font-size:20px;flex:none">
+    <span class="chip c-warn" style="background:#fff">Cấp B</span>
+    <span style="flex:1">Sản lượng chậm so với kế hoạch giờ này. Kiểm tra máy hoặc ghi lại sản lượng.</span>
+    <button style="height:56px;padding:0 24px;border-radius:12px;border:2px solid var(--warn);background:#fff;font-size:20px;font-weight:600;color:var(--warn)">Đã biết</button>
+  </div>
+  <div style="flex:1;display:flex;gap:24px;padding:24px;min-height:0">
+    <section style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:16px">
+      <button class="tile" style="background:var(--brand);border-color:var(--brand)"><b style="color:#fff">Chi tiết máy</b><span style="color:#E6EEF8">Ca hiện tại · lệnh đang chạy</span></button>
+      <button class="tile"><b>Ghi sản lượng</b><span>Lần ghi gần nhất 14:30</span></button>
+      <button class="tile" style="border-color:var(--bad)"><b style="color:var(--bad)">Dừng máy</b><span>Máy đang chạy</span></button>
+      <button class="tile"><b>Đổi mác</b><span>Chọn mác thay thế</span></button>
+      <button class="tile"><b>Kiểm tra chất lượng</b><span>Lượt kế tiếp <b class="mono" style="font-size:18px;color:var(--ink)">15:45</b></span></button>
+      <button class="tile"><b>Nhận nguyên vật liệu</b><span>1 phiếu đang chờ nhận</span></button>
+    </section>
+    <aside style="width:380px;display:flex;flex-direction:column;gap:12px">
+      <h2 style="margin:0;font-size:24px;line-height:30px">Việc cần làm</h2>
+      <button class="task"><span class="chip c-warn" style="flex:none">Chưa nhập</span><span style="flex:1">Sản lượng giờ 15:00</span></button>
+      <button class="task"><span class="chip c-warn" style="flex:none">Chờ</span><span style="flex:1">Phiếu cấp phát NVL</span></button>
+      <button class="task"><span class="chip c-ok" style="flex:none">Đạt</span><span style="flex:1">Kiểm tra trước ca</span></button>
+      <button class="task"><span class="chip c-off" style="flex:none">Offline</span><span style="flex:1">0 lệnh chờ đồng bộ</span></button>
+      <span style="flex:1"></span>
+      <button style="height:72px;border-radius:12px;border:2px solid var(--line2);background:#fff;font-size:22px;font-weight:600;color:var(--ink)">Chốt ca &amp; đổi người dùng</button>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>T-60 Mở ca</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf:#fff;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:4px solid #F2B01E;outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:999px;font-size:18px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:12px;height:12px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:11px;width:14px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:3px solid currentColor;border-radius:50%;box-sizing:border-box}
+.step{display:flex;align-items:center;gap:16px;min-height:84px;padding:10px 20px;border-radius:12px;border:2px solid var(--line);background:#fff;font-size:20px}
+.step b{font-size:22px}
+.num{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex:none;background:var(--offs);color:var(--ink)}
+.btn{height:64px;padding:0 28px;border-radius:12px;border:2px solid var(--line2);background:#fff;font-size:20px;font-weight:600;color:var(--ink)}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column">
+  <div style="height:64px;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:28px;font-size:20px;flex:none">
+    <b class="mono" style="font-size:22px">VM-04</b>
+    <span>Ca 2 · 18/10/2026</span>
+    <span style="color:var(--ink2)">Chưa mở ca</span>
+    <span style="flex:1"></span>
+    <span class="chip c-ok">Đã đồng bộ 15:28</span>
+    <b style="font-size:22px">13:58</b>
+  </div>
+  <div style="flex:1;display:flex;gap:24px;padding:24px;min-height:0">
+    <section style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <h1 style="margin:0 0 4px;font-size:36px;line-height:44px">Mở ca 2</h1>
+      <div class="step"><span class="num" style="background:var(--ok);color:#fff">1</span><span style="flex:1"><b>Nhân sự đã bố trí</b><br>Nguyễn Văn A, Trần Thị B, Lê Văn C</span><span class="chip c-ok">Đạt</span></div>
+      <div class="step" style="border-color:#F2B01E"><span class="num" style="background:var(--warns);color:var(--warn)">2</span><span style="flex:1"><b>Xác nhận lệnh sản xuất</b><br>Lệnh <span class="mono">LSX-2610-014</span> chờ lãnh đạo ca xác nhận</span><button class="btn">Xem lệnh</button></div>
+      <div class="step"><span class="num">3</span><span style="flex:1"><b>Kiểm tra máy trước ca</b><br>Vệ sinh, an toàn, vật tư tại máy</span><span class="chip c-off">Chưa làm</span></div>
+      <div class="step"><span class="num">4</span><span style="flex:1"><b>Ký mở ca</b><br>Lãnh đạo ca nhập PIN để ký điện tử</span><span class="chip c-off">Chưa làm</span></div>
+    </section>
+    <aside style="width:400px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:24px;line-height:30px">Điều kiện mở ca</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:20px">
+        <div style="display:flex;gap:12px;align-items:center"><span class="chip c-ok">Đạt</span>Đủ nhân sự</div>
+        <div style="display:flex;gap:12px;align-items:center"><span class="chip c-bad">Chặn</span>Lệnh chưa xác nhận</div>
+        <div style="display:flex;gap:12px;align-items:center"><span class="chip c-warn">Chờ</span>Chưa kiểm tra máy</div>
+      </div>
+      <p style="margin:0;padding:12px 16px;background:var(--bads);border-radius:8px;font-size:18px;line-height:26px;color:var(--bad)">Chưa mở ca được: còn 1 mục chặn. Xác nhận lệnh sản xuất ở bước 2.</p>
+      <span style="flex:1"></span>
+      <button disabled style="height:80px;border-radius:12px;border:0;background:var(--offs);color:var(--off);font-size:26px;font-weight:700;cursor:not-allowed">Mở ca</button>
+      <button class="btn">Quay lại</button>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

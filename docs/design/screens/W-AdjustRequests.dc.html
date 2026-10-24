@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>CC – Yêu cầu điều chỉnh chờ duyệt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:18px}
+.chip::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:8px;width:9px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.c-info{background:var(--brand-soft);color:var(--brand)}.c-info::before{display:none}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--line2);background:#fff;font-weight:600;color:var(--ink)}
+.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}
+.nav a{display:block;padding:8px 12px;border-radius:6px;color:var(--ink2);text-decoration:none}
+.nav a.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.li{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.li.sel{border:2px solid var(--brand);background:var(--brand-soft)}
+table{border-collapse:collapse;width:100%}
+th{height:36px;padding:0 12px;background:var(--sf2);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink2);text-align:left}
+td{height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:13px}
+.step{display:flex;gap:10px;align-items:flex-start}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg);overflow:hidden">
+  <nav class="nav" style="width:216px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;flex:none">
+    <div style="font-weight:700;font-size:18px;padding:4px 12px 16px">PXVB</div>
+    <a href="#">Tổng quan</a><a href="#">Kế hoạch sản xuất</a><a href="#">Phiên ca</a><a href="#">Chất lượng</a><a href="#">Bảo trì</a><a href="#">Báo cáo</a><a href="#" class="on">Công việc của tôi</a><a href="#">Danh mục</a>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">
+      <span style="color:var(--ink3)">Công việc của tôi /</span><b>Yêu cầu điều chỉnh</b><span style="flex:1"></span><span style="color:var(--ink2)">Cập nhật lúc 15:30</span>
+    </header>
+    <div style="flex:1;display:flex;min-height:0">
+      <section style="width:380px;padding:16px 12px 16px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;flex:none">
+        <div style="display:flex;gap:8px"><button class="btn p">Chờ tôi duyệt (3)</button><button class="btn">Của tôi (1)</button></div>
+        <button class="li sel"><div style="display:flex;justify-content:space-between"><b class="mono">DC-2610-007</b><span class="chip c-warn">Chờ duyệt</span></div><div style="color:var(--ink2)">Sửa sản lượng phiên ca VM-04, ca 2</div><div style="font-size:12px;color:var(--ink3)">Lê Văn C · 18/10/2026 14:10</div></button>
+        <button class="li"><div style="display:flex;justify-content:space-between"><b class="mono">DC-2610-006</b><span class="chip c-warn">Chờ duyệt</span></div><div style="color:var(--ink2)">Sửa mã lý do dừng máy</div><div style="font-size:12px;color:var(--ink3)">Trần Thị B · 18/10/2026 11:42</div></button>
+        <button class="li"><div style="display:flex;justify-content:space-between"><b class="mono">DC-2610-005</b><span class="chip c-warn">Chờ duyệt</span></div><div style="color:var(--ink2)">Mở lại ca đã chốt</div><div style="font-size:12px;color:var(--ink3)">Lê Văn C · 17/10/2026 22:05</div></button>
+      </section>
+      <main style="flex:1;padding:16px 24px 16px 8px;box-sizing:border-box;min-width:0">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px"><h1 style="margin:0;font-size:22px;line-height:28px" class="mono">DC-2610-007</h1><span class="chip c-warn">Chờ duyệt</span><span style="flex:1"></span><span class="chip c-off">Bản ghi đã khóa</span></div>
+          <div style="color:var(--ink2)">Đối tượng: <b style="color:var(--ink)">Phiên ca VM-04, ca 2, 18/10/2026</b>. Dữ liệu đã chốt không sửa trực tiếp, chỉ qua yêu cầu này.</div>
+          <div style="border:1px solid var(--line);border-radius:8px;overflow:hidden"><table>
+            <thead><tr><th>Trường</th><th style="text-align:right">Giá trị hiện tại</th><th style="text-align:right">Đề xuất</th></tr></thead>
+            <tbody><tr><td>Sản lượng giờ 14:00</td><td style="text-align:right">1.200</td><td style="text-align:right;background:var(--warns);font-weight:600">1.250</td></tr></tbody>
+          </table></div>
+          <div><div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px">Lý do của người yêu cầu</div><div style="padding:10px 12px;background:var(--sf2);border:1px solid var(--line);border-radius:6px">Nhập thiếu 50 điếu do tablet mất kết nối lúc ghi.</div></div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px">Tiến trình duyệt</div>
+            <div style="display:flex;gap:24px">
+              <div class="step"><span class="chip c-ok">Đã duyệt</span><span>Lãnh đạo ca<br><span style="color:var(--ink3);font-size:12px">14:20</span></span></div>
+              <div class="step"><span class="chip c-warn">Đang chờ bạn</span><span>Quản đốc phân xưởng</span></div>
+              <div class="step"><span class="chip c-off">Chưa đến</span><span>Phòng kế hoạch</span></div>
+            </div>
+          </div>
+          <div><label for="rs" style="display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px">Lý do từ chối (bắt buộc nếu từ chối)</label><textarea id="rs" rows="2" style="width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:6px;padding:8px 12px"></textarea></div>
+          <span style="flex:1"></span>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" style="color:var(--bad);border-color:var(--bad)">Từ chối</button><button class="btn p">Duyệt và ký</button></div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

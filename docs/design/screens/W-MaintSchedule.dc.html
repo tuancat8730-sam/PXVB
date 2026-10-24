@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PM – Lịch bảo trì tuần</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+button,input{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:18px}
+.chip::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:8px;width:9px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.c-info{background:var(--brand-soft);color:var(--brand)}.c-info::before{display:none}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--line2);background:#fff;font-weight:600;color:var(--ink)}
+.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}
+.nav a{display:block;padding:8px 12px;border-radius:6px;color:var(--ink2);text-decoration:none}
+.nav a.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.gh{padding:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--sf2);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.gm{padding:8px 12px;font-weight:600;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;display:flex;align-items:center}
+.gc{border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;padding:4px;display:flex;align-items:center;min-height:48px}
+.gc .chip{white-space:normal}
+.gc.sel{outline:3px solid var(--brand);outline-offset:-3px;background:var(--brand-soft)}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg);overflow:hidden">
+  <nav class="nav" style="width:216px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;flex:none">
+    <div style="font-weight:700;font-size:18px;padding:4px 12px 16px">PXVB</div>
+    <a href="#">Tổng quan</a><a href="#">Kế hoạch sản xuất</a><a href="#">Phiên ca</a><a href="#">Chất lượng</a><a href="#" class="on">Bảo trì</a><a href="#">Báo cáo</a><a href="#">Danh mục</a>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">
+      <span style="color:var(--ink3)">Bảo trì /</span><b>Lịch bảo trì</b><span style="flex:1"></span><span style="color:var(--ink2)">Cập nhật lúc 15:30</span>
+    </header>
+    <div style="flex:1;display:flex;min-height:0">
+      <main style="flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h1 style="margin:0;font-size:22px;line-height:28px">Tuần 19/10 đến 25/10/2026</h1><span class="chip c-warn">Chờ duyệt</span>
+          <span style="flex:1"></span><button class="btn" aria-label="Tuần trước">‹</button><button class="btn">Tuần này</button><button class="btn" aria-label="Tuần sau">›</button><button class="btn">Excel</button><button class="btn p">Gửi duyệt</button>
+        </div>
+        <div style="display:flex;gap:12px;font-size:12px"><span class="chip c-info">Bảo trì định kỳ</span><span class="chip c-bad">Sửa chữa</span><span class="chip c-warn">Có xung đột với sản xuất</span><span class="chip c-off">Trống</span></div>
+        <div style="flex:1;display:grid;grid-template-columns:96px repeat(7,minmax(0,1fr));grid-auto-rows:min-content;border-top:1px solid var(--line);border-left:1px solid var(--line);border-radius:6px;overflow:hidden;align-content:start;background:#fff">
+          <div class="gh">Máy</div><div class="gh">T2 19/10</div><div class="gh">T3 20/10</div><div class="gh">T4 21/10</div><div class="gh">T5 22/10</div><div class="gh">T6 23/10</div><div class="gh">T7 24/10</div><div class="gh">CN 25/10</div>
+          <sc-for list="{{cells}}" as="c" hint-placeholder-count="56">
+            <div class="{{c.cls}}"><span class="{{c.chipCls}}">{{c.label}}</span></div>
+          </sc-for>
+        </div>
+      </main>
+      <aside style="width:320px;background:#fff;border-left:1px solid var(--line);padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;flex:none">
+        <b style="font-size:16px">VM-04 · Thứ hai 19/10</b>
+        <div style="border:1px solid var(--line);border-radius:8px;padding:12px"><div style="display:flex;justify-content:space-between"><b>Bảo trì định kỳ tuần</b><span class="chip c-info">12 hạng mục</span></div><span style="color:var(--ink2)">08:00 đến 10:00 · Hoàng Văn E</span></div>
+        <div style="padding:10px 12px;background:var(--warns);color:var(--warn);border-radius:6px;font-size:13px">Trùng ca 1 của lệnh LSX-2610-011. Hoán đổi lịch hoặc báo kế hoạch dời lệnh.</div>
+        <button class="btn">Hoán đổi với ngày khác</button><button class="btn">Đổi người thực hiện</button>
+        <span style="flex:1"></span>
+        <span style="font-size:12px;color:var(--ink3)">Kéo thả ô để đổi lịch; dùng nút bên trên nếu thao tác bằng bàn phím.</span>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const machines = ['VM-01', 'VM-02', 'VM-03', 'VM-04', 'VM-05', 'VM-06', 'VM-07'];
+    const plan = {
+      'VM-01': { 1: ['i', 'Định kỳ'] },
+      'VM-02': { 0: ['r', 'Sửa chữa'], 1: ['r', 'Sửa chữa'] },
+      'VM-03': { 3: ['i', 'Định kỳ'] },
+      'VM-04': { 0: ['x', 'Định kỳ · trùng ca'] },
+      'VM-05': { 4: ['i', 'Định kỳ'] },
+      'VM-06': {},
+      'VM-07': { 2: ['i', 'Thay dầu'] },
+    };
+    const style = { i: 'chip c-info', r: 'chip c-bad', x: 'chip c-warn' };
+    const cells = [];
+    machines.forEach((m) => {
+      cells.push({ cls: 'gm mono', chipCls: '', label: m });
+      for (let d = 0; d < 7; d += 1) {
+        const p = plan[m][d];
+        const sel = m === 'VM-04' && d === 0;
+        cells.push({ cls: 'gc' + (sel ? ' sel' : ''), chipCls: p ? style[p[0]] : 'chip c-off', label: p ? p[1] : 'Trống' });
+      }
+    });
+    return { cells };
+  }
+}
+</script>
+</body>
+</html>

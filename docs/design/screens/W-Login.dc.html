@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Web – Đăng nhập</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf:#fff;--line:#D9DFE6;--line2:#B9C2CD;--bad:#B3261E;--bads:#FBE3E0}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+button,input{font:inherit}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+.in{width:100%;height:36px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:6px;font-size:14px;background:#fff;color:var(--ink)}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg)">
+  <section style="width:520px;background:var(--brand);color:#fff;padding:64px 56px;display:flex;flex-direction:column;box-sizing:border-box">
+    <div style="font-size:28px;font-weight:700;letter-spacing:1px">PXVB</div>
+    <div style="flex:1"></div>
+    <h2 style="margin:0 0 12px;font-size:32px;line-height:40px;font-weight:700">Điều hành sản xuất trong một hệ thống</h2>
+    <p style="margin:0;font-size:16px;line-height:24px;color:#E6EEF8">Kế hoạch, sản xuất, chất lượng, bảo trì và báo cáo, cùng một nguồn số liệu.</p>
+  </section>
+  <section style="flex:1;display:flex;align-items:center;justify-content:center;padding:32px">
+    <form style="width:400px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:32px;display:flex;flex-direction:column;gap:16px">
+      <h1 style="margin:0;font-size:22px;line-height:28px">Đăng nhập</h1>
+      <div role="alert" style="background:var(--bads);color:var(--bad);border-radius:6px;padding:10px 12px;font-size:14px;line-height:20px">Tên đăng nhập hoặc mật khẩu không đúng. Còn 2 lần thử trước khi tài khoản bị khóa tạm. <span class="mono" style="font-size:12px">PXVB-IDN-0001</span></div>
+      <div><label for="u">Tên đăng nhập</label><input id="u" class="in" value="nguyenvana" autocomplete="username"></div>
+      <div><label for="p">Mật khẩu</label><input id="p" class="in" type="password" value="matkhau123" autocomplete="current-password" style="border-color:var(--bad)"></div>
+      <button type="button" style="height:36px;border:0;border-radius:6px;background:var(--brand);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Đăng nhập</button>
+      <a href="#" style="font-size:14px;color:var(--brand)">Quên mật khẩu? Liên hệ quản trị hệ thống</a>
+    </form>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>T-10 Danh sách lượt KSCL</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:4px solid #F2B01E;outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:999px;font-size:18px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:12px;height:12px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:11px;width:14px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:3px solid currentColor;border-radius:50%;box-sizing:border-box}
+.item{display:flex;align-items:center;gap:16px;min-height:84px;padding:8px 20px;border:2px solid var(--line);border-radius:12px;background:#fff;font-size:22px;text-align:left;width:100%;color:var(--ink)}
+.item .t{width:96px;font-size:28px;font-weight:700}
+.btn{height:64px;padding:0 28px;border-radius:12px;border:2px solid var(--line2);background:#fff;font-size:20px;font-weight:600;color:var(--ink)}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column">
+  <div style="height:64px;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:28px;font-size:20px;flex:none">
+    <b class="mono" style="font-size:22px">VM-04</b><span>Ca 2 · 18/10/2026</span><span style="color:var(--ink2)">Mác: <b style="color:var(--ink)">Mác A</b></span>
+    <span style="flex:1"></span><span class="chip c-ok">Đã đồng bộ 15:28</span><b style="font-size:22px">15:30</b>
+  </div>
+  <div style="flex:1;display:flex;gap:24px;padding:24px;min-height:0">
+    <section style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <h1 style="margin:0 0 4px;font-size:36px;line-height:44px">Lượt kiểm tra chất lượng</h1>
+      <button class="item" style="border-color:#F2B01E;background:var(--warns)"><span class="t mono">14:45</span><span style="flex:1">Biểu mẫu KSCL máy vấn</span><span class="chip c-warn" style="background:#fff">Quá hạn 45 phút</span></button>
+      <button class="item" style="border-color:var(--brand)"><span class="t mono">15:45</span><span style="flex:1">Biểu mẫu KSCL máy vấn</span><span class="chip c-off">Sắp đến</span></button>
+      <button class="item"><span class="t mono">13:45</span><span style="flex:1">Biểu mẫu KSCL máy vấn</span><span class="chip c-ok">Đạt</span></button>
+      <button class="item" style="border-color:var(--bad)"><span class="t mono">12:45</span><span style="flex:1">Biểu mẫu KSCL máy vấn</span><span class="chip c-bad">Không đạt · Cấp B</span></button>
+      <button class="item"><span class="t mono">11:45</span><span style="flex:1">Biểu mẫu KSCL máy vấn</span><span class="chip c-ok">Đạt</span></button>
+    </section>
+    <aside style="width:360px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:24px;line-height:30px">Việc kế tiếp</h2>
+      <p style="margin:0;font-size:20px;line-height:28px;color:var(--ink2)">Lượt 14:45 đã quá hạn. Làm ngay để không bị ghi chưa nhập.</p>
+      <span style="flex:1"></span>
+      <button style="height:88px;border-radius:12px;border:0;background:var(--brand);color:#fff;font-size:26px;font-weight:700">Làm lượt 14:45</button>
+      <button class="btn">Xem cảnh báo (2)</button>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

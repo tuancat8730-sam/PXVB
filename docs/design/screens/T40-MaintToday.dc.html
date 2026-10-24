@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>T-40 Việc bảo trì hôm nay</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:4px solid #F2B01E;outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:4px 14px;border-radius:999px;font-size:18px;font-weight:600;white-space:nowrap}
+.chip::before{content:"";width:12px;height:12px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:11px;width:14px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:3px solid currentColor;border-radius:50%;box-sizing:border-box}
+.job{display:flex;align-items:center;gap:16px;min-height:92px;padding:8px 20px;border:2px solid var(--line);border-radius:12px;background:#fff;font-size:22px;text-align:left;width:100%;color:var(--ink)}
+.job .m{width:84px;font-weight:700;font-size:24px}
+.btn{height:64px;padding:0 28px;border-radius:12px;border:2px solid var(--line2);background:#fff;font-size:20px;font-weight:600;color:var(--ink)}
+</style>
+</helmet>
+<div style="width:1280px;height:800px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column">
+  <div style="height:64px;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:28px;font-size:20px;flex:none">
+    <b style="font-size:22px">Bảo trì</b><span>Thứ hai 19/10/2026</span><span style="color:var(--ink2)">Thợ: Hoàng Văn E</span>
+    <span style="flex:1"></span><span class="chip c-off">Offline · 2 lệnh chờ gửi</span><b style="font-size:22px">07:55</b>
+  </div>
+  <div style="flex:1;display:flex;gap:24px;padding:24px;min-height:0">
+    <section style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <h1 style="margin:0 0 4px;font-size:36px;line-height:44px">Việc hôm nay</h1>
+      <button class="job" style="border-color:var(--bad)"><span class="m mono">VM-02</span><span style="flex:1"><b>Sửa chữa: kẹt cơ cấu cấp giấy</b><br><span style="font-size:18px;color:var(--ink2)">Báo lúc 06:40 · đang dừng máy</span></span><span class="chip c-bad">Khẩn</span></button>
+      <button class="job" style="border-color:var(--brand);background:var(--brand-soft)"><span class="m mono">VM-04</span><span style="flex:1"><b>Bảo trì định kỳ tuần</b><br><span style="font-size:18px;color:var(--ink2)">08:00 đến 10:00 · 12 hạng mục</span></span><span class="chip c-warn">Sắp đến</span></button>
+      <button class="job"><span class="m mono">VM-07</span><span style="flex:1"><b>Thay dầu hộp số</b><br><span style="font-size:18px;color:var(--ink2)">13:00 đến 14:30 · 3 hạng mục</span></span><span class="chip c-off">Chưa bắt đầu</span></button>
+      <button class="job"><span class="m mono">VM-01</span><span style="flex:1"><b>Kiểm tra dây curoa</b><br><span style="font-size:18px;color:var(--ink2)">Đã xong lúc 07:30</span></span><span class="chip c-ok">Hoàn thành</span></button>
+    </section>
+    <aside style="width:360px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:24px;line-height:30px">Việc đang chọn</h2>
+      <p style="margin:0;font-size:20px;line-height:28px"><b class="mono">VM-02</b><br>Sửa chữa: kẹt cơ cấu cấp giấy</p>
+      <p style="margin:0;font-size:18px;line-height:26px;color:var(--ink2)">Máy đang dừng từ 06:40. Bắt đầu để ghi thời gian sửa.</p>
+      <span style="flex:1"></span>
+      <button style="height:88px;border-radius:12px;border:0;background:var(--brand);color:#fff;font-size:26px;font-weight:700">Bắt đầu sửa</button>
+      <button class="btn">Báo sự cố mới</button>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

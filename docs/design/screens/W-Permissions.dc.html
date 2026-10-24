@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>MD – Ma trận phân quyền</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf:#fff;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+button,input{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:18px}
+.chip::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:8px;width:9px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--line2);background:#fff;font-weight:600;color:var(--ink)}
+.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}
+.nav a{display:block;padding:8px 12px;border-radius:6px;color:var(--ink2);text-decoration:none}
+.nav a.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.role{display:flex;align-items:center;justify-content:space-between;width:100%;height:40px;padding:0 12px;border-radius:6px;border:1px solid transparent;background:transparent;text-align:left;color:var(--ink)}
+.role.on{background:var(--brand-soft);border-color:var(--brand);font-weight:600;color:var(--brand)}
+.th{padding:0 8px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--sf2);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink2)}
+.rn{padding:0 12px;height:44px;display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.rn.g{background:var(--sf2);font-weight:600;color:var(--ink2);font-size:12px}
+.cb{height:44px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)}
+.box{width:24px;height:24px;border-radius:4px;border:2px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center;color:#fff;padding:0}
+.box.on{background:var(--brand);border-color:var(--brand)}
+.box.chg{border-color:#F2B01E;box-shadow:0 0 0 3px var(--warns)}
+.box.chg.on{background:var(--brand)}
+.box.lock{background:var(--offs);border-color:var(--line2);color:var(--off);cursor:not-allowed}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg);overflow:hidden">
+  <nav class="nav" style="width:216px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;flex:none">
+    <div style="font-weight:700;font-size:18px;padding:4px 12px 16px">PXVB</div>
+    <a href="#">Tổng quan</a><a href="#">Kế hoạch sản xuất</a><a href="#">Phiên ca</a><a href="#">Chất lượng</a><a href="#">Bảo trì</a><a href="#">Báo cáo</a><a href="#" class="on">Danh mục &amp; quản trị</a>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">
+      <span style="color:var(--ink3)">Quản trị /</span><b>Người dùng và phân quyền</b>
+      <span style="flex:1"></span>
+      <span class="chip c-warn">3 thay đổi chưa lưu</span>
+      <button class="btn">Hoàn tác</button><button class="btn p">Lưu thay đổi</button>
+    </header>
+    <div style="flex:1;display:flex;min-height:0">
+      <aside style="width:248px;background:#fff;border-right:1px solid var(--line);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px;flex:none">
+        <b style="font-size:16px;margin-bottom:4px">Vai trò</b>
+        <button class="role"><span>Công nhân vận hành</span><span class="mono" style="font-size:12px;color:var(--ink3)">42</span></button>
+        <button class="role on"><span>Lãnh đạo ca</span><span class="mono" style="font-size:12px">9</span></button>
+        <button class="role"><span>Kiểm soát chất lượng</span><span class="mono" style="font-size:12px;color:var(--ink3)">6</span></button>
+        <button class="role"><span>Kế hoạch sản xuất</span><span class="mono" style="font-size:12px;color:var(--ink3)">4</span></button>
+        <button class="role"><span>Quản trị hệ thống</span><span class="mono" style="font-size:12px;color:var(--ink3)">2</span></button>
+        <span style="flex:1"></span>
+        <button class="btn">Thêm vai trò</button>
+      </aside>
+      <main style="flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="display:flex;align-items:center;gap:12px"><h1 style="margin:0;font-size:22px;line-height:28px">Quyền của vai trò Lãnh đạo ca</h1><span style="color:var(--ink2)">Quyền có dạng <span class="mono">md.&lt;mục&gt;.&lt;hành động&gt;</span></span></div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(5,96px)">
+            <div class="th" style="justify-content:flex-start;padding-left:12px">Danh mục</div>
+            <div class="th">Xem</div><div class="th">Tạo</div><div class="th">Sửa</div><div class="th">Xuất</div><div class="th">Duyệt</div>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+              <div class="{{r.nameCls}}">{{r.name}}</div>
+              <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5">
+                <div class="cb">
+                  <sc-if value="{{c.show}}" hint-placeholder-val="{{true}}">
+                    <button class="{{c.cls}}" aria-label="{{c.label}}">{{c.mark}}</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;font-size:12px;color:var(--ink2);align-items:center">
+          <span style="display:flex;gap:6px;align-items:center"><span class="box on" style="width:16px;height:16px">✓</span>Được phép</span>
+          <span style="display:flex;gap:6px;align-items:center"><span class="box chg" style="width:16px;height:16px"></span>Vừa thay đổi, chưa lưu</span>
+          <span style="display:flex;gap:6px;align-items:center"><span class="box lock" style="width:16px;height:16px"></span>Cố định theo thiết kế, không đổi được</span>
+          <span style="display:flex;gap:6px;align-items:center">Mọi thay đổi quyền được ghi vào nhật ký kiểm toán.</span>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const acts = ['xem', 'tạo', 'sửa', 'xuất', 'duyệt'];
+    const spec = [
+      { g: 'Danh mục máy và ca' },
+      { name: 'Máy', v: '10110', ch: '' },
+      { name: 'Ca làm việc', v: '10000', ch: '' },
+      { name: 'Ghép cặp vấn–bao', v: '11100', ch: '2' },
+      { g: 'Sản phẩm và định mức' },
+      { name: 'Sản phẩm', v: '10010', ch: '' },
+      { name: 'Định mức nguyên vật liệu', v: '10001', ch: '4', lock: '4' },
+      { name: 'Ngưỡng cảnh báo', v: '10000', ch: '' },
+    ];
+    const rows = spec.map((s) => {
+      if (s.g) return { name: s.g, nameCls: 'rn g', cells: acts.map((a) => ({ show: false, cls: '', label: '', mark: '' })) };
+      const cells = acts.map((a, i) => {
+        const on = s.v[i] === '1';
+        const changed = s.ch === String(i);
+        const locked = s.lock === String(i);
+        const cls = 'box' + (on ? ' on' : '') + (changed ? ' chg' : '') + (locked ? ' lock' : '');
+        return { show: true, cls, label: s.name + ': ' + a + (on ? ', được phép' : ', không được phép'), mark: on ? '✓' : '' };
+      });
+      return { name: s.name, nameCls: 'rn', cells };
+    });
+    return { rows };
+  }
+}
+</script>
+</body>
+</html>

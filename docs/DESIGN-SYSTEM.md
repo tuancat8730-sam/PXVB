@@ -4,7 +4,9 @@ Nguồn yêu cầu: `docs/PXVB-SRS-SDD.md` §14.2 (dashboard), §15 (tablet), §
 
 **Bản xem được (canvas 14 bảng):** https://claude.ai/artifact/RYsmJi9rPFJfsjReCWR4jj (riêng tư; chỉ chủ sở hữu mở được cho đến khi chia sẻ).
 
-> **Trạng thái:** đề xuất thiết kế, chưa duyệt. Thương hiệu (logo, màu chủ đạo, font) **chưa có**; bộ màu/chữ dưới đây là đề xuất, đổi được qua token. Số liệu trong bản vẽ là dữ liệu minh họa, không phải số thật. Các ngưỡng/chuẩn của biểu mẫu KSCL (T-11) chỉ minh họa, chờ danh mục thật (Q10). Bản vẽ **chưa được kiểm tra bằng cách dựng lên trình duyệt** ở nhiều cỡ màn hình; xem §9.
+**Bản vẽ nguồn & trạng thái từng màn hình:** `docs/design/README.md`. Canvas bổ sung (73 màn + 60 bảng trạng thái): https://claude.ai/artifact/976ez4LHLR95GAre8a8Bng.
+
+> **Trạng thái (24/10/2026):** đề xuất thiết kế, chưa duyệt. Đã vẽ đủ 77/77 màn trong §7 và sáu trạng thái cho từng mẫu (§10). Thương hiệu (logo, màu chủ đạo, font) **chưa có**; bộ màu/chữ dưới đây là đề xuất, đổi được qua token. Số liệu trong bản vẽ là dữ liệu minh họa, không phải số thật. Các ngưỡng/chuẩn của biểu mẫu KSCL (T-11) chỉ minh họa, chờ danh mục thật (Q10). Đã dựng thử 128 trang trong Chrome (bố cục, cỡ nút, nhãn ô nhập) nhưng **chưa kiểm tra bàn phím, tương phản bằng công cụ, cỡ 1366×768 và 5 màn dùng vòng lặp canvas**; danh sách việc chưa làm ở §10.
 
 ## 1. Hướng thiết kế
 
@@ -119,7 +121,7 @@ Nút (chính / phụ / ghost / nguy hiểm / vô hiệu / chỉ biểu tượng)
 | Phân hệ | Màn hình → mẫu |
 |---|---|
 | CC | Yêu cầu điều chỉnh của tôi / chờ tôi duyệt (FR-CC-014) → W4 · Tra cứu audit (FR-CC-022) → W1 · Trung tâm cảnh báo → W1 · Giám sát thiết bị & đồng bộ (FR-CC-066) → W1 · Trạng thái dịch vụ (FR-CC-090) → W5 · Công việc nền Quartz → W1 |
-| MD (§5.7) | Danh sách + form từng danh mục → W1 · Lưới ghép cặp vấn–bao → W3 · Trình soạn định mức → W2 · Ma trận ngưỡng → W3 · "Chất lượng dữ liệu" → W1 · Người dùng & ma trận phân quyền → W3 · Trình thiết kế biểu mẫu KSCL (§9.4) → **chưa có mẫu** (trình soạn kéo-thả; thiết kế riêng khi làm E17) |
+| MD (§5.7) | Danh sách + form từng danh mục → W1 · Lưới ghép cặp vấn–bao → W3 · Trình soạn định mức → W2 · Ma trận ngưỡng → W3 · "Chất lượng dữ liệu" → W1 · Người dùng & ma trận phân quyền → W3 · Trình thiết kế biểu mẫu KSCL (§9.4) → không có mẫu chung, đã vẽ riêng ở trạng thái tĩnh (thao tác kéo-thả và bàn phím chưa thiết kế; xem §10, mục B2) |
 | PL (§6.6) | Lịch KHSX tháng, Lưới KHSX tuần, Bảng điều độ lệnh, Bố trí nhân sự → W3 · Xác nhận lệnh đầu ca → T-61 / W4 · Theo dõi thực hiện → W5 |
 | MT | Phiếu cấp phát → W1 + W2 · Giao nhận và chốt tiêu hao ca → W4 · Báo cáo tiêu hao → W6 |
 | PR | Dashboard ca, giám sát khu vực (FR-PR-010), phân tích OEE (FR-PR-013) → W5 · Phiên ca → W1 · Chốt ca (CC-11) → W4 |
@@ -143,7 +145,75 @@ SDD chưa mô tả đầy đủ màn hình web của MT, QC, TX, OH, SP; ánh x�
 | Việc | Ai |
 |---|---|
 | Duyệt hướng thiết kế; cung cấp logo, màu, font của đơn vị nếu có | PXVB |
-| Kiểm tra bản vẽ bằng trình duyệt thật (nhiều cỡ, bàn phím, tương phản) | Chưa làm |
-| Thiết kế riêng: trình thiết kế biểu mẫu KSCL, lịch tháng (PL/PM), giao diện đăng nhập, mẫu T-A / T-F | Chưa làm |
+| Kiểm tra bản vẽ bằng trình duyệt thật (nhiều cỡ, bàn phím, tương phản) | Làm một phần (bố cục, cỡ nút, nhãn); phần còn lại ở §10, nhóm A |
+| Thiết kế riêng: trình thiết kế biểu mẫu KSCL, lịch tháng PL, đăng nhập, mẫu T-A / T-F | Đã vẽ (chờ duyệt), xem §10; lịch PM dùng dạng lưới tuần W3 |
 | Chọn vị trí đặt token (package dùng chung web/tablet) khi dựng `src/web` | Dev lead |
 | Đo thực tế độ chói và cỡ chạm trên tablet IP54 ở xưởng | Chưa làm |
+
+## 10. Tiến độ thiết kế màn hình
+
+Cập nhật 24/10/2026 (sau đợt 5). Cách đếm: mỗi mục ngăn bằng "·" trong §7 là một màn hình; RP tính 4 loại (dashboard `DB_*`, `DB_WALL`, báo cáo `R_*`, subscription). Bản vẽ nguồn và trạng thái từng màn: `docs/design/README.md`; bản xem được: https://claude.ai/artifact/976ez4LHLR95GAre8a8Bng.
+
+| Nhóm | Tổng | Đã vẽ | Chưa vẽ |
+|---|---|---|---|
+| Tablet (§7.1) | 24 | 24 | **0** |
+| Web (§7.2) | 53 | 53 | **0** |
+| Cộng | 77 | 77 | **0** |
+
+Mọi màn trong §7 đã có bản vẽ **đề xuất, chờ duyệt**. Trong đó 4 màn tablet (T-03, T-04, T-05, T-11) nằm ở bảng mẫu đợt 1; 73 màn còn lại nằm ở canvas bổ sung. Từ đợt 5, 49 màn được sinh từ bộ dựng `docs/design/generator/` (mẫu W1–W6, K1, T-A…T-F), nên cùng một khung và dễ sửa hàng loạt, nhưng mỗi màn chỉ có **một trạng thái nội dung** và nội dung là dữ liệu minh họa.
+
+### Đã làm (24/10/2026)
+
+| Hạng mục | Kết quả |
+|---|---|
+| Vẽ đủ màn hình trong §7 | 77/77, đề xuất chờ duyệt |
+| Dựng thử trong Chrome (128 trang: 68 màn tĩnh + 60 bảng trạng thái) | Không tràn khung ở 1366×800 / 1280×800 / 1920×1080; nút tablet ≥ 56 px; ô nhập có nhãn gắn đúng |
+| Lỗi tìm thấy và đã sửa | Nhãn chưa gắn ô nhập (8 trang); chip xuống dòng trong lưới; kiosk chỉ phân biệt bằng màu; trạng thái Thành công tablet tô sai dòng |
+| Sáu trạng thái (§5) | Có cho W1–W6, T-A, T-C, T-F, K1 (60 bảng `S-*`); mọi màn theo trạng thái của mẫu nó dùng |
+| Lưu nguồn vào repo | `docs/design/screens/` (134 file) và `docs/design/generator/` (`lib.py`, `specs.py`, `states.py`) |
+
+### Việc chưa làm
+
+**A. Kiểm tra chưa đủ**
+
+| # | Việc | Ghi chú |
+|---|---|---|
+| A1 | Dựng thử 5 màn viết tay dùng vòng lặp canvas: `W-PlanCalendar`, `W-Permissions`, `W-PrDashboard`, `W-PrOee`, `W-MaintSchedule` | Cần mở trong canvas thật; `W-MaintSchedule` còn chip trong lưới có thể xuống dòng như lỗi đã sửa ở bộ dựng |
+| A2 | Bàn phím: thứ tự Tab, tiêu điểm nhìn thấy, thao tác thay thế cho kéo-thả | Mới đọc mã, chưa thử bằng bàn phím thật |
+| A3 | Đo tương phản chữ ≥ 4,5:1 bằng công cụ (nhất là chữ xám `--ink-3`, chữ vàng trên nền vàng, kiosk) | Chọn màu theo tiêu chuẩn nhưng chưa đo |
+| A4 | Cỡ web 1366×768 | Mới đo 1366×800 |
+| A5 | Tablet 10″ thật: độ chói IP54, cỡ chạm khi đeo găng, chữ ở xa | Cần thiết bị ở xưởng |
+| A6 | Cảnh báo "dữ liệu cũ hơn 5 phút" trên mọi dashboard | Mới có ở Giám sát khu vực và kiosk (trạng thái Lỗi) |
+| A7 | Nội dung dài (tên dài, nhiều dòng, số lớn) | Chưa thử |
+
+**B. Thiết kế chưa vẽ**
+
+| # | Việc | Ghi chú |
+|---|---|---|
+| B1 | Bộ sáu trạng thái riêng cho mẫu T-B, T-D, T-E | Hiện dùng chung quy tắc với T-A/T-C |
+| B2 | Trạng thái kéo-thả và thao tác bàn phím thay thế: lưới KHSX tuần, lịch KHSX tháng, điều độ lệnh, bố trí nhân sự, hoán đổi lịch bảo trì, lưới ghép cặp vấn–bao, trình thiết kế KSCL | Mới vẽ trạng thái tĩnh |
+| B3 | Lớp phủ: hộp thoại xác nhận, ngăn kéo chi tiết, chọn ngày, chọn máy | Có bóng đổ theo §2.3; chưa vẽ |
+| B4 | Ký điện tử (nhập PIN, xác nhận nhiều bên, tình huống ký thất bại) | Mới vẽ ô chữ ký ở trạng thái Chưa ký / Đã ký |
+| B5 | Đăng nhập: sai PIN nhiều lần, khóa tài khoản, hết phiên (web và tablet) | Mới có một trạng thái lỗi ở đăng nhập web |
+| B6 | Trạng thái dữ liệu `CONFIRMED`/`LOCKED` và luồng "Yêu cầu điều chỉnh" từ từng màn | Mới có ở Yêu cầu điều chỉnh, Phiếu cấp phát và vài nút bị khóa |
+| B7 | Thành phần nền trong bản vẽ (bảng "Thành phần & trạng thái") chưa cập nhật các chip, snackbar, thẻ trạng thái mới | Canvas đợt 1 không có nguồn trong repo (chỉ có liên kết); cần xuất hoặc vẽ lại nếu muốn lưu |
+| B8 | Cỡ màn hình hẹp (< 1024 px) cho web quản lý | SDD chưa yêu cầu; cần quyết định có hỗ trợ hay không |
+| B9 | Mô hình dữ liệu và chữ cho các biểu mẫu động T-11 theo từng loại kiểm tra thật | Chờ danh mục KSCL (Q10) |
+
+**C. Cần PXVB quyết định / xác nhận**
+
+| # | Việc | Ai |
+|---|---|---|
+| C1 | Duyệt hướng thiết kế; cung cấp logo, màu, font nếu có | PXVB |
+| C2 | Xác nhận các giả định không có trong SDD (danh sách ở `docs/design/README.md`: PIN 6 số, cách xử lý xung đột, quy tắc cấp A/B/C, điều kiện mở ca, các màn web MT/QC/TX/OH/SP); ghi vào `docs/OPEN-QUESTIONS.md` khi duyệt | PXVB, BA |
+| C3 | Số liệu minh họa trong bản vẽ phải thay bằng dữ liệu thật khi làm epic tương ứng | Dev, BA |
+| C4 | Cập nhật SDD §2.2 (đang ghi Angular) theo quyết định L01 (React) | BA |
+
+**D. Triển khai frontend** (chưa bắt đầu từ bản vẽ này)
+
+| # | Việc | Ghi chú |
+|---|---|---|
+| D1 | Chọn nơi đặt token dùng chung web/tablet khi dựng `src/web` | Dev lead (đã nêu ở §9) |
+| D2 | Dựng thành phần nền React: Button, Field, Chip, Banner, DataTable, Drawer, Stepper, Skeleton, Snackbar | Lấy token và quy tắc từ §2–§4 |
+| D3 | Ráp sáu mẫu web, kiosk, ba mẫu tablet có trạng thái từ `docs/design/generator/lib.py` làm tham chiếu | Bản vẽ chỉ là HTML tĩnh, không dùng làm mã sản phẩm |
+| D4 | Cổng kiểm tra mỗi màn khi làm xong (§8) | Áp dụng cho từng epic |

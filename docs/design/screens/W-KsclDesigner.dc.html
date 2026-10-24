@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>MD – Trình thiết kế biểu mẫu KSCL</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf:#fff;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:18px}
+.chip::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:8px;width:9px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.c-info{background:var(--brand-soft);color:var(--brand)}.c-info::before{display:none}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--line2);background:#fff;font-weight:600;color:var(--ink)}
+.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}
+.nav a{display:block;padding:8px 12px;border-radius:6px;color:var(--ink2);text-decoration:none}
+.nav a.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+.in{height:36px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink);width:100%}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.pal{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px dashed var(--line2);border-radius:6px;background:#fff;width:100%;text-align:left;color:var(--ink)}
+.fld{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.fld.sel{border:2px solid var(--brand);background:var(--brand-soft)}
+.grip{color:var(--ink3);letter-spacing:2px;font-size:14px}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg);overflow:hidden">
+  <nav class="nav" style="width:216px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;flex:none">
+    <div style="font-weight:700;font-size:18px;padding:4px 12px 16px">PXVB</div>
+    <a href="#">Tổng quan</a><a href="#">Kế hoạch sản xuất</a><a href="#">Phiên ca</a><a href="#">Chất lượng</a><a href="#">Bảo trì</a><a href="#">Báo cáo</a><a href="#" class="on">Danh mục</a>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">
+      <span style="color:var(--ink3)">Danh mục / Mẫu kiểm soát chất lượng /</span><b>Biểu mẫu KSCL máy</b>
+      <span class="chip c-off">Nháp</span>
+      <span style="flex:1"></span>
+      <button class="btn">Xem trước trên tablet</button><button class="btn">Lưu nháp</button><button class="btn p">Gửi duyệt</button>
+    </header>
+    <div style="padding:10px 24px;background:var(--warns);color:var(--warn);font-size:13px;border-bottom:1px solid #F2B01E">Ngưỡng và chuẩn trong bản vẽ chỉ minh họa. Giá trị thật lấy từ danh mục đã duyệt (câu hỏi Q10).</div>
+    <div style="flex:1;display:flex;min-height:0">
+      <aside style="width:208px;background:#fff;border-right:1px solid var(--line);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;flex:none">
+        <b style="font-size:16px">Loại ô nhập</b>
+        <button class="pal">Đạt / Không đạt</button>
+        <button class="pal">Số đo có chuẩn</button>
+        <button class="pal">Chọn một trong nhiều</button>
+        <button class="pal">Văn bản ghi chú</button>
+        <button class="pal">Ảnh đính kèm</button>
+        <span style="font-size:12px;color:var(--ink3)">Kéo vào biểu mẫu hoặc chọn rồi bấm Enter. Có thể đổi thứ tự bằng nút Lên/Xuống.</span>
+      </aside>
+      <main style="flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:12px;min-width:0;overflow:hidden">
+        <div style="display:flex;gap:16px">
+          <div style="flex:2"><label for="n">Tên biểu mẫu</label><input id="n" class="in" value="Biểu mẫu KSCL máy vấn"></div>
+          <div style="flex:1"><label for="v">Phiên bản</label><input id="v" class="in" value="3 (nháp)" readonly style="background:var(--sf2)"></div>
+          <div style="flex:1"><label for="e">Hiệu lực từ</label><input id="e" class="in" value="01/11/2026"></div>
+        </div>
+        <b style="font-size:16px">Các mục kiểm tra (4)</b>
+        <div class="fld"><span class="grip">⋮⋮</span><span class="mono" style="color:var(--ink3)">01</span><span style="flex:1">Ngoại quan điếu thuốc</span><span class="chip c-info">Đạt / Không đạt</span><button class="btn" style="height:28px;padding:0 8px" aria-label="Lên">↑</button><button class="btn" style="height:28px;padding:0 8px" aria-label="Xuống">↓</button></div>
+        <div class="fld sel"><span class="grip">⋮⋮</span><span class="mono" style="color:var(--ink3)">02</span><span style="flex:1"><b>Khối lượng điếu</b> <span style="color:var(--ink2)">chuẩn 0,85 · biên 0,80 đến 0,90 g</span></span><span class="chip c-info">Số đo</span><button class="btn" style="height:28px;padding:0 8px" aria-label="Lên">↑</button><button class="btn" style="height:28px;padding:0 8px" aria-label="Xuống">↓</button></div>
+        <div class="fld"><span class="grip">⋮⋮</span><span class="mono" style="color:var(--ink3)">03</span><span style="flex:1">Độ chặt đầu điếu</span><span class="chip c-info">Số đo</span><button class="btn" style="height:28px;padding:0 8px" aria-label="Lên">↑</button><button class="btn" style="height:28px;padding:0 8px" aria-label="Xuống">↓</button></div>
+        <div class="fld"><span class="grip">⋮⋮</span><span class="mono" style="color:var(--ink3)">04</span><span style="flex:1">Ghi chú của người kiểm</span><span class="chip c-info">Văn bản</span><button class="btn" style="height:28px;padding:0 8px" aria-label="Lên">↑</button><button class="btn" style="height:28px;padding:0 8px" aria-label="Xuống">↓</button></div>
+        <div style="border:1px dashed var(--line2);border-radius:8px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--ink3)">Thả ô nhập mới vào đây</div>
+      </main>
+      <aside style="width:340px;background:#fff;border-left:1px solid var(--line);padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;flex:none;overflow:hidden">
+        <b style="font-size:16px">Thuộc tính mục 02</b>
+        <div><label for="l">Nhãn hiển thị trên tablet</label><input id="l" class="in" value="Khối lượng điếu"></div>
+        <div style="display:flex;gap:8px"><div style="flex:1"><label for="mn">Biên dưới</label><input id="mn" class="in mono" value="0,80"></div><div style="flex:1"><label for="tg">Chuẩn</label><input id="tg" class="in mono" value="0,85"></div><div style="flex:1"><label for="mx">Biên trên</label><input id="mx" class="in mono" value="0,90"></div></div>
+        <div><label for="u">Đơn vị</label><input id="u" class="in" value="g"></div>
+        <b style="font-size:14px;margin-top:4px">Dự kiến cấp cảnh báo</b>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip c-ok" style="width:56px;justify-content:center">Đạt</span>Trong biên</div>
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip c-warn" style="width:56px;justify-content:center">Cấp B</span>Ngoài biên một lần</div>
+          <div style="display:flex;gap:8px;align-items:center"><span class="chip c-bad" style="width:56px;justify-content:center">Cấp A</span>Ngoài biên liên tiếp</div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);font-weight:400"><input type="checkbox" checked style="width:18px;height:18px"> Bắt buộc nhập</label>
+        <span style="flex:1"></span>
+        <button class="btn" style="color:var(--bad);border-color:var(--bad)">Xóa mục này</button>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>TX – Block tem</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#174E86;--brand-soft:#E6EEF8;--ink:#16202B;--ink2:#3F4B5A;--ink3:#5E6A7A;--bg:#F3F5F8;--sf2:#F8FAFC;--line:#D9DFE6;--line2:#B9C2CD;--ok:#1E7A46;--oks:#E2F3E9;--warn:#8A5A00;--warns:#FFF0C7;--bad:#B3261E;--bads:#FBE3E0;--off:#4A5666;--offs:#E6E9ED}
+body{margin:0;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+button,input{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.mono{font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:18px}
+.chip::before{content:"";width:8px;height:8px;background:currentColor;flex:none}
+.c-ok{background:var(--oks);color:var(--ok)}.c-ok::before{border-radius:50%}
+.c-bad{background:var(--bads);color:var(--bad)}
+.c-warn{background:var(--warns);color:var(--warn)}.c-warn::before{clip-path:polygon(50% 0,100% 100%,0 100%);height:8px;width:9px}
+.c-off{background:var(--offs);color:var(--off)}.c-off::before{background:none;border:2px solid currentColor;border-radius:50%;box-sizing:border-box}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--line2);background:#fff;font-weight:600;color:var(--ink)}
+.btn.p{background:var(--brand);border-color:var(--brand);color:#fff}
+.nav a{display:block;padding:8px 12px;border-radius:6px;color:var(--ink2);text-decoration:none}
+.nav a.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
+table{border-collapse:collapse;width:100%}
+th{height:36px;padding:0 12px;background:var(--sf2);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink2);text-align:left}
+td{height:40px;padding:0 12px;border-bottom:1px solid var(--line);font-size:13px}
+.n{text-align:right}
+tr.sel td{background:var(--brand-soft)}
+.in{height:36px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:6px;background:#fff;color:var(--ink);width:100%}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px}
+.kpi{flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--sf2)}
+.kpi b{font-size:28px;line-height:34px;display:block}
+</style>
+</helmet>
+<div style="width:1366px;height:800px;display:flex;background:var(--bg);overflow:hidden">
+  <nav class="nav" style="width:216px;background:#fff;border-right:1px solid var(--line);padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;flex:none">
+    <div style="font-weight:700;font-size:18px;padding:4px 12px 16px">PXVB</div>
+    <a href="#">Tổng quan</a><a href="#">Kế hoạch sản xuất</a><a href="#">Phiên ca</a><a href="#">Chất lượng</a><a href="#" class="on">Tem</a><a href="#">Bảo trì</a><a href="#">Báo cáo</a><a href="#">Danh mục</a>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">
+      <span style="color:var(--ink3);">Tem /</span><b>Block tem</b><span style="flex:1"></span><span style="color:var(--ink2)">Cập nhật lúc 15:30</span>
+    </header>
+    <div style="flex:1;display:flex;min-height:0">
+      <section style="width:560px;padding:16px 16px 16px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;flex:none">
+        <div style="display:flex;gap:8px"><input aria-label="Tìm block" placeholder="Tìm theo mã block, dải số" style="flex:1;height:36px;box-sizing:border-box;padding:0 12px;border:1px solid var(--line2);border-radius:6px;font:inherit"><button class="btn">Lọc</button><button class="btn">Excel</button><button class="btn p">Nhận block mới</button></div>
+        <div style="background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden">
+          <table>
+            <thead><tr><th>Mã block</th><th>Dải số</th><th class="n">Đã dùng</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              <tr class="sel"><td class="mono">BL-0142</td><td class="mono">000001–002000</td><td class="n">1.180</td><td><span class="chip c-ok">Đang dùng</span></td></tr>
+              <tr><td class="mono">BL-0141</td><td class="mono">002001–004000</td><td class="n">—</td><td><span class="chip c-off">Chưa dùng</span></td></tr>
+              <tr><td class="mono">BL-0140</td><td class="mono">004001–006000</td><td class="n">2.000</td><td><span class="chip c-warn">Chờ đối chiếu</span></td></tr>
+              <tr><td class="mono">BL-0139</td><td class="mono">006001–008000</td><td class="n">1.996</td><td><span class="chip c-ok">Đã chốt</span></td></tr>
+              <tr><td class="mono">BL-0138</td><td class="mono">008001–010000</td><td class="n">1.990</td><td><span class="chip c-bad">Lệch số</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <main style="flex:1;padding:16px 24px 16px 8px;box-sizing:border-box;min-width:0">
+        <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px"><h1 style="margin:0;font-size:22px;line-height:28px" class="mono">BL-0142</h1><span class="chip c-ok">Đang dùng</span><span style="flex:1"></span><span style="color:var(--ink3)">Nhận 17/10/2026 08:10</span></div>
+          <div style="display:flex;gap:12px">
+            <div class="kpi"><span style="color:var(--ink2)">Đã xuất dùng</span><b>1.180</b></div>
+            <div class="kpi"><span style="color:var(--ink2)">Hư / mất</span><b>3</b></div>
+            <div class="kpi"><span style="color:var(--ink2)">Còn lại</span><b>817</b></div>
+          </div>
+          <div style="display:flex;gap:16px">
+            <div style="flex:1"><label for="a">Từ số</label><input id="a" class="in mono" value="000001" readonly style="background:var(--sf2)"></div>
+            <div style="flex:1"><label for="b">Đến số</label><input id="b" class="in mono" value="002000" readonly style="background:var(--sf2)"></div>
+            <div style="flex:1"><label for="c">Số tem tiếp theo</label><input id="c" class="in mono" value="001184" readonly style="background:var(--sf2)"></div>
+          </div>
+          <b style="font-size:16px">Tem hư / mất gần đây</b>
+          <div style="border:1px solid var(--line);border-radius:8px;overflow:hidden"><table>
+            <thead><tr><th>Số tem</th><th>Loại</th><th>Lý do</th><th>Người báo</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">000412</td><td><span class="chip c-warn">Hư</span></td><td>Rách khi dán</td><td>Nguyễn Văn A</td></tr>
+              <tr><td class="mono">000987</td><td><span class="chip c-bad">Mất</span></td><td>Không tìm thấy khi kiểm</td><td>Trần Thị B</td></tr>
+            </tbody>
+          </table></div>
+          <p style="margin:0;padding:10px 12px;background:var(--warns);color:var(--warn);border-radius:6px;font-size:13px">Còn 817 tem chưa dùng. Đối chiếu tem với bao cuối ca trước khi chốt.</p>
+          <span style="flex:1"></span>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn">Báo tem hư / mất</button><button class="btn p">Đối chiếu và chốt</button></div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
