@@ -24,6 +24,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @Testcontainers
 @org.springframework.context.annotation.Import(MailTestConfig.class)
+// Ngưỡng giới hạn tần suất cao để các IT đăng nhập nhiều lần không bị chặn; RateLimitIT ghi đè ngưỡng thấp
+@org.springframework.test.context.TestPropertySource(properties = "pxvb.security.rate-limit-max-requests=100000")
 abstract class AbstractIntegrationTest {
 
     static final String ADMIN_PASSWORD = "Adm1n#Pxvb2026!";

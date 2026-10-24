@@ -17,5 +17,7 @@ public record IdentityProperties(
         @DefaultValue("15m") Duration lockDuration,
         @DefaultValue("365d") Duration deviceTokenTtl,
         @DefaultValue("24h") Duration activationTtl,
+        @DefaultValue("10") int rateLimitMaxRequests,
+        @DefaultValue("15m") Duration rateLimitWindow,
         String bootstrapAdminPassword) {
 }
