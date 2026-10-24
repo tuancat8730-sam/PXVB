@@ -21,7 +21,7 @@ Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
 |---|---|---|---|---|
 | E00 | Scaffolding, CI/CD, môi trường | ✅ | `7b221b3` | CI chạy backend (MySQL 8.0/8.4) + `tablet-core`; `docker-compose.dev.yml`. Chưa có OpenAPI-diff, lint |
 | E01 | BuildingBlocks (audit, outbox, idempotency, state machine, lỗi) | ✅ | `7b221b3` | L03 phân vùng audit theo tháng, L08 sink RabbitMQ, L10 job dọn Idempotency-Key chưa làm |
-| E02 | Identity, RBAC, scope, device registry, PIN | 🟡 | `7b221b3` | L04 rate limiting, L05 LDAP (hoãn theo quyết định PO), L06 màn tra cứu audit, L07 `ScopeFilter` dùng chung |
+| E02 | Identity, RBAC, scope, device registry, PIN | 🟡 | `7b221b3` | Đã xong L04 (rate limit đăng nhập/PIN/kích hoạt, PXVB-CC-0429) và L06 (API tra cứu/lịch sử/xuất Excel audit, chưa có UI). Còn: L07 `ScopeFilter` (chưa áp dụng: `MachineInfo` chưa có dây chuyền, cần chốt nơi áp dụng); L05 LDAP hoãn theo quyết định PO |
 | E03 | Workflow phê duyệt + xác nhận điện tử + điều chỉnh sau khóa | ✅ | `e1157af` | L15 "bản sửa đổi báo cáo" chờ RP |
 | E04 | Alert engine + Notification + WebSocket/STOMP | 🟡 | `e1157af`, `ba6e225` | Đã thêm email (CRITICAL, yêu cầu duyệt/điều chỉnh) và xuất Excel cảnh báo. Còn: báo cáo định kỳ qua email (chờ RP + SMTP), snooze (FR-CC-055), L11/L12 worker + relay RabbitMQ |
 | E05 | Import/Export Excel engine | ✅ | `31f7da2` | Mẫu nhập đã có cho danh mục MD, định mức, KHSX tháng |

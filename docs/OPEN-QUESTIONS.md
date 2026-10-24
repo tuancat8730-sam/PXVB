@@ -7,9 +7,9 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L01 | Q16 tách React/Angular | **Toàn bộ frontend dùng React** (web quản lý + dashboard + tablet RN), không dùng Angular như SDD §2.2 | `src/web`, §2.4, §15 | PO (đã chốt) |
 | L02 | Quyền SUPER cho trigger append-only `sys_audit_log` | Migration tạo trigger chặn UPDATE/DELETE; khi bật binlog cần user migration có `SUPER` hoặc `log_bin_trust_function_creators=1` | Triển khai/DBA | CNTT TLSG |
 | L03 | Phân vùng `sys_audit_log` theo tháng (NFR §4.3) | Chưa làm ở E01; cần đổi PK thành (id, occurred_at) khi bật partition | Hiệu năng audit 3 năm | Dev lead + CNTT |
-| L04 | Rate limiting (PXVB-CC-0429) | Chưa có; hiện chỉ có khóa tài khoản sau 5 lần sai | ATTT §16.3 | Dev lead (E25) |
+| L04 | Rate limiting (PXVB-CC-0429) | Đã có cho `/auth/login`, `/auth/pin-login`, `/devices/activate`: cửa sổ cố định, khóa theo (đường dẫn, IP kết nối, `X-Device-Id`), mặc định 10 lần / 15 phút (`pxvb.security.rate-limit-*`), bộ đếm trong bộ nhớ một tiến trình (G4); API chung theo người dùng chưa làm (G1) | ATTT §16.3 | Dev lead (chuyển Redis ở E25) |
 | L05 | LDAP v3 (Q17) | `AuthSource.LDAP` đã có trong mô hình, chưa cài đặt đăng nhập LDAP | Identity | CNTT |
-| L06 | Màn hình tra cứu audit (FR-CC-022, P1) | Quyền `identity.audit.view` đã seed; chưa có API/UI tra cứu | RP/Admin UI | Dev lead |
+| L06 | Màn hình tra cứu audit (FR-CC-022, P1) | Đã có API `GET /api/v1/identity/audit-logs` (lọc, phân trang con trỏ, khoảng thời gian bắt buộc: mặc định 24 giờ, tối đa 31 ngày), lịch sử theo bản ghi, xuất Excel tối đa 50.000 dòng (ghi audit `EXPORT`); che giá trị trường nhạy cảm khi trả. Chưa có UI | RP/Admin UI | Dev lead |
 | L07 | Phạm vi dữ liệu `ScopeFilter` (FR-CC-006, P1) | Mới có `DataScope` + `permits()`; chưa có filter dùng chung ở repository | Các phân hệ nghiệp vụ | Dev lead |
 | L08 | Outbox → RabbitMQ/STOMP | Mới có outbox + dispatcher + `OutboxSink`; chưa có sink RabbitMQ | E04 | Dev lead |
 | L09 | Spring Modulith `verify()` | Dùng ArchUnit trong E01–E02; bật Modulith `verify()` khi có ≥ 2 module nghiệp vụ | Kiến trúc | Dev lead |
