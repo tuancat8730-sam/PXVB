@@ -178,7 +178,7 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 
 ### Pha 6 – Giao diện (UI) cho E04
 
-Điều kiện chung: bản vẽ được PXVB duyệt (`DESIGN-SYSTEM.md` §9); khung tương ứng sẵn sàng (`src/web` React chưa có; RN tablet UI chưa có). Mọi màn đạt cổng §8 và đủ sáu trạng thái §5, với nội dung cảnh báo thật (không chỉ khung chung).
+Điều kiện chung: bản vẽ được PXVB duyệt (`DESIGN-SYSTEM.md` §9) — **đã duyệt (2026-10-25)** theo phản hồi của PO, gồm T-12, W-AlertCenter, W-AlertRules, W-Notifications; khung tương ứng sẵn sàng (`src/web` React chưa có; RN tablet UI chưa có) — **còn chặn Pha 6b**, cần quyết định dựng khung. Mọi màn đạt cổng §8 và đủ sáu trạng thái §5, với nội dung cảnh báo thật (không chỉ khung chung).
 
 **6a. Thiết kế (D) — làm được ngay, không cần khung code**
 | ID | Việc | Trạng thái | Phụ thuộc |
