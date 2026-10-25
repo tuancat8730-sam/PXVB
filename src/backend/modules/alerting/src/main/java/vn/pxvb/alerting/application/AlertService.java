@@ -65,6 +65,29 @@ public class AlertService implements AlertRaiser {
     private static final Set<Alert.Status> ACTIVE = Set.of(Alert.Status.OPEN, Alert.Status.ACK,
             Alert.Status.IN_PROGRESS);
 
+    static final int MAX_EXPORT_ROWS = 50_000;
+
+    /** Mức do module nghiệp vụ yêu cầu; {@code null} nghĩa là lấy theo rule. Giá trị sai bị từ chối (F7). */
+    static Alert.Severity parseSeverity(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Alert.Severity.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Mức cảnh báo không hợp lệ: " + value,
+                    Map.of("severity", List.of("Mức phải là INFO, WARN hoặc CRITICAL")));
+        }
+    }
+
+    /** Từ chối xuất khi vượt trần, thay vì cắt im lặng (F6). */
+    static void requireWithinExportLimit(long totalRows) {
+        if (totalRows > MAX_EXPORT_ROWS) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Có " + totalRows + " dòng, vượt giới hạn "
+                    + String.format("%,d", MAX_EXPORT_ROWS).replace(',', '.') + " dòng. Hãy thu hẹp bộ lọc.");
+        }
+    }
+
     private final RuleRepository rules;
     private final AlertRepository alerts;
     private final HistoryRepository history;
@@ -103,6 +126,7 @@ public class AlertService implements AlertRaiser {
     public AlertRef raise(AlertCommand c) {
         AlertRule rule = rules.findByCode(c.ruleCode()).orElseThrow(() -> new BusinessException(
                 ErrorCode.VALIDATION, "Rule cảnh báo không tồn tại: " + c.ruleCode()));
+        Alert.Severity requestedSeverity = parseSeverity(c.severity());
         if (!rule.isActive()) {
             return new AlertRef(null, false);
         }
@@ -119,7 +143,7 @@ public class AlertService implements AlertRaiser {
             return new AlertRef(alert.getId(), false);
         }
 
-        Alert.Severity severity = c.severity() == null ? rule.getSeverity() : Alert.Severity.valueOf(c.severity());
+        Alert.Severity severity = requestedSeverity == null ? rule.getSeverity() : requestedSeverity;
         Alert alert = alerts.save(new Alert(rule.getCode(), severity, rule.getModule(), c.subjectType(),
                 c.subjectId(), c.machineId(), c.shiftSessionId(), c.title(), c.message(), payloadJson, dedupKey,
                 now));
@@ -226,9 +250,10 @@ public class AlertService implements AlertRaiser {
     @Transactional(readOnly = true)
     public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId) {
         Page<Alert> page = search(module, severity, status, machineId,
-                org.springframework.data.domain.PageRequest.of(0, 50_000,
+                org.springframework.data.domain.PageRequest.of(0, MAX_EXPORT_ROWS + 1,
                         org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
                                 "raisedAt")));
+        requireWithinExportLimit(page.getTotalElements());
         List<List<Object>> rows = page.getContent().stream().map(a -> List.<Object>of(
                 a.getRaisedAt(), a.getRuleCode(), a.getSeverity().name(), a.getModule(),
                 a.getTitle(), a.getStatus().name(), a.getOccurrenceCount(), a.getEscalationLevel(),
