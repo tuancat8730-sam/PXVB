@@ -2,13 +2,19 @@ package vn.pxvb.alerting.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Timer;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +27,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vn.pxvb.alerting.application.Repositories.AlertRepository;
 import vn.pxvb.alerting.application.Repositories.HistoryRepository;
 import vn.pxvb.alerting.application.Repositories.RecipientRepository;
@@ -30,6 +38,7 @@ import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.alerting.domain.AlertHistory;
 import vn.pxvb.alerting.domain.AlertRecipient;
 import vn.pxvb.alerting.domain.AlertRule;
+import vn.pxvb.alerting.infrastructure.AlertNotifyMetrics;
 import vn.pxvb.alerting.infrastructure.RealtimePublisher;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
@@ -72,6 +81,9 @@ public class AlertService implements AlertRaiser {
     private static final List<DataScope> ALL_SCOPES = List.of(DataScope.all());
 
     static final int MAX_EXPORT_ROWS = 50_000;
+    static final int MAX_STATS_DAYS = 90;
+    /** Múi giờ nghiệp vụ, như {@code ProductionTime} và {@code MtTime}. */
+    static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     /** Mức do module nghiệp vụ yêu cầu; {@code null} nghĩa là lấy theo rule. Giá trị sai bị từ chối (F7). */
     static Alert.Severity parseSeverity(String value) {
@@ -115,11 +127,14 @@ public class AlertService implements AlertRaiser {
     private final MasterdataQueries masterdata;
     private final EmailService email;
     private final ExportService exports;
+    private final AlertNotifyMetrics notifyMetrics;
 
     public AlertService(RuleRepository rules, AlertRepository alerts, HistoryRepository history,
                         RecipientRepository recipients, IdentityDirectory directory,
                         NotificationService notifications, RealtimePublisher realtime, ObjectMapper mapper,
-                        Clock clock, MasterdataQueries masterdata, EmailService email, ExportService exports) {
+                        Clock clock, MasterdataQueries masterdata, EmailService email, ExportService exports,
+                        AlertNotifyMetrics notifyMetrics) {
+        this.notifyMetrics = notifyMetrics;
         this.rules = rules;
         this.alerts = alerts;
         this.history = history;
@@ -157,6 +172,7 @@ public class AlertService implements AlertRaiser {
         }
 
         Alert.Severity severity = requestedSeverity == null ? rule.getSeverity() : requestedSeverity;
+        Timer.Sample latency = notifyMetrics.start();
         Alert alert = alerts.save(new Alert(rule.getCode(), severity, rule.getModule(), c.subjectType(),
                 c.subjectId(), c.machineId(), lineCodeOf(c.machineId()), c.shiftSessionId(), c.title(), c.message(),
                 payloadJson, dedupKey, now));
@@ -164,6 +180,8 @@ public class AlertService implements AlertRaiser {
 
         Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
         deliver(alert, targets, 0, now, c.title());
+        // Đăng ký sau các push của deliver nên chạy sau chúng: độ trễ là raise → push đã commit.
+        afterCommit(() -> notifyMetrics.recordPushed(severity, latency));
         return new AlertRef(alert.getId(), true);
     }
 
@@ -280,10 +298,52 @@ public class AlertService implements AlertRaiser {
         }
         notifications.notifyUsers(targets, "ALERT", title, alert.getMessage(), "/alerts/" + alert.getId(),
                 alert.getId());
+        // RealtimePublisher tự đẩy sau commit (runAfterCommit).
         realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(event, alert));
         if (alert.getSeverity() == Alert.Severity.CRITICAL) {
             email.sendAfterCommit(targets, "[PXVB][CRITICAL] " + title,
                     alert.getMessage() == null ? alert.getTitle() : alert.getMessage(), "/alerts/" + alert.getId());
+        }
+    }
+
+    /** Số cảnh báo theo mã rule và ngày nghiệp vụ (FR-CC-054). */
+    public record DayCount(String ruleCode, LocalDate businessDate, long count) {
+    }
+
+    private record RuleDay(String ruleCode, LocalDate businessDate) {
+    }
+
+    /**
+     * Thống kê theo rule và ngày nghiệp vụ trong [from, to], tối đa {@link #MAX_STATS_DAYS} ngày (L68).
+     * Ngày nghiệp vụ là ngày theo múi giờ {@link #BUSINESS_ZONE} tại thời điểm raise. Áp dụng phạm vi như danh sách.
+     */
+    @Transactional(readOnly = true)
+    public List<DayCount> stats(LocalDate from, LocalDate to, List<DataScope> scopes) {
+        requireStatsRange(from, to);
+        Instant start = from.atStartOfDay(BUSINESS_ZONE).toInstant();
+        Instant end = to.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant();
+        Specification<Alert> spec = (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.get("raisedAt"), start),
+                cb.lessThan(root.get("raisedAt"), end),
+                lineScope(root, cb, scopes));
+        Map<RuleDay, Long> counts = new HashMap<>();
+        for (Alert alert : alerts.findAll(spec)) {
+            RuleDay key = new RuleDay(alert.getRuleCode(), LocalDate.ofInstant(alert.getRaisedAt(), BUSINESS_ZONE));
+            counts.merge(key, 1L, Long::sum);
+        }
+        return counts.entrySet().stream()
+                .map(e -> new DayCount(e.getKey().ruleCode(), e.getKey().businessDate(), e.getValue()))
+                .sorted(Comparator.comparing(DayCount::businessDate).thenComparing(DayCount::ruleCode))
+                .toList();
+    }
+
+    private static void requireStatsRange(LocalDate from, LocalDate to) {
+        if (from == null || to == null || to.isBefore(from)) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Khoảng ngày thống kê không hợp lệ");
+        }
+        if (ChronoUnit.DAYS.between(from, to) + 1 > MAX_STATS_DAYS) {
+            throw new BusinessException(ErrorCode.VALIDATION,
+                    "Khoảng thống kê tối đa " + MAX_STATS_DAYS + " ngày");
         }
     }
 
@@ -367,6 +427,20 @@ public class AlertService implements AlertRaiser {
 
     private static boolean grantsAll(List<DataScope> scopes) {
         return scopes.stream().anyMatch(scope -> scope.type() == DataScope.Type.ALL);
+    }
+
+    /** Chạy {@code action} sau khi transaction hiện tại commit; không có transaction thì chạy ngay. */
+    private static void afterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
     }
 
     /** Dây chuyền của máy tại thời điểm raise; null nếu không có máy hoặc máy chưa gán dây chuyền. */

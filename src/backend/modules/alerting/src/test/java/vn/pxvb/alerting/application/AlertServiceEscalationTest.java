@@ -22,6 +22,7 @@ import vn.pxvb.alerting.application.Repositories.RecipientRepository;
 import vn.pxvb.alerting.application.Repositories.RuleRepository;
 import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.alerting.domain.AlertRule;
+import vn.pxvb.alerting.infrastructure.AlertNotifyMetrics;
 import vn.pxvb.alerting.infrastructure.RealtimePublisher;
 import vn.pxvb.dataio.application.ExportService;
 import vn.pxvb.identity.contract.IdentityDirectory;
@@ -65,6 +66,6 @@ class AlertServiceEscalationTest {
         return new AlertService(rules, alerts, mock(HistoryRepository.class), mock(RecipientRepository.class),
                 mock(IdentityDirectory.class), mock(NotificationService.class), mock(RealtimePublisher.class),
                 new ObjectMapper(), Clock.fixed(NOW, ZoneOffset.UTC), mock(MasterdataQueries.class),
-                mock(EmailService.class), mock(ExportService.class));
+                mock(EmailService.class), mock(ExportService.class), mock(AlertNotifyMetrics.class));
     }
 }

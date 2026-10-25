@@ -160,14 +160,14 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
 | 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ✅ Thêm tham số `shiftSessionId` ở controller và `AlertService.search`/`export`. IT `alertListAndExportCanBeFilteredByShiftSession` đỏ trước, xanh sau (danh sách và số dòng xuất Excel) | Không |
-| 3.2 | F4b: `GET /alerts/stats` đếm theo rule và BusinessDate trong khoảng tối đa 90 ngày; index `(rule_code, raised_at)`; IT kiểm ranh giới ngày theo BusinessDate, không theo UTC | ⬜ | L68 (đã chốt) |
+| 3.2 | F4b: `GET /alerts/stats` đếm theo rule và BusinessDate trong khoảng tối đa 90 ngày; index `(rule_code, raised_at)`; IT kiểm ranh giới ngày theo BusinessDate, không theo UTC | ✅ `AlertService.stats` (lọc phạm vi như danh sách; ngày nghiệp vụ theo `Asia/Ho_Chi_Minh` tại thời điểm raise; tối đa 90 ngày, ngoài khoảng → 400); index `ix_alert_rule_raised` (V20261025_32). IT `statsCountAlertsByBusinessDateInBusinessZone` (17:30Z = ngày sau), `statsRejectRangeOverNinetyDays`, `statsOnlyCountAlertsInScope` | L68 (đã chốt) |
 | 3.3 | F9: audit trước/sau và lý do thay đổi bắt buộc khi sửa rule; alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise; IT kiểm snapshot không đổi khi rule đổi sau đó | ⬜ | L67 (đã chốt, có điều kiện CLAUDE.md) |
 
 ### Pha 4 – Đo lường và vận hành
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
-| 4.1 | F14: Micrometer `Timer` đo `raise → push sau commit`, gắn tag theo mức; IT kiểm timer được ghi | ⬜ | Không |
-| 4.2 | Ngưỡng NFR-004 (5 phút) đưa vào cấu hình, không hard-code | ⬜ | Không |
+| 4.1 | F14: Micrometer `Timer` đo `raise → push sau commit`, gắn tag theo mức; IT kiểm timer được ghi | ✅ `AlertNotifyMetrics` (`pxvb.alert.notify.latency`, tag `severity`). Đo từ đầu raise đến sau commit; push realtime đã đẩy sau commit qua `RealtimePublisher`. IT `raiseRecordsNotifyLatencyTimer` | Không |
+| 4.2 | Ngưỡng NFR-004 (5 phút) đưa vào cấu hình, không hard-code | ✅ `pxvb.alerting.notify-latency-target` (mặc định `PT5M`); vượt ngưỡng tăng `pxvb.alert.notify.breach`. `AlertNotifyMetricsTest` 3/3 | Không |
 | 4.3 | L11/L12: worker + relay RabbitMQ. Chỉ chuyển khi đã kiểm tra không có đường R0 nào phụ thuộc relay | ⏸ | L70 (có điều kiện) → E25 |
 
 ### Pha 5 – Unit test và kiến trúc

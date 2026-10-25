@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -47,6 +50,8 @@ class AlertingIT extends AbstractIntegrationTest {
     AlertService alertService;
     @Autowired
     JdbcTemplate jdbc;
+    @Autowired
+    MeterRegistry meters;
 
     private static final String ESCALATING_RULE = "MT_WASTE_HIGH";
     private static final String NO_LEVEL_POLICY = "{\"levels\":[]}";
@@ -462,6 +467,77 @@ class AlertingIT extends AbstractIntegrationTest {
     private AlertCommand machineCommand(String rule, String subject, UUID machineId) {
         return new AlertCommand(rule, "Machine", subject, machineId, null, "Cảnh báo " + rule,
                 "Chi tiết " + subject, Map.of("value", 4.2), null, null);
+    }
+
+    @Test
+    void statsCountAlertsByBusinessDateInBusinessZone() throws Exception {
+        // 2020-01-10 17:30Z = 00:30 ngày 11/01 theo giờ Việt Nam; 16:30Z = 23:30 ngày 10/01.
+        String lateSubject = "M-" + UUID.randomUUID();
+        String earlySubject = "M-" + UUID.randomUUID();
+        raiser.raise(command("MT_WASTE_HIGH", lateSubject));
+        backdateAlert("MT_WASTE_HIGH:Machine:" + lateSubject, Instant.parse("2020-01-10T17:30:00Z"));
+        raiser.raise(command("MT_WASTE_HIGH", earlySubject));
+        backdateAlert("MT_WASTE_HIGH:Machine:" + earlySubject, Instant.parse("2020-01-10T16:30:00Z"));
+
+        List<String> rows = statsRows(admin, "2020-01-10", "2020-01-11", "MT_WASTE_HIGH");
+
+        assertThat(rows).containsExactly("2020-01-10=1", "2020-01-11=1");
+    }
+
+    @Test
+    void statsRejectRangeOverNinetyDays() throws Exception {
+        MvcResult r = mvc.perform(get(ALERTS_PATH + "stats").param("from", "2020-01-01").param("to", "2020-06-01")
+                .header("Authorization", "Bearer " + admin)).andReturn();
+
+        assertThat(r.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void statsOnlyCountAlertsInScope() throws Exception {
+        String lineA = uniqueLine();
+        String lineB = uniqueLine();
+        TestUser supervisorB = createUser(mvc, mapper, admin, "supB", "SHIFT_LEADER", "LINE", lineB);
+        String subjectInLineA = "M-" + UUID.randomUUID();
+        raiser.raise(machineCommand("MT_WASTE_HIGH", subjectInLineA, createMachineOnLine(lineA)));
+        // Cửa sổ riêng (2019) để không lẫn với test thống kê khác dùng chung DB.
+        backdateAlert("MT_WASTE_HIGH:Machine:" + subjectInLineA, Instant.parse("2019-07-01T12:00:00Z"));
+
+        assertThat(statsRows(admin, "2019-07-01", "2019-07-02", "MT_WASTE_HIGH")).containsExactly("2019-07-01=1");
+        assertThat(statsRows(supervisorB.token(), "2019-07-01", "2019-07-02", "MT_WASTE_HIGH")).isEmpty();
+    }
+
+    @Test
+    void raiseRecordsNotifyLatencyTimer() throws Exception {
+        long before = notifyLatencyCount("WARN");
+
+        raiser.raise(command("MT_WASTE_HIGH", "M-" + UUID.randomUUID()));
+
+        assertThat(notifyLatencyCount("WARN")).isEqualTo(before + 1);
+    }
+
+    private long notifyLatencyCount(String severity) {
+        var timer = meters.find("pxvb.alert.notify.latency").tag("severity", severity).timer();
+        return timer == null ? 0 : timer.count();
+    }
+
+    /** Dòng thống kê dạng {@code ngày=số} của một mã rule, theo thứ tự trả về. */
+    private List<String> statsRows(String token, String from, String to, String ruleCode) throws Exception {
+        JsonNode stats = json(mvc.perform(get(ALERTS_PATH + "stats").param("from", from).param("to", to)
+                .header("Authorization", "Bearer " + token)).andReturn());
+        List<String> rows = new ArrayList<>();
+        for (JsonNode day : stats) {
+            if (ruleCode.equals(day.get("ruleCode").asText())) {
+                rows.add(day.get("businessDate").asText() + "=" + day.get("count").asLong());
+            }
+        }
+        return rows;
+    }
+
+    /** Ghi theo UTC như app (DATETIME lưu UTC); Timestamp.from sẽ lệch theo múi giờ của JVM. */
+    private void backdateAlert(String dedupKey, Instant at) {
+        LocalDateTime utc = LocalDateTime.ofInstant(at, ZoneOffset.UTC);
+        jdbc.update("UPDATE sys_alert SET raised_at = ?, last_occurred_at = ? WHERE dedup_key = ?",
+                utc, utc, dedupKey);
     }
 
     private AlertCommand shiftCommand(String rule, String subject, UUID shiftSessionId) {

@@ -1,6 +1,7 @@
 package vn.pxvb.alerting.api;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -101,6 +102,12 @@ public class AlertController {
                         org.springframework.http.ContentDisposition.attachment().filename("canh-bao.xlsx").build()
                                 .toString())
                 .body(service.export(module, severity, status, machineId, shiftSessionId, scopes()));
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasAuthority('alerting.alert.view')")
+    public List<AlertService.DayCount> stats(@RequestParam LocalDate from, @RequestParam LocalDate to) {
+        return service.stats(from, to, scopes());
     }
 
     @GetMapping("/{id}")
