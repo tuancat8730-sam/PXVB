@@ -312,8 +312,9 @@ class MasterdataIT extends AbstractIntegrationTest {
     void qcFormVersionsAreImmutableOnceActive() throws Exception {
         String code = unique("B06.");
         JsonNode v1 = createOk("qc-form-templates", qaHead.token(), ("{\"code\":\"%s\",\"formGroup\":\"B06\","
-                + "\"name\":\"Kiểm tra điếu\",\"category\":\"INLINE\",\"formSchema\":{\"fields\":["
-                + "{\"key\":\"weight\",\"type\":\"number\"}]}}").formatted(code));
+                + "\"name\":\"Kiểm tra điếu\",\"category\":\"INLINE\",\"formSchema\":{\"schemaVersion\":1,"
+                + "\"sections\":[{\"code\":\"S1\",\"fields\":[{\"code\":\"weight\",\"label\":\"Khối lượng\","
+                + "\"type\":\"NUMBER\"}]}]}}").formatted(code));
         String v1Id = v1.get("id").asText();
         assertThat(v1.get("status").asText()).isEqualTo("DRAFT");
         assertThat(v1.get("versionNo").asInt()).isEqualTo(1);
