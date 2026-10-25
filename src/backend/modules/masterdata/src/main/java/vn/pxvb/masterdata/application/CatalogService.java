@@ -622,7 +622,20 @@ public class CatalogService {
                 default -> m.put(c.name(), rs.getString(c.name()));
             }
         }
+        addStewardship(spec, m, rs);
         return m;
+    }
+
+    /** Trường quản trị danh mục (FR-MD-022): người phụ trách, phiên bản và trạng thái. */
+    private void addStewardship(CatalogSpec spec, Map<String, Object> m, ResultSet rs) throws SQLException {
+        boolean hasVersionNo = spec.versioned() && spec.col("versionNo") != null;
+        m.put("owner", spec.owner());
+        m.put("version", rs.getLong(hasVersionNo ? "versionNo" : "rowVersion"));
+        if (spec.hasActive()) {
+            m.putIfAbsent("status", rs.getBoolean("isActive") ? "ACTIVE" : "INACTIVE");
+        } else {
+            m.putIfAbsent("status", "ACTIVE");
+        }
     }
 
     private String orderBy(CatalogSpec spec, String sort) {

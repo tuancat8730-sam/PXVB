@@ -157,6 +157,11 @@ public final class CatalogSpec {
         return approvers;
     }
 
+    /** Người phụ trách danh mục (FR-MD-022, G7): vai trò duyệt đầu tiên, không có thì vai trò ghi đầu tiên. */
+    public String owner() {
+        return approvers.stream().findFirst().or(() -> writers.stream().findFirst()).orElse("");
+    }
+
     public List<Usage> usages() {
         return usages;
     }

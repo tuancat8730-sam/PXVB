@@ -33,7 +33,7 @@
 | FR-MD-019 Liên kết 2 chiều | ✅ backend | Ghi: `componentId` phải thuộc `machineId`, phải có máy hoặc dòng máy (code). Đọc: `GET md/machines/{id}/parts`, `GET md/spare-parts/{id}/machines` (`PartLinkQueries`, `PartLinkController`; `MasterdataLinkIT` 5/5). UI U-5 ⬜ |
 | FR-MD-011 / FR-MD-014 | ✅ | `reason-codes`, `stamp-types` đã có; không cần thay đổi |
 | FR-MD-021 Chất lượng dữ liệu | 🟡 | `DataQualityService` có 8 nhóm cũ + 4 nhóm E08 (Pha 4, `MasterdataDataQualityIT` 4/4 trên 8.0 và 8.4). Còn: UI `W-MdDataQuality` chưa có nhóm mới |
-| FR-MD-022 Kiểm soát danh mục | ⬜ | Có `status`, `approvers`; chưa hiển thị người phụ trách/ngày cập nhật (Pha 5). Không làm luồng duyệt mới (D4) |
+| FR-MD-022 Kiểm soát danh mục | 🟡 | Mọi danh mục trả `owner`, `updatedAt`, `version`, `status` (Pha 5, `MasterdataCatalogControlIT` 3/3). Người phụ trách là giả định G7. Không làm luồng duyệt mới (D4) |
 | Kiểm thử | 🟡 | Unit: 20/20 xanh (3 lớp quy tắc). IT xanh trên 8.0 và 8.4: `MasterdataE08IT` 4/4, `MasterdataLinkIT` 5/5, `DataImportIT` 6/6 (AC-MD-002). `MasterdataIT` 9/9 (đã chạy trước đó). Còn lại: IT Pha 4–5 |
 | ArchUnit | ✅ | `ArchitectureTest` 16/16 xanh (chạy offline) |
 
@@ -72,6 +72,7 @@
 | G4 | Chỉ kiểm phụ tùng khi có vật tư; không kiểm phụ tùng có NCC mặc định (D5) | Thêm vào chất lượng dữ liệu (Pha 4) |
 | G5 | Seed hiện có (ngưỡng, giờ ca) là giá trị giả định (L25) | Thay bằng dữ liệu thật qua import |
 | G6 | Liên kết chỉ có `modelCode` (không có máy) áp cho mọi máy cùng `model`; đọc từ cả hai phía, hiển thị `scope = MODEL` ⚠ | Đổi trong `PartLinkQueries` nếu PXVB chọn chỉ liên kết trực tiếp |
+| G7 | Người phụ trách danh mục (FR-MD-022) = vai trò duyệt đầu tiên của danh mục (`approvers`), không có thì vai trò ghi đầu tiên; là vai trò, không phải người cụ thể ⚠ | Khai báo `owner` riêng cho từng danh mục trong `Catalogs.java` khi PXVB xác nhận |
 
 ## 6. Quyết định (PO/PXVB đã duyệt 2026-10-25, theo mặc định)
 
@@ -134,8 +135,8 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 5 – Kiểm soát danh mục (FR-MD-022; Task 7)
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 5.1 | Phản hồi danh mục có `owner`, `updatedAt`, `version`, `status` | ⬜ |
-| 5.2 | IT đọc danh mục trả đủ trường | ⬜ |
+| 5.1 | Phản hồi danh mục có `owner`, `updatedAt`, `version`, `status` (mọi danh mục: đơn lẻ, danh sách, sync) | ✅ | TDD: IT đỏ 3/3 (`owner` null). `CatalogSpec.owner()` (G7) và `CatalogService.addStewardship` thêm `owner`, `version` (`versionNo` nếu có phiên bản, không thì `rowVersion`), `status` (cột `status`, hoặc suy từ `is_active`, mặc định ACTIVE). `updatedAt` đã có |
+| 5.2 | IT `MasterdataCatalogControlIT` (3 test): đọc đơn lẻ, biểu mẫu có phiên bản, danh sách đều trả đủ trường | ✅ | Xanh 3/3 trên 8.0 và 8.4 (2026-10-25). Full `verify` 8.0: 128 test, 13 lỗi = baseline (ProductionIT 11, MaterialIT 2), không hồi quy |
 
 ### Pha 6 – Thiết kế và build UI (xem `docs/design/E08-ui-plan.md`)
 | ID | Việc | Trạng thái | Phụ thuộc |
@@ -171,7 +172,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | FR-MD-018 | 🟡 | ⏸ gợi ý từ lịch sử (RP) | – |
 | FR-MD-019 | ✅ backend | ✅ (ghi, đọc 2 chiều; UI U-5) | 2.2, 3.1–3.3 |
 | FR-MD-021 | ⬜ | ✅ | 4.1–4.3 |
-| FR-MD-022 | ⬜ | ✅ (hiển thị; không luồng mới) | 5.1, 5.2 |
+| FR-MD-022 | 🟡 | ✅ (hiển thị; không luồng mới) | 5.1, 5.2 (G7 còn mở) |
 | Dữ liệu thật | ⬜ | ✅ (import, không đổi code) | 7.8 |
 
 ## 9. Rủi ro
@@ -204,3 +205,4 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2026-10-25 | UQ3 (dev-team: PM, Architect, Developer, QA). Chốt UQ3a: cấp B = ngoài biên một lần (theo yêu cầu người dùng). Ghi UQ3b vào OPEN-QUESTIONS (L75): cấp A "liên tiếp" và cấp C chưa chốt, hai phương án (a) hoãn sang E18, (b) metric chuỗi trong E08. Cập nhật `docs/design/README.md` (B chốt, A/C mở) và plan (mục 5 G2, mục 6, 7.6) |
 | 2026-10-25 | UQ3b (dev-team: PM, Architect, Developer, QA; tất cả nghiêng về (a)). Người dùng chọn (a): E08 chỉ lưu B, cấp A chưa kích hoạt. Ghi L75 (đã chọn (a), rủi ro SLA chấp nhận), cập nhật plan (mục 3 F11, mục 5 G2, mục 6, mục 9 rủi ro CAO). Chưa thực thi guard trong code (F11), chưa định nghĩa phạm vi/N/reset/cấp C |
 | 2026-10-25 | Pha 4 theo TDD: viết `MasterdataDataQualityIT` (4 test), chạy đỏ 4/4 (số đếm 0). Thêm 4 nhóm vào `DataQualityService` (QC_FORM_NO_ACTIVE, DEFECT_RULE_OVERLAP, MAINT_PART_MISSING, SPARE_PART_NO_SUPPLIER). Lần 1 xanh 3/4; test kích hoạt biểu mẫu lỗi 403 vì dùng admin: sửa sang người dùng QA_HEAD như `MasterdataIT` (lỗi ở test, không ở mã). Xanh 22/22 IT masterdata trên 8.0 và 8.4. Lệch: không thêm nhóm vào `W-MdDataQuality` (UI, Pha 6) |
+| 2026-10-25 | Pha 5 theo TDD: viết `MasterdataCatalogControlIT` (3 test), chạy đỏ (NPE: `owner` null). Thêm `CatalogSpec.owner()` (G7) và `addStewardship` trong `mapRow`. Xanh 31/31 IT masterdata trên 8.0 và 8.4. Full `verify` 8.0: 13 lỗi = baseline. Lệch: `CatalogService` hiện 1.005 dòng (vượt ngưỡng mềm 800, đã có trước pha này); tách sau nếu cần |
