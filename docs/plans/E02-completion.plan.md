@@ -10,7 +10,7 @@
 |---|---|---|
 | L06 | Tra cứu audit (API + xuất Excel + lịch sử theo bản ghi), FR-CC-022 | ✅ (chưa có UI) |
 | L04 | Rate limiting `PXVB-CC-0429` cho đăng nhập/PIN/kích hoạt thiết bị | ✅ |
-| L07 | `ScopeFilter` dùng chung (FR-CC-006) + áp thử một endpoint | ⬜ chờ quyết định nơi áp dụng (xem mục 7) |
+| L07 | `ScopeFilter` dùng chung (FR-CC-006) + áp thử một endpoint | ⬜ đã chốt đầy đủ (403; theo thời điểm sự kiện; fail-closed; ca suy từ máy; UNIT mở rộng khi truy vấn; alerting trước). Pha 3 chưa làm. Phân công ca/ĐBCL tách sang L73 (xem `OPEN-QUESTIONS.md`) |
 | L05 | LDAP v3 | ⏸ hoãn theo quyết định PO, **ngoài phạm vi** |
 
 ## 2. Giả định đã áp dụng (chưa được PXVB/Dev lead xác nhận; đổi được)
@@ -66,7 +66,7 @@
 |---|---|---|
 | 3.1 | Test đơn vị (đỏ) ALL/LINE/UNIT, nhiều vai trò, không có scope | ⬜ |
 | 3.2 | `ScopeFilter` trong building-blocks (cách tạo điều kiện lọc phụ thuộc kết quả 0.2) | ⬜ |
-| 3.3 | Áp thử danh sách phiên ca (`production`) + IT: Trưởng ca LINE khác không thấy | ⬜ chặn: ca không có dây chuyền; xem mục 7 |
+| 3.3 | Áp thử danh sách phiên ca (`production`) + IT: Trưởng ca LINE khác không thấy | ⬜ chặn: ca không có dây chuyền. Đề xuất L07 (c): LINE của ca suy từ máy thuộc ca, chờ xác nhận; xem mục 7 |
 | 3.4 | Luật ArchUnit chống quên áp dụng | ⬜ |
 
 ### Pha 4 – Hoàn thiện
@@ -105,3 +105,4 @@
 | 2026-10-24 | Pha 3 (L07) **chưa làm**: ca làm việc (`pr_shift_session`) không có dây chuyền; `MasterdataQueries.MachineInfo` không có `lineCode`. Cần chốt nơi áp dụng LINE scope trước khi làm |
 | 2026-10-24 | Full `verify` 8.0 và 8.4 (trước khi bổ sung test): 90 test, 13 lỗi (đúng danh sách baseline, không có E02). Pha 4 (review bảo mật, OpenAPI) chưa làm vì còn L07 |
 | 2026-10-24 | Rà soát trạng thái theo bằng chứng: cập nhật bảng Pha 0–4 và mục 1 cho khớp với kết quả test thực tế |
+| 2026-10-25 | Dev-team (PM, Arch, Dev, QA) trả lời L07. Đề xuất đã ghi vào `OPEN-QUESTIONS.md` L07 (chưa chốt). Pha 3 vẫn chưa làm, chờ Dev lead xác nhận |
