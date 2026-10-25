@@ -214,7 +214,7 @@ public class AlertService implements AlertRaiser {
         int count = 0;
         for (Alert alert : alerts.findByStatus(Alert.Status.OPEN)) {
             AlertRule rule = rules.findByCode(alert.getRuleCode()).orElse(null);
-            if (rule == null) {
+            if (rule == null || !rule.isActive()) {
                 continue;
             }
             List<Level> levels = parseEscalation(rule.getEscalationPolicy());

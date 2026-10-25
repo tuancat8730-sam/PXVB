@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Instant;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
@@ -45,6 +46,12 @@ class AlertingIT extends AbstractIntegrationTest {
     AlertService alertService;
     @Autowired
     JdbcTemplate jdbc;
+
+    private static final String ESCALATING_RULE = "MT_WASTE_HIGH";
+    private static final String NO_LEVEL_POLICY = "{\"levels\":[]}";
+    private static final String TWO_LEVEL_POLICY = "{\"levels\":["
+            + "{\"afterMinutes\":30,\"roles\":[\"DEPUTY_DIRECTOR\"]},"
+            + "{\"afterMinutes\":60,\"roles\":[\"DEPUTY_DIRECTOR\"]}]}";
 
     private String admin;
     private TestUser leader;
@@ -185,6 +192,89 @@ class AlertingIT extends AbstractIntegrationTest {
     private void backdateLastOccurrence(String dedupKey, Instant lastOccurredAt) {
         jdbc.update("UPDATE sys_alert SET last_occurred_at = ? WHERE dedup_key = ?",
                 Timestamp.from(lastOccurredAt), dedupKey);
+    }
+
+    @Test
+    void escalationAdvancesOneLevelAtATimeAndNeverRepeatsALevel() throws Exception {
+        updateRule(ESCALATING_RULE, TWO_LEVEL_POLICY, true);
+        try {
+            AlertRef ref = raiser.raise(command(ESCALATING_RULE, "M-" + UUID.randomUUID()));
+            Instant raisedAt = Instant.now();
+
+            alertService.escalateDue(raisedAt.plus(31, ChronoUnit.MINUTES));
+            assertThat(escalationLevelOf(ref)).isEqualTo(1);
+            alertService.escalateDue(raisedAt.plus(31, ChronoUnit.MINUTES));
+            assertThat(escalationLevelOf(ref)).isEqualTo(1);
+
+            alertService.escalateDue(raisedAt.plus(61, ChronoUnit.MINUTES));
+            assertThat(escalationLevelOf(ref)).isEqualTo(2);
+            alertService.escalateDue(raisedAt.plus(200, ChronoUnit.MINUTES));
+            assertThat(escalationLevelOf(ref)).isEqualTo(2);
+        } finally {
+            updateRule(ESCALATING_RULE, NO_LEVEL_POLICY, true);
+        }
+    }
+
+    @Test
+    void acknowledgedAlertStopsEscalation() throws Exception {
+        updateRule(ESCALATING_RULE, TWO_LEVEL_POLICY, true);
+        try {
+            AlertRef ref = raiser.raise(command(ESCALATING_RULE, "M-" + UUID.randomUUID()));
+            call(leader, "/api/v1/alerting/alerts/" + ref.alertId() + "/ack", "{\"note\":\"Đã nhận\"}");
+
+            alertService.escalateDue(Instant.now().plus(200, ChronoUnit.MINUTES));
+
+            assertThat(escalationLevelOf(ref)).isZero();
+            assertThat(alertService.detail(ref.alertId()).alert().getStatus()).isEqualTo(Alert.Status.ACK);
+        } finally {
+            updateRule(ESCALATING_RULE, NO_LEVEL_POLICY, true);
+        }
+    }
+
+    @Test
+    void inProgressAlertStopsEscalation() throws Exception {
+        updateRule(ESCALATING_RULE, TWO_LEVEL_POLICY, true);
+        try {
+            AlertRef ref = raiser.raise(command(ESCALATING_RULE, "M-" + UUID.randomUUID()));
+            call(leader, "/api/v1/alerting/alerts/" + ref.alertId() + "/ack", "{\"note\":\"Đã nhận\"}");
+            call(leader, "/api/v1/alerting/alerts/" + ref.alertId() + "/start", "{\"note\":\"Đang xử lý\"}");
+
+            alertService.escalateDue(Instant.now().plus(200, ChronoUnit.MINUTES));
+
+            assertThat(escalationLevelOf(ref)).isZero();
+            assertThat(alertService.detail(ref.alertId()).alert().getStatus()).isEqualTo(Alert.Status.IN_PROGRESS);
+        } finally {
+            updateRule(ESCALATING_RULE, NO_LEVEL_POLICY, true);
+        }
+    }
+
+    @Test
+    void disabledRuleDoesNotEscalateOpenAlerts() throws Exception {
+        updateRule(ESCALATING_RULE, TWO_LEVEL_POLICY, true);
+        try {
+            AlertRef ref = raiser.raise(command(ESCALATING_RULE, "M-" + UUID.randomUUID()));
+            updateRule(ESCALATING_RULE, null, false);
+
+            alertService.escalateDue(Instant.now().plus(200, ChronoUnit.MINUTES));
+
+            assertThat(escalationLevelOf(ref)).isZero();
+        } finally {
+            updateRule(ESCALATING_RULE, NO_LEVEL_POLICY, true);
+        }
+    }
+
+    private int escalationLevelOf(AlertRef ref) {
+        return alertService.detail(ref.alertId()).alert().getEscalationLevel();
+    }
+
+    private void updateRule(String code, String escalationPolicy, boolean active) throws Exception {
+        ObjectNode body = mapper.createObjectNode().put("active", active);
+        if (escalationPolicy != null) {
+            body.put("escalationPolicy", escalationPolicy);
+        }
+        mvc.perform(put("/api/v1/alerting/rules/" + code).header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(body)))
+                .andExpect(status().isOk());
     }
 
     @Test
