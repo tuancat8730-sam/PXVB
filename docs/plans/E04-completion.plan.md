@@ -173,7 +173,7 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 5 – Unit test và kiến trúc
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | 🟡 Đã có `AlertTest` (8), `AlertRuleCatalogTest` (2), `AlertNotifyMetricsTest` (3). Coverage: unit riêng của module 31,4%; cộng IT trong `pxvb-api` (đo bằng JaCoCo, file exec của host) 84,6% (2945/3483 dòng) — đạt mục tiêu khi tính IT. Phần còn thiếu của unit: `AlertService` (dựa vào IT) | F8 |
+| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | 🟡 Đã có unit test: `AlertTest` (8), `AlertRuleCatalogTest` (2), `AlertNotifyMetricsTest` (3), `AlertServiceUnitTest` (10), `AlertRuleServiceTest` (3). Coverage (JaCoCo, đo **theo dòng**, `domain` + `application`, 637 dòng): unit riêng của module **56,4%** (359/637) — chưa đạt 80%; IT trong `pxvb-api` **84,8%** (540/637). Chưa phủ bằng unit: `WorkflowEventSink` (56 dòng), `AlertService` (75), `EmailService` (34), `Notification` (24), `NotificationService` (22). *Lưu ý: các số 31,4% và 84,6% ghi trước đây là theo lệnh (instruction), không phải dòng; commit `6863f7b` mang số sai này.* | F8 |
 | 5.2 | Kiểm tra `ArchitectureTest` vẫn xanh; alerting chỉ dùng `identity.contract`, `masterdata.contract`, `dataio.application` | ✅ `ArchitectureTest` 16/16 xanh sau mọi thay đổi (alerting dùng `common.audit` của building-blocks) |
 
 ### Pha 6 – Giao diện (UI) cho E04
