@@ -59,7 +59,7 @@ class AlertServiceEscalationTest {
 
     private static Alert openAlert() {
         return new Alert(RULE_CODE, Alert.Severity.WARN, "PR", "Machine", "M-" + Math.random(), null, null, null,
-                "Cảnh báo", "Chi tiết", "{}", "key-" + Math.random(), NOW);
+                "Cảnh báo", "Chi tiết", "{}", "key-" + Math.random(), NOW, 1, "{}");
     }
 
     private static AlertService service(RuleRepository rules, AlertRepository alerts) {

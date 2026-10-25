@@ -275,7 +275,7 @@ class AlertingIT extends AbstractIntegrationTest {
     }
 
     private void updateRule(String code, String escalationPolicy, boolean active) throws Exception {
-        ObjectNode body = mapper.createObjectNode().put("active", active);
+        ObjectNode body = mapper.createObjectNode().put("active", active).put("reason", "Kiểm thử leo thang");
         if (escalationPolicy != null) {
             body.put("escalationPolicy", escalationPolicy);
         }
@@ -314,14 +314,14 @@ class AlertingIT extends AbstractIntegrationTest {
     void disabledRuleDoesNotRaiseAndUnknownRuleIsRejected() throws Exception {
         MvcResult off = mvc.perform(put("/api/v1/alerting/rules/TX_BLOCK_LOW")
                 .header("Authorization", "Bearer " + admin).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"active\":false}")).andReturn();
+                .content("{\"active\":false,\"reason\":\"Tắt rule để kiểm thử\"}")).andReturn();
         assertThat(off.getResponse().getStatus()).isEqualTo(200);
         try {
             AlertRef ref = raiser.raise(command("TX_BLOCK_LOW", "S-1"));
             assertThat(ref.alertId()).isNull();
         } finally {
             mvc.perform(put("/api/v1/alerting/rules/TX_BLOCK_LOW").header("Authorization", "Bearer " + admin)
-                    .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true}"));
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"active\":true,\"reason\":\"Khôi phục sau kiểm thử\"}"));
         }
         assertThatThrownBy(() -> raiser.raise(command("NO_SUCH_RULE", "x"))).isInstanceOf(BusinessException.class);
     }
@@ -538,6 +538,65 @@ class AlertingIT extends AbstractIntegrationTest {
         LocalDateTime utc = LocalDateTime.ofInstant(at, ZoneOffset.UTC);
         jdbc.update("UPDATE sys_alert SET raised_at = ?, last_occurred_at = ? WHERE dedup_key = ?",
                 utc, utc, dedupKey);
+    }
+
+    @Test
+    void ruleChangeWithoutReasonIsRejected() throws Exception {
+        MvcResult r = ruleUpdate("MT_WASTE_HIGH", "{\"dedupWindowMin\":45}");
+
+        assertThat(r.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void ruleChangeIsAuditedWithBeforeAfterValuesAndReason() throws Exception {
+        String reason = "Kiểm toán thay đổi " + UUID.randomUUID();
+        try {
+            assertThat(ruleUpdate("MT_WASTE_HIGH", "{\"dedupWindowMin\":45,\"reason\":\"" + reason + "\"}")
+                    .getResponse().getStatus()).isEqualTo(200);
+        } finally {
+            ruleUpdate("MT_WASTE_HIGH", "{\"dedupWindowMin\":30,\"reason\":\"Khôi phục sau kiểm thử\"}");
+        }
+
+        String changes = jdbc.queryForObject("SELECT field_changes FROM sys_audit_log WHERE module = 'alerting' "
+                + "AND entity_type = 'AlertRule' AND entity_id = 'MT_WASTE_HIGH' AND reason = ?", String.class, reason);
+        JsonNode change = mapper.readTree(changes).get(0);
+        assertThat(change.get("field").asText()).isEqualTo("dedupWindowMin");
+        assertThat(change.get("oldValue").asInt()).isEqualTo(30);
+        assertThat(change.get("newValue").asInt()).isEqualTo(45);
+    }
+
+    @Test
+    void alertKeepsRuleSnapshotFromItsRaiseAfterTheRuleChanges() throws Exception {
+        AlertRef before = raiser.raise(command("MT_WASTE_HIGH", "M-" + UUID.randomUUID()));
+        JsonNode beforeAlert = detailAlert(before.alertId());
+        try {
+            assertThat(ruleUpdate("MT_WASTE_HIGH", "{\"dedupWindowMin\":45,\"reason\":\"Đổi cửa sổ khử trùng\"}")
+                    .getResponse().getStatus()).isEqualTo(200);
+            AlertRef after = raiser.raise(command("MT_WASTE_HIGH", "M-" + UUID.randomUUID()));
+            JsonNode afterAlert = detailAlert(after.alertId());
+
+            assertThat(afterAlert.get("ruleVersion").asInt()).isGreaterThan(beforeAlert.get("ruleVersion").asInt());
+            assertThat(snapshotOf(afterAlert).get("dedupWindowMin").asInt()).isEqualTo(45);
+            assertThat(snapshotOf(detailAlert(before.alertId())).get("dedupWindowMin").asInt()).isEqualTo(30);
+            assertThat(detailAlert(before.alertId()).get("ruleVersion").asInt())
+                    .isEqualTo(beforeAlert.get("ruleVersion").asInt());
+        } finally {
+            ruleUpdate("MT_WASTE_HIGH", "{\"dedupWindowMin\":30,\"reason\":\"Khôi phục sau kiểm thử\"}");
+        }
+    }
+
+    private MvcResult ruleUpdate(String code, String body) throws Exception {
+        return mvc.perform(put("/api/v1/alerting/rules/" + code).header("Authorization", "Bearer " + admin)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn();
+    }
+
+    private JsonNode detailAlert(UUID id) throws Exception {
+        return json(mvc.perform(get(ALERTS_PATH + id).header("Authorization", "Bearer " + admin)).andReturn())
+                .get("alert");
+    }
+
+    private JsonNode snapshotOf(JsonNode alert) throws Exception {
+        return mapper.readTree(alert.get("ruleSnapshot").asText());
     }
 
     private AlertCommand shiftCommand(String rule, String subject, UUID shiftSessionId) {

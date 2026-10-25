@@ -54,6 +54,13 @@ public class Alert extends BaseEntity {
 
     private String lineCode;
 
+    /** Phiên bản rule lúc raise (L67); null với alert tạo trước khi có snapshot. */
+    private Integer ruleVersion;
+
+    /** Snapshot cấu hình rule lúc raise (JSON): mức, cửa sổ khử trùng, người nhận, leo thang. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String ruleSnapshot;
+
     @JdbcTypeCode(SqlTypes.BINARY)
     private UUID shiftSessionId;
 
@@ -107,7 +114,7 @@ public class Alert extends BaseEntity {
 
     public Alert(String ruleCode, Severity severity, String module, String subjectType, String subjectId,
                  UUID machineId, String lineCode, UUID shiftSessionId, String title, String message,
-                 String payloadJson, String dedupKey, Instant now) {
+                 String payloadJson, String dedupKey, Instant now, Integer ruleVersion, String ruleSnapshot) {
         this.ruleCode = ruleCode;
         this.severity = severity;
         this.module = module;
@@ -115,6 +122,8 @@ public class Alert extends BaseEntity {
         this.subjectId = subjectId;
         this.machineId = machineId;
         this.lineCode = lineCode;
+        this.ruleVersion = ruleVersion;
+        this.ruleSnapshot = ruleSnapshot;
         this.shiftSessionId = shiftSessionId;
         this.title = title;
         this.message = message;
@@ -200,6 +209,14 @@ public class Alert extends BaseEntity {
     }
 
     /** Dây chuyền của máy tại thời điểm raise (snapshot, FR-CC-006); null nếu không có máy hoặc máy chưa gán dây chuyền. */
+    public Integer getRuleVersion() {
+        return ruleVersion;
+    }
+
+    public String getRuleSnapshot() {
+        return ruleSnapshot;
+    }
+
     public String getLineCode() {
         return lineCode;
     }

@@ -32,13 +32,14 @@ public class AlertController {
                            String subjectId, UUID machineId, UUID shiftSessionId, String title, String message,
                            String status, Instant raisedAt, Instant lastOccurredAt, int occurrenceCount,
                            Instant ackAt, UUID ackBy, Instant resolvedAt, UUID resolvedBy, String cause,
-                           String resolutionNote, int escalationLevel) {
+                           String resolutionNote, int escalationLevel, Integer ruleVersion, String ruleSnapshot) {
         static AlertDto from(Alert a) {
             return new AlertDto(a.getId(), a.getRuleCode(), a.getSeverity().name(), a.getModule(),
                     a.getSubjectType(), a.getSubjectId(), a.getMachineId(), a.getShiftSessionId(), a.getTitle(),
                     a.getMessage(), a.getStatus().name(), a.getRaisedAt(), a.getLastOccurredAt(),
                     a.getOccurrenceCount(), a.getAckAt(), a.getAckBy(), a.getResolvedAt(), a.getResolvedBy(),
-                    a.getCause(), a.getResolutionNote(), a.getEscalationLevel());
+                    a.getCause(), a.getResolutionNote(), a.getEscalationLevel(), a.getRuleVersion(),
+                    a.getRuleSnapshot());
         }
     }
 

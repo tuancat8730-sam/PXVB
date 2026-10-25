@@ -1,7 +1,9 @@
 package vn.pxvb.alerting.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.micrometer.core.instrument.Timer;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
@@ -175,7 +177,7 @@ public class AlertService implements AlertRaiser {
         Timer.Sample latency = notifyMetrics.start();
         Alert alert = alerts.save(new Alert(rule.getCode(), severity, rule.getModule(), c.subjectType(),
                 c.subjectId(), c.machineId(), lineCodeOf(c.machineId()), c.shiftSessionId(), c.title(), c.message(),
-                payloadJson, dedupKey, now));
+                payloadJson, dedupKey, now, rule.getVersion(), ruleSnapshotJson(rule)));
         history.save(new AlertHistory(alert.getId(), null, Alert.Status.OPEN.name(), null, now, null));
 
         Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
@@ -441,6 +443,26 @@ public class AlertService implements AlertRaiser {
                 action.run();
             }
         });
+    }
+
+    /** Snapshot cấu hình rule gắn vào alert lúc raise (L67): không đổi khi rule được sửa sau đó. */
+    private String ruleSnapshotJson(AlertRule rule) {
+        ObjectNode snapshot = mapper.createObjectNode()
+                .put("severity", rule.getSeverity().name())
+                .put("dedupWindowMin", rule.getDedupWindowMin())
+                .put("active", rule.isActive());
+        snapshot.set("condition", jsonValue(rule.getConditionJson()));
+        snapshot.set("recipientPolicy", jsonValue(rule.getRecipientPolicy()));
+        snapshot.set("escalationPolicy", jsonValue(rule.getEscalationPolicy()));
+        return snapshot.toString();
+    }
+
+    private JsonNode jsonValue(String json) {
+        try {
+            return mapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Cấu hình rule không phải JSON hợp lệ", e);
+        }
     }
 
     /** Dây chuyền của máy tại thời điểm raise; null nếu không có máy hoặc máy chưa gán dây chuyền. */

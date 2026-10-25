@@ -161,7 +161,7 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 |---|---|---|---|
 | 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ✅ Thêm tham số `shiftSessionId` ở controller và `AlertService.search`/`export`. IT `alertListAndExportCanBeFilteredByShiftSession` đỏ trước, xanh sau (danh sách và số dòng xuất Excel) | Không |
 | 3.2 | F4b: `GET /alerts/stats` đếm theo rule và BusinessDate trong khoảng tối đa 90 ngày; index `(rule_code, raised_at)`; IT kiểm ranh giới ngày theo BusinessDate, không theo UTC | ✅ `AlertService.stats` (lọc phạm vi như danh sách; ngày nghiệp vụ theo `Asia/Ho_Chi_Minh` tại thời điểm raise; tối đa 90 ngày, ngoài khoảng → 400); index `ix_alert_rule_raised` (V20261025_32). IT `statsCountAlertsByBusinessDateInBusinessZone` (17:30Z = ngày sau), `statsRejectRangeOverNinetyDays`, `statsOnlyCountAlertsInScope` | L68 (đã chốt) |
-| 3.3 | F9: audit trước/sau và lý do thay đổi bắt buộc khi sửa rule; alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise; IT kiểm snapshot không đổi khi rule đổi sau đó | ⬜ | L67 (đã chốt, có điều kiện CLAUDE.md) |
+| 3.3 | F9: audit trước/sau và lý do thay đổi bắt buộc khi sửa rule; alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise; IT kiểm snapshot không đổi khi rule đổi sau đó | ✅ `AlertRuleService.update`: bắt buộc `reason` (400 nếu thiếu), ghi `sys_audit_log` với `field_changes` trước/sau qua `AuditLogWriter`. `sys_alert_rule.version` tăng mỗi lần sửa; alert lưu `rule_version` và `rule_snapshot` (V20261025_33). IT `ruleChangeWithoutReasonIsRejected`, `ruleChangeIsAuditedWithBeforeAfterValuesAndReason`, `alertKeepsRuleSnapshotFromItsRaiseAfterTheRuleChanges` đỏ trước, xanh sau. Kiểm CLAUDE.md: rule chỉ chứa cấu hình định tuyến, ngưỡng nằm ở masterdata có phiên bản (producer), nên giữ L67 | L67 (đã chốt) |
 
 ### Pha 4 – Đo lường và vận hành
 | ID | Việc | Trạng thái | Phụ thuộc |
@@ -173,8 +173,8 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 5 – Unit test và kiến trúc
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | ⬜ |
-| 5.2 | Kiểm tra `ArchitectureTest` vẫn xanh; alerting chỉ dùng `identity.contract`, `masterdata.contract`, `dataio.application` | ⬜ |
+| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | 🟡 Đã có `AlertTest` (8), `AlertRuleCatalogTest` (2), `AlertNotifyMetricsTest` (3). Coverage: unit riêng của module 31,4%; cộng IT trong `pxvb-api` (đo bằng JaCoCo, file exec của host) 84,6% (2945/3483 dòng) — đạt mục tiêu khi tính IT. Phần còn thiếu của unit: `AlertService` (dựa vào IT) | F8 |
+| 5.2 | Kiểm tra `ArchitectureTest` vẫn xanh; alerting chỉ dùng `identity.contract`, `masterdata.contract`, `dataio.application` | ✅ `ArchitectureTest` 16/16 xanh sau mọi thay đổi (alerting dùng `common.audit` của building-blocks) |
 
 ### Pha 6 – Giao diện (UI) cho E04
 
