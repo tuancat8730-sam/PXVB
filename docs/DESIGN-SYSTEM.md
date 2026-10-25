@@ -67,6 +67,9 @@ Be Vietnam Pro (UI; thiết kế cho tiếng Việt, giấy phép OFL) và IBM P
 | Chưa nhập quá hạn / Cần giải trình | tam giác | Chưa nhập · Giải trình | vàng |
 | Offline / Không có dữ liệu | vành rỗng | Offline · Chưa có dữ liệu | xám |
 | Cấp cảnh báo QC | chữ | Cấp A (đỏ) · Cấp B (vàng) · Cấp C (xanh mực) | |
+| Mức cảnh báo chung (CRITICAL / WARN / INFO) | chữ + màu | Khẩn (đỏ) · Cảnh báo (vàng) · Thông tin (xanh mực). "Cấp A/B/C" chỉ dùng cho cấp lỗi QC (L71) | |
+| Trạng thái cảnh báo (OPEN / ACK / IN_PROGRESS / RESOLVED / CLOSED) | chữ | Chưa xác nhận · Đã biết · Đang xử lý · Đã xử lý · Đã đóng (L72) | |
+| Bậc leo thang | chữ | Bậc 0 · Bậc 1 · Bậc 2 (không gọi là "Cấp") | |
 | Vòng đời bản ghi | chữ | Nháp · Chờ duyệt · Đã duyệt · Từ chối · Đã chốt (khóa) | |
 
 Dữ liệu `CONFIRMED`/`LOCKED` hiện biểu tượng khóa và **không có nút Sửa**; sửa đi qua "Yêu cầu điều chỉnh" (đúng quy ước dự án).

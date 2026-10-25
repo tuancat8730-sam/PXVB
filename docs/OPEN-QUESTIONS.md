@@ -144,3 +144,17 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 
 **Còn chờ PXVB cung cấp dữ liệu:** thông tin SMTP + người nhận báo cáo (L18); danh sách nguyên nhân cảnh báo (L16);
 danh sách 46 biểu mẫu KSCL, danh mục lỗi và ngưỡng A/B/C (Q10); quy cách tem (Q11).
+
+## Phát sinh khi rà soát E04 (alerting) và thiết kế màn cảnh báo — xem `docs/plans/E04-completion.plan.md`
+
+| # | Vấn đề | Đang áp dụng | Ảnh hưởng | Cần ai chốt |
+|---|---|---|---|---|
+| L64 | Ghi chú khi `RESOLVED` (FR-CC-051) | **Đề xuất, chưa chốt:** bắt buộc, không được rỗng. Hiện backend chỉ bắt buộc nguyên nhân | `AlertService.resolve`, T-12, W-AlertCenter | PXVB |
+| L65 | Ai được tiếp nhận/xử lý cảnh báo: chỉ người nhận, hay mọi người có quyền trong phạm vi? | **Đề xuất, chưa chốt:** giữ quyền `alerting.alert.handle` hiện tại, kiểm phạm vi khi có L07 | `AlertController`, F10 | PXVB, Dev lead |
+| L66 | Tái diễn khi mức tăng (WARN→CRITICAL) và tái diễn trong cửa sổ dedup | **Đề xuất, chưa chốt:** nâng mức và gửi lại thông báo/email khi mức tăng; không gửi lại khi tái diễn cùng mức trong cửa sổ | `AlertService.raise`, F2, F11 | PXVB |
+| L67 | Ngày hiệu lực của rule (FR-CC-050): phiên bản rule hay chỉ audit? | **Đề xuất, chưa chốt:** chỉ audit + ghi lý do; phiên bản làm khi có yêu cầu. Bản vẽ W-AlertRules đang vẽ theo phiên bản, cần đồng bộ nếu chốt khác | `AlertRule.configure`, W-AlertRules | PXVB |
+| L68 | "Thống kê tần suất" (FR-CC-054) đếm theo gì? | **Đề xuất, chưa chốt:** theo rule và ngày, trong khoảng thời gian chọn | API thống kê mới, W-AlertCenter | PXVB |
+| L69 | Snooze (FR-CC-055, P2) có vào R0 không? | **Đề xuất, chưa chốt:** hoãn sang sau R0 (đã ghi ở L17) | FR-CC-055 | PO |
+| L70 | Chuyển worker và relay RabbitMQ (L11, L12) sang E25? | **Đề xuất, chưa chốt:** có, cùng L08 | Vận hành, realtime nhiều nút | Dev lead |
+| L71 | Mức hiển thị cảnh báo chung: có dùng "Cấp A/B/C" không, và có tách khỏi cấp lỗi QC không? | **Đã chốt (2026-10-25):** cảnh báo chung hiển thị theo mức `CRITICAL` = **Khẩn** (đỏ), `WARN` = **Cảnh báo** (vàng), `INFO` = **Thông tin** (xanh mực). Chữ "Cấp A/B/C" chỉ dùng cho cấp lỗi QC (`DESIGN-SYSTEM.md` §3). Bậc leo thang hiển thị là "Bậc 0/1/2", không dùng "Cấp" | Bản vẽ T-12, W-AlertCenter, T-13, `DESIGN-SYSTEM.md` §3 (đã cập nhật) | PXVB (xác nhận nhãn) |
+| L72 | Nhãn trạng thái cảnh báo | **Đã chốt (2026-10-25):** OPEN = "Chưa xác nhận", ACK = "Đã biết", IN_PROGRESS = "Đang xử lý", RESOLVED = "Đã xử lý", CLOSED = "Đã đóng" | Bản vẽ T-12, W-AlertCenter; `DESIGN-SYSTEM.md` §3 | PXVB (xác nhận nhãn) |
