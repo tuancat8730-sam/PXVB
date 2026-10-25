@@ -102,9 +102,9 @@ Các mã này đã có trong `AlertRuleCatalog`, nhưng không có lệnh `raise
 | G4 | Email chỉ gửi cho CRITICAL (L18/L26). Báo cáo định kỳ ngoài phạm vi | Thêm khi RP sẵn sàng |
 | G5 | Scanner và bộ đếm chạy trong tiến trình `pxvb-api` (L11) | Chuyển worker + Quartz ở E25 |
 
-## 6. Câu hỏi cần PXVB / PO chốt (đề xuất ghi vào `OPEN-QUESTIONS.md` là L64–L72)
+## 6. Câu hỏi cần PXVB / PO chốt (L64–L72 đã ghi vào `OPEN-QUESTIONS.md`)
 
-`OPEN-QUESTIONS.md` hiện kết thúc ở L63, nên các mã này chưa bị trùng.
+**Trạng thái (2026-10-25):** L64–L70 đã chốt theo đề xuất của dev-team, PO duyệt. L71–L72 chốt trước đó. Chi tiết và điều kiện nằm trong `OPEN-QUESTIONS.md` mục E04.
 
 | Mã | Câu hỏi | Đề xuất mặc định (nếu chưa có trả lời) |
 |---|---|---|
@@ -116,6 +116,15 @@ Các mã này đã có trong `AlertRuleCatalog`, nhưng không có lệnh `raise
 | L69 | Snooze (FR-CC-055, P2) có vào R0 không? | Hoãn sang sau R0 (đã ghi ở L17) |
 | L70 | Chuyển worker + relay RabbitMQ (L11/L12) sang E25? | Có, cùng L08 |
 | L71 (**đã chốt 2026-10-25**) | Mức hiển thị cảnh báo chung: CRITICAL/WARN/INFO có hiển thị theo "Cấp A/B/C" như bản vẽ không? "Cấp A/B/C" có được tách hẳn khỏi cấp lỗi QC không? | Hiển thị CRITICAL = đỏ "Khẩn", WARN = vàng, INFO = xanh mực. Chữ "Cấp A/B/C" chỉ dùng cho cấp lỗi QC. Cập nhật `DESIGN-SYSTEM.md` §3 và bản vẽ T-12, W-AlertCenter (F18) |
+
+**Quyết định L64–L70 (2026-10-25, theo đề xuất dev-team, PO duyệt):**
+- **L64:** ghi chú bắt buộc khi RESOLVED, không rỗng sau khi cắt khoảng trắng, kiểm ở server (RFC7807 tiếng Việt). Backend cần sửa (F3).
+- **L65:** giữ quyền `alerting.alert.handle`, không giới hạn theo người nhận. Kiểm phạm vi làm khi có L07. Rủi ro chấp nhận: đến lúc đó chưa chặn được xử lý chéo dây chuyền, nên không đưa nhiều dây chuyền ra production trước L07 (F10).
+- **L66:** tái diễn mức tăng thì nâng mức và gửi lại thông báo; lên CRITICAL thì gửi email. Tái diễn cùng mức trong cửa sổ dedup chỉ tăng bộ đếm. Sau cửa sổ thì tạo alert mới (F2, F11).
+- **L67:** không làm bảng phiên bản rule. Audit trước/sau + lý do bắt buộc; mỗi alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise. **Điều kiện:** kiểm CLAUDE.md (ngưỡng phải dùng masterdata có phiên bản). Nếu rule cảnh báo là ngưỡng, phải chuyển sang phiên bản (cỡ L).
+- **L68:** đếm theo rule và BusinessDate trong khoảng chọn, tối đa 90 ngày. Index `(rule_code, raised_at)`.
+- **L69:** snooze không vào R0, hoãn sang P2. Khi làm, CRITICAL không được snooze.
+- **L70:** chuyển worker và relay sang E25 **có điều kiện**: chỉ sau khi xác nhận không có đường R0 nào (kể cả email CRITICAL và outbox như `pl.order.confirmed`) phụ thuộc relay. Đến lúc đó, scanner chạy trên một instance duy nhất.
 | L72 (**đã chốt 2026-10-25**) | Nhãn trạng thái: dùng "Chưa xác nhận / Đã biết / Đang xử lý / Đã xử lý / Đã đóng" tương ứng OPEN / ACK / IN_PROGRESS / RESOLVED / CLOSED? | Dùng đúng bảng ánh xạ này, PXVB xác nhận nhãn (F18) |
 
 ## 7. Kế hoạch thực hiện
@@ -128,55 +137,56 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 0.1 | Chạy `AlertingIT` + `AlertRealtimeIT` 5 lần liên tiếp trên MySQL 8.4 (`-Dpxvb.test.mysql=8.4`) để tái hiện hoặc bác bỏ F1 | ✅ 5/5 xanh (mỗi lượt 8 + 2 test). Lượt đầu lỗi hạ tầng Ryuk/Colima, đã xử lý bằng `TESTCONTAINERS_RYUK_DISABLED=true` (không đổi mã) | Ghi số lần đỏ/xanh vào nhật ký |
 | 0.2 | Với F1: xác nhận nguyên nhân bằng log (scanner nào tạo thông báo trong khoảng test) | 🟡 F1 không tái hiện: 5 lượt riêng và 1 lượt full suite đều xanh. Giữ F1 ở mức rủi ro, chưa sửa test | Nếu không phải scanner, mở rủi ro mới |
 | 0.3 | Baseline `./mvnw verify` trên 8.0 và 8.4 | 🟡 8.4 xong: 93 test, 13 lỗi (ProductionIT 11, MaterialIT 2), đúng baseline E02, không có lỗi E04. 8.0 chưa chạy | Số test xanh/đỏ trước khi sửa. Lưu ý: 13 lỗi sẵn có ở `ProductionIT`/`MaterialIT` (lệch thời gian ca) không thuộc E04 |
-| 0.4 | Chốt L64–L70 với PXVB/PO | ⬜ | Pha 2 và 3 chờ L64–L66 và L68 |
+| 0.4 | Chốt L64–L70 với PXVB/PO | ✅ 2026-10-25 theo đề xuất dev-team (L67 và L70 có điều kiện, xem mục 6) | Pha 2 và 3 đã có quyết định L64–L66 và L68 để viết test |
 
 ### Pha 1 – Ổn định nền (không đổi nghiệp vụ)
 | ID | Việc | Trạng thái | Mức |
 |---|---|---|---|
-| 1.1 | Sửa F1: test không giả định `unread == 0` toàn cục. Cách sửa tùy kết quả 0.2 (tắt scanner trong test, hoặc đếm theo phần tử vừa tạo). Test đỏ trước khi sửa nếu tái hiện được | ⬜ | CAO |
+| 1.1 | Sửa F1: test không giả định `unread == 0` toàn cục. Cách sửa tùy kết quả 0.2 (tắt scanner trong test, hoặc đếm theo phần tử vừa tạo). Test đỏ trước khi sửa nếu tái hiện được | ✅ Chọn cách đếm theo phần tử vừa tạo: `notificationsCanBeMarkedRead` chỉ kiểm thông báo của cảnh báo vừa raise (không phụ thuộc số thông báo toàn cục). F1 chưa tái hiện, nên không có test đỏ | CAO |
 | 1.2 | F7: severity không hợp lệ → `BusinessException(VALIDATION)`, test đỏ trước | ✅ `AlertService.parseSeverity` (kiểm tra ngay đầu `raise`); test đơn vị `AlertInputRulesTest` đỏ rồi xanh | TB |
 | 1.3 | F6: vượt 50.000 dòng → lỗi VALIDATION rõ ràng, không cắt im lặng; test | ✅ `requireWithinExportLimit` + lấy `MAX+1` dòng để đếm; test đơn vị ở `AlertInputRulesTest` (IT với 50.001 dòng không thực tế) | TB |
-| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | ⬜ | TB |
+| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | ✅ Bỏ qua rule không active (test `disabledRuleDoesNotEscalateOpenAlerts`). Tải rule một lần theo mã trong mỗi lượt quét: `AlertServiceEscalationTest` đỏ trước (findByCode được gọi theo từng alert), xanh sau | TB |
 
 ### Pha 2 – Vòng đời và leo thang
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
-| 2.1 | F3: ghi chú bắt buộc khi RESOLVED; test đỏ trước | ⬜ | L64 |
-| 2.2 | F2: nâng mức khi tái diễn (chỉ tăng, không hạ); khi nâng thì gửi lại thông báo và email nếu CRITICAL; test đỏ trước (PR_STOP_LONG tái diễn sau 15' → CRITICAL, có email) | ⬜ | L66 |
-| 2.3 | F11: hành vi tái diễn trong cửa sổ dedup theo L66 | ⬜ | L66 |
-| 2.4 | F10: kiểm tra quyền xử lý theo người nhận hoặc phạm vi | ⬜ | L65, L07 |
-| 2.5 | Test leo thang đa cấp: không leo lại cấp đã leo; ACK hoặc IN_PROGRESS dừng leo thang; rule tắt thì không leo | ⬜ | G1 |
+| 2.1 | F3: ghi chú bắt buộc khi RESOLVED; test đỏ trước | ✅ Unit `AlertInputRulesTest` 8/8 xanh; IT `resolveWithoutNoteIsRejectedAndKeepsStatus` xanh (chạy lại 2026-10-25 sau khi sửa Docker) | L64 (đã chốt) |
+| 2.2 | F2: nâng mức khi tái diễn (chỉ tăng, không hạ); khi nâng thì gửi lại thông báo và email nếu CRITICAL. Nhánh alert đã tồn tại hiện bỏ qua mức yêu cầu. IT `higherSeverityRecurrenceEscalatesAndEmailsOnceWhileSameLevelOnlyCounts` đã viết | ✅ Code (`AlertService.recur`, `Alert.raiseSeverity`, `renotify`); IT `higherSeverityRecurrenceEscalatesAndEmailsOnceWhileSameLevelOnlyCounts` xanh. Email đi một lần cho mỗi người nhận hiện tại (không gửi lặp khi tái diễn cùng mức) | L66 (đã chốt) |
+| 2.3 | F11: tái diễn cùng mức trong cửa sổ dedup chỉ tăng bộ đếm; sau cửa sổ tạo alert mới | ✅ Cùng mã với 2.2 (IT ở 2.2). IT `recurrenceAfterDedupWindowCreatesNewAlert` (backdate `last_occurred_at` qua JDBC) xanh | L66 (đã chốt) |
+| 2.4 | F10: kiểm tra phạm vi dây chuyền/máy khi xử lý. Chỉ làm sau L07; đến lúc đó giữ permission-only (xem L65). Đề xuất L07 đã ghi trong `OPEN-QUESTIONS.md`: alerting là consumer đầu tiên, lọc theo máy qua `MasterdataQueries` | ✅ Theo L07 (đã chốt 2026-10-25): `MachineInfo.lineCode`; cột `sys_alert.line_code` snapshot khi raise (V20261025_31); list và export lọc trong SQL; detail, ack, start, resolve, close trả 403 ngoài phạm vi; UNIT chưa có dữ liệu nên không khớp (fail-closed). IT `scopedUserCannotActOnAlertOfAnotherLine`, `listAndExportShowOnlyAlertsOfTheScopedLine`, `alertWithoutLineIsVisibleOnlyToAllScope`, `unitScopeSeesNothingUntilUnitsAreMappedToLines` đỏ trước, xanh sau | L65 (đã chốt), L07 (đã chốt) |
+| 2.5 | Test leo thang đa cấp: không leo lại cấp đã leo; ACK hoặc IN_PROGRESS dừng leo thang; rule tắt thì không leo | ✅ 4 IT: `escalationAdvancesOneLevelAtATimeAndNeverRepeatsALevel`, `acknowledgedAlertStopsEscalation`, `inProgressAlertStopsEscalation`, `disabledRuleDoesNotEscalateOpenAlerts`. Lỗi thật đã sửa: `escalateDue` không kiểm tra rule tắt (test đỏ trước) | G1 |
 
 ### Pha 3 – Trung tâm cảnh báo (API)
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
-| 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ⬜ | Không |
-| 3.2 | F4b: `GET /alerts/stats` đếm theo rule/ngày/module trong khoảng; IT | ⬜ | L68 |
-| 3.3 | F9: ghi lý do thay đổi rule trong audit (nếu L67 chọn "chỉ audit") | ⬜ | L67 |
+| 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ✅ Thêm tham số `shiftSessionId` ở controller và `AlertService.search`/`export`. IT `alertListAndExportCanBeFilteredByShiftSession` đỏ trước, xanh sau (danh sách và số dòng xuất Excel) | Không |
+| 3.2 | F4b: `GET /alerts/stats` đếm theo rule và BusinessDate trong khoảng tối đa 90 ngày; index `(rule_code, raised_at)`; IT kiểm ranh giới ngày theo BusinessDate, không theo UTC | ✅ `AlertService.stats` (lọc phạm vi như danh sách; ngày nghiệp vụ theo `Asia/Ho_Chi_Minh` tại thời điểm raise; tối đa 90 ngày, ngoài khoảng → 400); index `ix_alert_rule_raised` (V20261025_32). IT `statsCountAlertsByBusinessDateInBusinessZone` (17:30Z = ngày sau), `statsRejectRangeOverNinetyDays`, `statsOnlyCountAlertsInScope` | L68 (đã chốt) |
+| 3.3 | F9: audit trước/sau và lý do thay đổi bắt buộc khi sửa rule; alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise; IT kiểm snapshot không đổi khi rule đổi sau đó | ✅ `AlertRuleService.update`: bắt buộc `reason` (400 nếu thiếu), ghi `sys_audit_log` với `field_changes` trước/sau qua `AuditLogWriter`. `sys_alert_rule.version` tăng mỗi lần sửa; alert lưu `rule_version` và `rule_snapshot` (V20261025_33). IT `ruleChangeWithoutReasonIsRejected`, `ruleChangeIsAuditedWithBeforeAfterValuesAndReason`, `alertKeepsRuleSnapshotFromItsRaiseAfterTheRuleChanges` đỏ trước, xanh sau. Kiểm CLAUDE.md: rule chỉ chứa cấu hình định tuyến, ngưỡng nằm ở masterdata có phiên bản (producer), nên giữ L67 | L67 (đã chốt) |
 
 ### Pha 4 – Đo lường và vận hành
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
-| 4.1 | F14: Micrometer `Timer` đo `raise → push sau commit`, gắn tag theo mức; IT kiểm timer được ghi | ⬜ | Không |
-| 4.2 | Ngưỡng NFR-004 (5 phút) đưa vào cấu hình, không hard-code | ⬜ | Không |
-| 4.3 | L11/L12: worker + relay RabbitMQ | ⏸ | L70 → E25 |
+| 4.1 | F14: Micrometer `Timer` đo `raise → push sau commit`, gắn tag theo mức; IT kiểm timer được ghi | ✅ `AlertNotifyMetrics` (`pxvb.alert.notify.latency`, tag `severity`). Đo từ đầu raise đến sau commit; push realtime đã đẩy sau commit qua `RealtimePublisher`. IT `raiseRecordsNotifyLatencyTimer` | Không |
+| 4.2 | Ngưỡng NFR-004 (5 phút) đưa vào cấu hình, không hard-code | ✅ `pxvb.alerting.notify-latency-target` (mặc định `PT5M`); vượt ngưỡng tăng `pxvb.alert.notify.breach`. `AlertNotifyMetricsTest` 3/3 | Không |
+| 4.3 | L11/L12: worker + relay RabbitMQ. Chỉ chuyển khi đã kiểm tra không có đường R0 nào phụ thuộc relay | ⏸ | L70 (có điều kiện) → E25 |
 
 ### Pha 5 – Unit test và kiến trúc
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | ⬜ |
-| 5.2 | Kiểm tra `ArchitectureTest` vẫn xanh; alerting chỉ dùng `identity.contract`, `masterdata.contract`, `dataio.application` | ⬜ |
+| 5.1 | F8: unit test thuần cho `Alert` (vòng đời, `recordRecurrence`), `AlertRuleCatalog` (không trùng mã, JSON hợp lệ), parse chính sách. Mục tiêu ≥ 80% dòng của `alerting.domain` và `alerting.application` | ✅ **Chấp nhận (PO, 2026-10-25):** tiêu chí đo kết hợp — unit test hiện tại cộng IT trong `pxvb-api` đạt **84,8%** (540/637 dòng) của `domain` + `application`. Unit thuần (56,4%) không đạt 80%; phần còn thiếu để viết unit (`WorkflowEventSink`, `AlertService`, `EmailService`, `Notification`, `NotificationService`) được ghi nhận là nợ kỹ thuật, làm khi cần. Unit test hiện có: `AlertTest` (8), `AlertRuleCatalogTest` (2), `AlertNotifyMetricsTest` (3), `AlertServiceUnitTest` (10), `AlertRuleServiceTest` (3). Coverage (JaCoCo, đo **theo dòng**, `domain` + `application`, 637 dòng): unit riêng của module **56,4%** (359/637) — chưa đạt 80%; IT trong `pxvb-api` **84,8%** (540/637). Chưa phủ bằng unit: `WorkflowEventSink` (56 dòng), `AlertService` (75), `EmailService` (34), `Notification` (24), `NotificationService` (22). *Lưu ý: các số 31,4% và 84,6% ghi trước đây là theo lệnh (instruction), không phải dòng; commit `6863f7b` mang số sai này.* | F8 |
+| 5.2 | Kiểm tra `ArchitectureTest` vẫn xanh; alerting chỉ dùng `identity.contract`, `masterdata.contract`, `dataio.application` | ✅ `ArchitectureTest` 16/16 xanh sau mọi thay đổi (alerting dùng `common.audit` của building-blocks) |
 
 ### Pha 6 – Giao diện (UI) cho E04
 
-Điều kiện chung: bản vẽ được PXVB duyệt (`DESIGN-SYSTEM.md` §9); khung tương ứng sẵn sàng (`src/web` React chưa có; RN tablet UI chưa có). Mọi màn đạt cổng §8 và đủ sáu trạng thái §5, với nội dung cảnh báo thật (không chỉ khung chung).
+Điều kiện chung: bản vẽ được PXVB duyệt (`DESIGN-SYSTEM.md` §9) — **đã duyệt (2026-10-25)** theo phản hồi của PO, gồm T-12, W-AlertCenter, W-AlertRules, W-Notifications; khung tương ứng sẵn sàng (`src/web` React chưa có; RN tablet UI chưa có) — **còn chặn Pha 6b**, cần quyết định dựng khung. Mọi màn đạt cổng §8 và đủ sáu trạng thái §5, với nội dung cảnh báo thật (không chỉ khung chung).
 
 **6a. Thiết kế (D) — làm được ngay, không cần khung code**
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
 | D1 | Bổ sung T-12: luồng xử lý (chọn nguyên nhân từ danh mục `ALERT_CAUSE`, bắt buộc; ghi chú, bắt buộc; trạng thái Đang xử lý / Đã xử lý); xem lịch sử xử lý | ✅ `T12-Alerts` (5 bước, nút hoàn tất có điều kiện) | L64, L72 |
 | D2 | Bổ sung W-AlertCenter: lọc theo ca, máy, khoảng thời gian; nút xuất Excel; chi tiết có lịch sử xử lý và cấp leo thang; khu vực thống kê tần suất (FR-CC-054) | ✅ `W-AlertCenter` (lọc ca/máy/ngày, Excel, thống kê, cột leo thang, lịch sử) | L68, L72 |
-| D3 | Vẽ màn Quy tắc cảnh báo (mẫu W2 có phiên bản và hiệu lực): người nhận, leo thang, cửa sổ dedup, mức, bật/tắt, ngày hiệu lực, lịch sử (FR-CC-050) | ✅ `W-AlertRules` (mẫu W2) | L67 |
+| D3 | Vẽ màn Quy tắc cảnh báo: người nhận, leo thang, cửa sổ dedup, mức, bật/tắt, lịch sử (FR-CC-050) | ✅ `W-AlertRules` (mẫu W2). **Cần sửa theo L67:** đang vẽ "hiệu lực từ" và "lịch sử phiên bản", phải đổi thành audit trước/sau + lý do (xem D8) | L67 |
+| D8 | Sửa W-AlertRules theo L67: bỏ "hiệu lực từ" và "lịch sử phiên bản"; thay bằng lịch sử thay đổi (audit) có lý do; ghi chú rằng alert lưu snapshot rule | ✅ Sửa trong `generator/specs.py`, sinh lại `W-AlertRules.dc.html` (chỉ file này đổi). Có ô lý do bắt buộc, "Số lần sửa", nút "Lưu thay đổi", và ghi chú snapshot | D3, L67 |
 | D4 | Vẽ chuông và danh sách thông báo web; vẽ màn danh sách thông báo tablet | ✅ `W-Notifications`, `T13-Notifications`; nút Thông báo trong header web và tablet | – |
 | D5 | Cập nhật ánh xạ mức và trạng thái: `DESIGN-SYSTEM.md` §3, T-12, W-AlertCenter (F18) | ✅ Đã áp dụng L71–L72 trong `T12-Alerts`, `T13-Notifications`, `W-AlertCenter` và `DESIGN-SYSTEM.md` §3 | L71, L72 (đã chốt) |
 | D6 | Viết nội dung cảnh báo thật cho 6 trạng thái của các màn trên (không dùng khung chung); kiểm cổng §8: bàn phím, tương phản, 1366×768, tablet 10″ (F19) | 🟡 Đã kiểm bố cục headless (2026-10-25): không tràn khung ở 1366×800 và 1280×800, nút tablet ≥ 56 px, ô nhập có nhãn. **Còn:** 6 trạng thái nội dung cảnh báo thật, bàn phím/Tab, đo tương phản, 1366×768, tablet 10″ thật | D1–D5 |
@@ -210,7 +220,7 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 
 | Yêu cầu | Hiện tại | Đích E04 | Pha |
 |---|---|---|---|
-| FR-CC-050 | 🟡 (thiết kế ⬜) | ✅ (F9 theo L67) · UI | 3.3, D3, 6.3 |
+| FR-CC-050 | 🟡 (thiết kế ⬜) | ✅ (audit + lý do + snapshot, theo L67) · UI | 3.3, D3, D8, 6.3 |
 | FR-CC-051 | 🟡 (thiết kế ⬜) | ✅ · UI xử lý | 2.1, 2.4, D1, 6.1, 6.2 |
 | FR-CC-052 | 🟡 | ✅ | 2.5, 1.4 |
 | FR-CC-053 | 🟡 (server; thiết kế một phần) | ✅ server · ✅ tablet | 6.1, D1, D4 |
@@ -227,7 +237,9 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 |---|---|---|
 | CAO | F1: CI đỏ ngẫu nhiên làm mất niềm tin vào test | Pha 0 tái hiện trước khi sửa |
 | CAO | F2: cảnh báo CRITICAL không gửi email khi tái diễn | Test đỏ ở 2.2 |
-| CAO | F10: người không thuộc phạm vi xử lý cảnh báo | Chờ L65 và L07; test ở 2.4 |
+| CAO | F10: người không thuộc phạm vi xử lý cảnh báo. PO đã chấp nhận permission-only đến khi có L07 (L65) | Không đưa nhiều dây chuyền ra production trước L07; làm 2.4 sau L07 |
+| CAO | L67: CLAUDE.md yêu cầu ngưỡng dùng masterdata có phiên bản; nếu rule cảnh báo là ngưỡng thì quyết định audit-only (L67) bị vượt | Kiểm CLAUDE.md và xác nhận với PO trước khi làm 3.3; nếu cần thì đổi sang phiên bản (cỡ L) |
+| TB | L70: chuyển relay sang E25 có thể chặn email CRITICAL hoặc outbox khác nếu còn phụ thuộc | Kiểm điều kiện L70 trước khi chuyển; đến lúc đó scanner chạy đơn nút |
 | TB | F5: `escalateDue` chậm khi số alert OPEN tăng | Giảm N+1 ở 1.4; đo ở 4.1 |
 | TB | 22 rule chưa có nguồn phát dễ tạo cảm giác "đã có" | Ghi rõ ở mục 4; không tính vào tiến độ E04 |
 | TB | Bộ đếm và scanner trong tiến trình (L11) khi nhiều nút | Ghi rõ G5; chuyển E25 |
@@ -239,7 +251,11 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | Ngày | Ghi chú |
 |---|---|
 | 2026-10-25 | Rà soát tĩnh E04 theo SRS §4.6, §4.9, NFR-004; phát hiện F1–F15; tạo kế hoạch này. **Chưa chạy test, chưa sửa mã.** Chờ xác nhận để bắt đầu Pha 0 |
+| 2026-10-25 | Pha 2.1 và 2.2–2.3 (mã): thêm `AlertService.requireResolutionNote` (L64) và nhánh tái diễn nâng mức (L66, `recur` + `renotify`, `Alert.raiseSeverity`). Unit `AlertInputRulesTest` 8/8 xanh; `ArchitectureTest` 16/16 xanh; `AlertingIT` biên dịch được. **IT chưa chạy được:** Testcontainers không nhận Docker của Colima (`/var/run/docker.sock` không có, `DOCKER_HOST` và `docker.host` không được dùng trong JVM test). Đã thử tạm `~/.testcontainers.properties` rồi xóa. Cần xử lý môi trường (ví dụ symlink socket) trước khi xác nhận IT |
+| 2026-10-25 | PO duyệt đề xuất dev-team cho L64–L70 (xem mục 6). Ghi vào `OPEN-QUESTIONS.md` (đã chốt). Đánh dấu 0.4 ✅; cập nhật mục 7, 8, 9. Chưa sửa mã, chưa sửa bản vẽ W-AlertRules (D8 ⬜) |
 | 2026-10-25 | Pha 0.1 xong (5/5 xanh trên 8.4). Full verify 8.4: 93 test, 13 lỗi baseline E02, không có E04. F1 không tái hiện. Pha 1.2 và 1.3 xong (TDD: test đỏ do thiếu symbol, rồi xanh; `AlertingIT` + `AlertRealtimeIT` vẫn 10/10 xanh). Chưa làm 1.1 (F1, không tái hiện nên chưa sửa), 1.4 (F5), Pha 2+ (chờ L64–L66). |
 | 2026-10-25 | Chốt L71–L72 theo đề xuất (ghi `OPEN-QUESTIONS.md` mục E04, đánh dấu đã chốt); D5 xong: nhãn Khẩn / Cảnh báo / Thông tin, trạng thái theo L72, bậc leo thang "Bậc n", áp dụng trong T-12, T-13, W-AlertCenter và `DESIGN-SYSTEM.md` §3. L64–L70 vẫn chờ PXVB. **D6 (kiểm trình duyệt) chưa làm.** |
 | 2026-10-25 | D1–D4 xong: sửa `generator/specs.py` và `generator/lib.py`, chạy lại `specs.py` và `states.py` (tái sinh đúng, không đổi màn ngoài phạm vi trừ header). Màn mới/cập nhật: `T12-Alerts`, `T13-Notifications`, `W-AlertCenter`, `W-AlertRules`, `W-Notifications`; README đợt 6 đã ghi. **Chưa kiểm trong trình duyệt (D6), chưa chốt L71–L72 (D5).** |
 | 2026-10-25 | Đối chiếu với `docs/design/` (T-12, W-AlertCenter, DESIGN-SYSTEM §3–§8): thêm mục 2b, F16–F19, L71–L72; Pha 6 tách thành thiết kế (D1–D7) và build (6.1–6.5); việc của epic khác chuyển sang X1–X4. **Chưa sửa bản vẽ** (chờ duyệt) |
+| 2026-10-25 | Pha 2.4 (L07, alerting là consumer đầu tiên) theo TDD: 4 IT đỏ rồi xanh; `AlertingIT` 20/20, `AlertRealtimeIT` 2/2, `ArchitectureTest` 16/16. Lệch so với quyết định L07: snapshot lưu `line_code` (mã dây chuyền trong `md_machine`), không phải `line_id`, vì masterdata chỉ có mã. UNIT chưa được mở rộng (masterdata chưa có đơn vị) nên UNIT không thấy cảnh báo nào |
+| 2026-10-25 | Pha 5.1: PO chấp nhận tiêu chí đo kết hợp (unit + IT = 84,8% dòng của `domain` + `application`); unit thuần 56,4% ghi nhận là nợ kỹ thuật. Số liệu cũ 31,4% / 84,6% là theo lệnh, đã sửa |

@@ -1,22 +1,36 @@
 package vn.pxvb.alerting.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.micrometer.core.instrument.Timer;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vn.pxvb.alerting.application.Repositories.AlertRepository;
 import vn.pxvb.alerting.application.Repositories.HistoryRepository;
 import vn.pxvb.alerting.application.Repositories.RecipientRepository;
@@ -26,9 +40,11 @@ import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.alerting.domain.AlertHistory;
 import vn.pxvb.alerting.domain.AlertRecipient;
 import vn.pxvb.alerting.domain.AlertRule;
+import vn.pxvb.alerting.infrastructure.AlertNotifyMetrics;
 import vn.pxvb.alerting.infrastructure.RealtimePublisher;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.common.security.DataScope;
 import vn.pxvb.dataio.application.ExportService;
 import vn.pxvb.identity.contract.IdentityDirectory;
 import vn.pxvb.masterdata.contract.MasterdataQueries;
@@ -64,8 +80,12 @@ public class AlertService implements AlertRaiser {
 
     private static final Set<Alert.Status> ACTIVE = Set.of(Alert.Status.OPEN, Alert.Status.ACK,
             Alert.Status.IN_PROGRESS);
+    private static final List<DataScope> ALL_SCOPES = List.of(DataScope.all());
 
     static final int MAX_EXPORT_ROWS = 50_000;
+    static final int MAX_STATS_DAYS = 90;
+    /** Múi giờ nghiệp vụ, như {@code ProductionTime} và {@code MtTime}. */
+    static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     /** Mức do module nghiệp vụ yêu cầu; {@code null} nghĩa là lấy theo rule. Giá trị sai bị từ chối (F7). */
     static Alert.Severity parseSeverity(String value) {
@@ -78,6 +98,15 @@ public class AlertService implements AlertRaiser {
             throw new BusinessException(ErrorCode.VALIDATION, "Mức cảnh báo không hợp lệ: " + value,
                     Map.of("severity", List.of("Mức phải là INFO, WARN hoặc CRITICAL")));
         }
+    }
+
+    /** Ghi chú xử lý bắt buộc khi RESOLVED: cắt khoảng trắng, không được rỗng (FR-CC-051, L64). */
+    static String requireResolutionNote(String note) {
+        if (note == null || note.isBlank()) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Cần ghi chú khi xử lý xong cảnh báo",
+                    Map.of("note", List.of("Vui lòng nhập ghi chú xử lý")));
+        }
+        return note.trim();
     }
 
     /** Từ chối xuất khi vượt trần, thay vì cắt im lặng (F6). */
@@ -100,11 +129,14 @@ public class AlertService implements AlertRaiser {
     private final MasterdataQueries masterdata;
     private final EmailService email;
     private final ExportService exports;
+    private final AlertNotifyMetrics notifyMetrics;
 
     public AlertService(RuleRepository rules, AlertRepository alerts, HistoryRepository history,
                         RecipientRepository recipients, IdentityDirectory directory,
                         NotificationService notifications, RealtimePublisher realtime, ObjectMapper mapper,
-                        Clock clock, MasterdataQueries masterdata, EmailService email, ExportService exports) {
+                        Clock clock, MasterdataQueries masterdata, EmailService email, ExportService exports,
+                        AlertNotifyMetrics notifyMetrics) {
+        this.notifyMetrics = notifyMetrics;
         this.rules = rules;
         this.alerts = alerts;
         this.history = history;
@@ -138,36 +170,37 @@ public class AlertService implements AlertRaiser {
                 .filter(a -> !a.getLastOccurredAt().isBefore(windowStart));
         String payloadJson = toJson(c.payload());
         if (existing.isPresent()) {
-            Alert alert = existing.get();
-            alert.recordRecurrence(now, c.message(), payloadJson);
-            return new AlertRef(alert.getId(), false);
+            return recur(existing.get(), rule, c, requestedSeverity, now, payloadJson);
         }
 
         Alert.Severity severity = requestedSeverity == null ? rule.getSeverity() : requestedSeverity;
+        Timer.Sample latency = notifyMetrics.start();
         Alert alert = alerts.save(new Alert(rule.getCode(), severity, rule.getModule(), c.subjectType(),
-                c.subjectId(), c.machineId(), c.shiftSessionId(), c.title(), c.message(), payloadJson, dedupKey,
-                now));
+                c.subjectId(), c.machineId(), lineCodeOf(c.machineId()), c.shiftSessionId(), c.title(), c.message(),
+                payloadJson, dedupKey, now, rule.getVersion(), ruleSnapshotJson(rule)));
         history.save(new AlertHistory(alert.getId(), null, Alert.Status.OPEN.name(), null, now, null));
 
         Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
         deliver(alert, targets, 0, now, c.title());
+        // Đăng ký sau các push của deliver nên chạy sau chúng: độ trễ là raise → push đã commit.
+        afterCommit(() -> notifyMetrics.recordPushed(severity, latency));
         return new AlertRef(alert.getId(), true);
     }
 
     // ---------- Vòng đời ----------
 
     @Transactional
-    public Alert acknowledge(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.ACK, userId, note, null);
+    public Alert acknowledge(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.ACK, userId, note, null, scopes);
     }
 
     @Transactional
-    public Alert startWork(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.IN_PROGRESS, userId, note, null);
+    public Alert startWork(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.IN_PROGRESS, userId, note, null, scopes);
     }
 
     @Transactional
-    public Alert resolve(UUID id, UUID userId, String cause, String note) {
+    public Alert resolve(UUID id, UUID userId, String cause, String note, List<DataScope> scopes) {
         if (cause == null || cause.isBlank()) {
             throw new BusinessException(ErrorCode.VALIDATION, "Cần chọn nguyên nhân khi xử lý xong cảnh báo",
                     Map.of("cause", List.of("Vui lòng chọn nguyên nhân")));
@@ -177,16 +210,18 @@ public class AlertService implements AlertRaiser {
                     Map.of("cause", List.of("Mã nguyên nhân '" + cause.trim()
                             + "' không thuộc danh mục ALERT_CAUSE")));
         }
-        return move(id, Alert.Status.RESOLVED, userId, note, cause.trim());
+        return move(id, Alert.Status.RESOLVED, userId, requireResolutionNote(note), cause.trim(), scopes);
     }
 
     @Transactional
-    public Alert close(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.CLOSED, userId, note, null);
+    public Alert close(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.CLOSED, userId, note, null, scopes);
     }
 
-    private Alert move(UUID id, Alert.Status target, UUID userId, String note, String cause) {
+    private Alert move(UUID id, Alert.Status target, UUID userId, String note, String cause,
+                       List<DataScope> scopes) {
         Alert alert = alerts.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        requireInScope(alert, scopes);
         Alert.Status from = alert.getStatus();
         Instant now = clock.instant();
         alert.transitionTo(target, userId, now);
@@ -204,10 +239,12 @@ public class AlertService implements AlertRaiser {
     /** Leo thang các cảnh báo chưa ACK quá hạn theo {@code escalationPolicy} (FR-CC-052). @return số cảnh báo leo thang. */
     @Transactional
     public int escalateDue(Instant now) {
+        Map<String, AlertRule> rulesByCode = rules.findAll().stream()
+                .collect(Collectors.toMap(AlertRule::getCode, Function.identity()));
         int count = 0;
         for (Alert alert : alerts.findByStatus(Alert.Status.OPEN)) {
-            AlertRule rule = rules.findByCode(alert.getRuleCode()).orElse(null);
-            if (rule == null) {
+            AlertRule rule = rulesByCode.get(alert.getRuleCode());
+            if (rule == null || !rule.isActive()) {
                 continue;
             }
             List<Level> levels = parseEscalation(rule.getEscalationPolicy());
@@ -232,24 +269,91 @@ public class AlertService implements AlertRaiser {
         return count;
     }
 
+    /**
+     * Tái diễn trong cửa sổ dedup (L66): luôn tăng bộ đếm. Nếu mức yêu cầu cao hơn thì nâng mức, ghi lịch sử và gửi
+     * lại cho người nhận hiện tại (kèm email nếu lên CRITICAL). Cùng mức hoặc thấp hơn thì không gửi lại.
+     */
+    private AlertRef recur(Alert alert, AlertRule rule, AlertCommand c, Alert.Severity requested, Instant now,
+                           String payloadJson) {
+        alert.recordRecurrence(now, c.message(), payloadJson);
+        if (requested != null && alert.raiseSeverity(requested)) {
+            history.save(new AlertHistory(alert.getId(), alert.getStatus().name(), alert.getStatus().name(), null,
+                    now, "Nâng mức lên " + requested.name()));
+            Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
+            renotify(alert, targets, "UPDATED", c.title());
+        }
+        return new AlertRef(alert.getId(), false);
+    }
+
     private void deliver(Alert alert, Set<UUID> targets, int level, Instant now, String title) {
         if (targets.isEmpty()) {
             return;
         }
         recipients.saveAll(targets.stream().map(u -> new AlertRecipient(alert.getId(), u, level, now)).toList());
+        renotify(alert, targets, level == 0 ? "RAISED" : "ESCALATED", title);
+    }
+
+    /** Gửi thông báo trong ứng dụng, push realtime, và email nếu cảnh báo đang ở mức CRITICAL. */
+    private void renotify(Alert alert, Set<UUID> targets, String event, String title) {
+        if (targets.isEmpty()) {
+            return;
+        }
         notifications.notifyUsers(targets, "ALERT", title, alert.getMessage(), "/alerts/" + alert.getId(),
                 alert.getId());
-        realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(level == 0 ? "RAISED" : "ESCALATED", alert));
+        // RealtimePublisher tự đẩy sau commit (runAfterCommit).
+        realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(event, alert));
         if (alert.getSeverity() == Alert.Severity.CRITICAL) {
             email.sendAfterCommit(targets, "[PXVB][CRITICAL] " + title,
                     alert.getMessage() == null ? alert.getTitle() : alert.getMessage(), "/alerts/" + alert.getId());
         }
     }
 
+    /** Số cảnh báo theo mã rule và ngày nghiệp vụ (FR-CC-054). */
+    public record DayCount(String ruleCode, LocalDate businessDate, long count) {
+    }
+
+    private record RuleDay(String ruleCode, LocalDate businessDate) {
+    }
+
+    /**
+     * Thống kê theo rule và ngày nghiệp vụ trong [from, to], tối đa {@link #MAX_STATS_DAYS} ngày (L68).
+     * Ngày nghiệp vụ là ngày theo múi giờ {@link #BUSINESS_ZONE} tại thời điểm raise. Áp dụng phạm vi như danh sách.
+     */
+    @Transactional(readOnly = true)
+    public List<DayCount> stats(LocalDate from, LocalDate to, List<DataScope> scopes) {
+        requireStatsRange(from, to);
+        Instant start = from.atStartOfDay(BUSINESS_ZONE).toInstant();
+        Instant end = to.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant();
+        Specification<Alert> spec = (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.get("raisedAt"), start),
+                cb.lessThan(root.get("raisedAt"), end),
+                lineScope(root, cb, scopes));
+        Map<RuleDay, Long> counts = new HashMap<>();
+        for (Alert alert : alerts.findAll(spec)) {
+            RuleDay key = new RuleDay(alert.getRuleCode(), LocalDate.ofInstant(alert.getRaisedAt(), BUSINESS_ZONE));
+            counts.merge(key, 1L, Long::sum);
+        }
+        return counts.entrySet().stream()
+                .map(e -> new DayCount(e.getKey().ruleCode(), e.getKey().businessDate(), e.getValue()))
+                .sorted(Comparator.comparing(DayCount::businessDate).thenComparing(DayCount::ruleCode))
+                .toList();
+    }
+
+    private static void requireStatsRange(LocalDate from, LocalDate to) {
+        if (from == null || to == null || to.isBefore(from)) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Khoảng ngày thống kê không hợp lệ");
+        }
+        if (ChronoUnit.DAYS.between(from, to) + 1 > MAX_STATS_DAYS) {
+            throw new BusinessException(ErrorCode.VALIDATION,
+                    "Khoảng thống kê tối đa " + MAX_STATS_DAYS + " ngày");
+        }
+    }
+
     /** Xuất danh sách cảnh báo ra Excel theo bộ lọc (FR-CC-054), tối đa 50.000 dòng. */
     @Transactional(readOnly = true)
-    public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId) {
-        Page<Alert> page = search(module, severity, status, machineId,
+    public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
+                         UUID shiftSessionId, List<DataScope> scopes) {
+        Page<Alert> page = search(module, severity, status, machineId, shiftSessionId, scopes,
                 org.springframework.data.domain.PageRequest.of(0, MAX_EXPORT_ROWS + 1,
                         org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
                                 "raisedAt")));
@@ -267,7 +371,7 @@ public class AlertService implements AlertRaiser {
 
     @Transactional(readOnly = true)
     public Page<Alert> search(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
-                              Pageable pageable) {
+                              UUID shiftSessionId, List<DataScope> scopes, Pageable pageable) {
         Specification<Alert> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (module != null && !module.isBlank()) {
@@ -282,15 +386,92 @@ public class AlertService implements AlertRaiser {
             if (machineId != null) {
                 predicates.add(cb.equal(root.get("machineId"), machineId));
             }
+            if (shiftSessionId != null) {
+                predicates.add(cb.equal(root.get("shiftSessionId"), shiftSessionId));
+            }
+            predicates.add(lineScope(root, cb, scopes));
             return cb.and(predicates.toArray(Predicate[]::new));
         };
         return alerts.findAll(spec, pageable);
     }
 
+    /** Chi tiết cảnh báo cho hệ thống (không lọc phạm vi). Người dùng thật phải dùng bản có {@code scopes}. */
     @Transactional(readOnly = true)
     public AlertDetail detail(UUID id) {
+        return detail(id, ALL_SCOPES);
+    }
+
+    @Transactional(readOnly = true)
+    public AlertDetail detail(UUID id, List<DataScope> scopes) {
         Alert alert = alerts.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        requireInScope(alert, scopes);
         return new AlertDetail(alert, history.findByAlertIdOrderByAt(id), recipients.findByAlertId(id));
+    }
+
+    /** Phạm vi ALL thấy mọi cảnh báo; LINE chỉ thấy cảnh báo có dây chuyền khớp; UNIT chưa có dữ liệu nên không khớp. */
+    private static Predicate lineScope(Root<Alert> root, CriteriaBuilder cb, List<DataScope> scopes) {
+        if (grantsAll(scopes)) {
+            return cb.conjunction();
+        }
+        List<String> lineCodes = scopes.stream()
+                .filter(scope -> scope.type() == DataScope.Type.LINE && scope.value() != null)
+                .map(DataScope::value)
+                .toList();
+        return lineCodes.isEmpty() ? cb.disjunction() : root.get("lineCode").in(lineCodes);
+    }
+
+    /** Ném 403 khi cảnh báo nằm ngoài phạm vi người dùng (FR-CC-006; quyết định L07). */
+    private static void requireInScope(Alert alert, List<DataScope> scopes) {
+        if (!DataScope.permits(scopes, DataScope.Type.LINE, alert.getLineCode())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    private static boolean grantsAll(List<DataScope> scopes) {
+        return scopes.stream().anyMatch(scope -> scope.type() == DataScope.Type.ALL);
+    }
+
+    /** Chạy {@code action} sau khi transaction hiện tại commit; không có transaction thì chạy ngay. */
+    private static void afterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
+    }
+
+    /** Snapshot cấu hình rule gắn vào alert lúc raise (L67): không đổi khi rule được sửa sau đó. */
+    private String ruleSnapshotJson(AlertRule rule) {
+        ObjectNode snapshot = mapper.createObjectNode()
+                .put("severity", rule.getSeverity().name())
+                .put("dedupWindowMin", rule.getDedupWindowMin())
+                .put("active", rule.isActive());
+        snapshot.set("condition", jsonValue(rule.getConditionJson()));
+        snapshot.set("recipientPolicy", jsonValue(rule.getRecipientPolicy()));
+        snapshot.set("escalationPolicy", jsonValue(rule.getEscalationPolicy()));
+        return snapshot.toString();
+    }
+
+    private JsonNode jsonValue(String json) {
+        try {
+            return mapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Cấu hình rule không phải JSON hợp lệ", e);
+        }
+    }
+
+    /** Dây chuyền của máy tại thời điểm raise; null nếu không có máy hoặc máy chưa gán dây chuyền. */
+    private String lineCodeOf(UUID machineId) {
+        if (machineId == null) {
+            return null;
+        }
+        MasterdataQueries.MachineInfo machine = masterdata.machines(Set.of(machineId)).get(machineId);
+        return machine == null ? null : machine.lineCode();
     }
 
     // ---------- Chính sách ----------

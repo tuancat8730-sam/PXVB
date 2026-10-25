@@ -49,6 +49,10 @@ public class AlertRule extends AuditableEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    /** Số lần đã cấu hình; alert lưu lại khi raise để biết rule nào đã sinh ra nó (L67). */
+    @Column(nullable = false)
+    private int version = 1;
+
     protected AlertRule() {
     }
 
@@ -83,10 +87,15 @@ public class AlertRule extends AuditableEntity {
         if (active != null) {
             this.active = active;
         }
+        this.version++;
     }
 
     public String getCode() {
         return code;
+    }
+
+    public int getVersion() {
+        return version;
     }
 
     public String getModule() {

@@ -1,6 +1,7 @@
 package vn.pxvb.alerting.api;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +18,7 @@ import vn.pxvb.alerting.application.AlertService;
 import vn.pxvb.alerting.application.AlertService.AlertDetail;
 import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.common.security.CurrentUser;
+import vn.pxvb.common.security.DataScope;
 import vn.pxvb.common.web.PageResponse;
 
 /** Trung tâm cảnh báo (FR-CC-051, FR-CC-054). */
@@ -30,13 +32,14 @@ public class AlertController {
                            String subjectId, UUID machineId, UUID shiftSessionId, String title, String message,
                            String status, Instant raisedAt, Instant lastOccurredAt, int occurrenceCount,
                            Instant ackAt, UUID ackBy, Instant resolvedAt, UUID resolvedBy, String cause,
-                           String resolutionNote, int escalationLevel) {
+                           String resolutionNote, int escalationLevel, Integer ruleVersion, String ruleSnapshot) {
         static AlertDto from(Alert a) {
             return new AlertDto(a.getId(), a.getRuleCode(), a.getSeverity().name(), a.getModule(),
                     a.getSubjectType(), a.getSubjectId(), a.getMachineId(), a.getShiftSessionId(), a.getTitle(),
                     a.getMessage(), a.getStatus().name(), a.getRaisedAt(), a.getLastOccurredAt(),
                     a.getOccurrenceCount(), a.getAckAt(), a.getAckBy(), a.getResolvedAt(), a.getResolvedBy(),
-                    a.getCause(), a.getResolutionNote(), a.getEscalationLevel());
+                    a.getCause(), a.getResolutionNote(), a.getEscalationLevel(), a.getRuleVersion(),
+                    a.getRuleSnapshot());
         }
     }
 
@@ -76,11 +79,13 @@ public class AlertController {
                                          @RequestParam(required = false) Alert.Severity severity,
                                          @RequestParam(required = false) Alert.Status status,
                                          @RequestParam(required = false) UUID machineId,
+                                         @RequestParam(required = false) UUID shiftSessionId,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "20") int pageSize) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "raisedAt"));
-        return PageResponse.of(service.search(module, severity, status, machineId, pageable), AlertDto::from);
+        return PageResponse.of(service.search(module, severity, status, machineId, shiftSessionId, scopes(),
+                pageable), AlertDto::from);
     }
 
     @GetMapping("/export")
@@ -89,44 +94,56 @@ public class AlertController {
             @RequestParam(required = false) String module,
             @RequestParam(required = false) Alert.Severity severity,
             @RequestParam(required = false) Alert.Status status,
-            @RequestParam(required = false) UUID machineId) {
+            @RequestParam(required = false) UUID machineId,
+            @RequestParam(required = false) UUID shiftSessionId) {
         return org.springframework.http.ResponseEntity.ok()
                 .contentType(org.springframework.http.MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
                         org.springframework.http.ContentDisposition.attachment().filename("canh-bao.xlsx").build()
                                 .toString())
-                .body(service.export(module, severity, status, machineId));
+                .body(service.export(module, severity, status, machineId, shiftSessionId, scopes()));
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasAuthority('alerting.alert.view')")
+    public List<AlertService.DayCount> stats(@RequestParam LocalDate from, @RequestParam LocalDate to) {
+        return service.stats(from, to, scopes());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('alerting.alert.view')")
     public AlertDetailDto get(@PathVariable UUID id) {
-        return AlertDetailDto.from(service.detail(id));
+        return AlertDetailDto.from(service.detail(id, scopes()));
     }
 
     @PostMapping("/{id}/ack")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto ack(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.acknowledge(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.acknowledge(id, currentUser.require().userId(), note(req), scopes()));
     }
 
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto start(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.startWork(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.startWork(id, currentUser.require().userId(), note(req), scopes()));
     }
 
     @PostMapping("/{id}/resolve")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto resolve(@PathVariable UUID id, @RequestBody ResolveRequest req) {
-        return AlertDto.from(service.resolve(id, currentUser.require().userId(), req.cause(), req.note()));
+        return AlertDto.from(service.resolve(id, currentUser.require().userId(), req.cause(), req.note(), scopes()));
     }
 
     @PostMapping("/{id}/close")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto close(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.close(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.close(id, currentUser.require().userId(), note(req), scopes()));
+    }
+
+    /** Phạm vi dữ liệu của người dùng hiện tại (FR-CC-006); service lọc và từ chối theo phạm vi này. */
+    private List<DataScope> scopes() {
+        return currentUser.require().scopes();
     }
 
     private static String note(NoteRequest req) {
