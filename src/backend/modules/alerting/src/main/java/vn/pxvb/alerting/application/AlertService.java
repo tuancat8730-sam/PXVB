@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -217,9 +219,11 @@ public class AlertService implements AlertRaiser {
     /** Leo thang các cảnh báo chưa ACK quá hạn theo {@code escalationPolicy} (FR-CC-052). @return số cảnh báo leo thang. */
     @Transactional
     public int escalateDue(Instant now) {
+        Map<String, AlertRule> rulesByCode = rules.findAll().stream()
+                .collect(Collectors.toMap(AlertRule::getCode, Function.identity()));
         int count = 0;
         for (Alert alert : alerts.findByStatus(Alert.Status.OPEN)) {
-            AlertRule rule = rules.findByCode(alert.getRuleCode()).orElse(null);
+            AlertRule rule = rulesByCode.get(alert.getRuleCode());
             if (rule == null || !rule.isActive()) {
                 continue;
             }

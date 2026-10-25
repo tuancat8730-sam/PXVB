@@ -145,7 +145,7 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 1.1 | Sửa F1: test không giả định `unread == 0` toàn cục. Cách sửa tùy kết quả 0.2 (tắt scanner trong test, hoặc đếm theo phần tử vừa tạo). Test đỏ trước khi sửa nếu tái hiện được | ✅ Chọn cách đếm theo phần tử vừa tạo: `notificationsCanBeMarkedRead` chỉ kiểm thông báo của cảnh báo vừa raise (không phụ thuộc số thông báo toàn cục). F1 chưa tái hiện, nên không có test đỏ | CAO |
 | 1.2 | F7: severity không hợp lệ → `BusinessException(VALIDATION)`, test đỏ trước | ✅ `AlertService.parseSeverity` (kiểm tra ngay đầu `raise`); test đơn vị `AlertInputRulesTest` đỏ rồi xanh | TB |
 | 1.3 | F6: vượt 50.000 dòng → lỗi VALIDATION rõ ràng, không cắt im lặng; test | ✅ `requireWithinExportLimit` + lấy `MAX+1` dòng để đếm; test đơn vị ở `AlertInputRulesTest` (IT với 50.001 dòng không thực tế) | TB |
-| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | 🟡 Bỏ qua rule không active ✅ (`escalateDue`, test `disabledRuleDoesNotEscalateOpenAlerts`). Còn lại: tải rule một lần thay vì N+1 | TB |
+| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | ✅ Bỏ qua rule không active (test `disabledRuleDoesNotEscalateOpenAlerts`). Tải rule một lần theo mã trong mỗi lượt quét: `AlertServiceEscalationTest` đỏ trước (findByCode được gọi theo từng alert), xanh sau | TB |
 
 ### Pha 2 – Vòng đời và leo thang
 | ID | Việc | Trạng thái | Phụ thuộc |
