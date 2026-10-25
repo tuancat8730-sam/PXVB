@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
+import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import vn.pxvb.alerting.application.AlertService;
@@ -41,6 +43,8 @@ class AlertingIT extends AbstractIntegrationTest {
     AlertRaiser raiser;
     @Autowired
     AlertService alertService;
+    @Autowired
+    JdbcTemplate jdbc;
 
     private String admin;
     private TestUser leader;
@@ -162,6 +166,25 @@ class AlertingIT extends AbstractIntegrationTest {
         assertThat(afterRepeats.getSeverity()).isEqualTo(Alert.Severity.CRITICAL);
         assertThat(afterRepeats.getOccurrenceCount()).isEqualTo(4);
         assertThat(MailTestConfig.SENT).hasSize(notifiedAfterEscalation);
+    }
+
+    @Test
+    void recurrenceAfterDedupWindowCreatesNewAlert() throws Exception {
+        String subject = "M-" + UUID.randomUUID();
+        AlertRef first = raiser.raise(command("MT_WASTE_HIGH", subject));
+        assertThat(first.created()).isTrue();
+        backdateLastOccurrence("MT_WASTE_HIGH:Machine:" + subject, Instant.now().minus(2, ChronoUnit.DAYS));
+
+        AlertRef later = raiser.raise(command("MT_WASTE_HIGH", subject));
+
+        assertThat(later.created()).isTrue();
+        assertThat(later.alertId()).isNotEqualTo(first.alertId());
+        assertThat(alertService.detail(first.alertId()).alert().getOccurrenceCount()).isEqualTo(1);
+    }
+
+    private void backdateLastOccurrence(String dedupKey, Instant lastOccurredAt) {
+        jdbc.update("UPDATE sys_alert SET last_occurred_at = ? WHERE dedup_key = ?",
+                Timestamp.from(lastOccurredAt), dedupKey);
     }
 
     @Test
