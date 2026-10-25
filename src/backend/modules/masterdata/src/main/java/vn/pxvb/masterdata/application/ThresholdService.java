@@ -125,11 +125,11 @@ public class ThresholdService implements MasterdataQueries {
         if (ids.isEmpty()) {
             return result;
         }
-        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model FROM md_machine "
-                + "WHERE id IN (" + inList(ids.size()) + ")", rs -> {
+        jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model, line_code "
+                + "FROM md_machine WHERE id IN (" + inList(ids.size()) + ")", rs -> {
             result.put(UUID.fromString(rs.getString("id")), new MachineInfo(UUID.fromString(rs.getString("id")),
                     rs.getString("code"), rs.getString("machine_type"), rs.getString("status"),
-                    rs.getBoolean("is_active"), rs.getString("model")));
+                    rs.getBoolean("is_active"), rs.getString("model"), rs.getString("line_code")));
         }, uuidArgs(ids));
         return result;
     }
@@ -184,10 +184,11 @@ public class ThresholdService implements MasterdataQueries {
     @Override
     @Transactional(readOnly = true)
     public List<MachineInfo> activeMachines() {
-        return jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model FROM "
+        return jdbc.query("SELECT BIN_TO_UUID(id) AS id, code, machine_type, status, is_active, model, line_code FROM "
                 + "md_machine WHERE is_active = 1 ORDER BY code", (rs, i) -> new MachineInfo(
                 UUID.fromString(rs.getString("id")), rs.getString("code"), rs.getString("machine_type"),
-                rs.getString("status"), rs.getBoolean("is_active"), rs.getString("model")));
+                rs.getString("status"), rs.getBoolean("is_active"), rs.getString("model"),
+                rs.getString("line_code")));
     }
 
     @Override

@@ -50,6 +50,7 @@ class AlertingIT extends AbstractIntegrationTest {
 
     private static final String ESCALATING_RULE = "MT_WASTE_HIGH";
     private static final String NO_LEVEL_POLICY = "{\"levels\":[]}";
+    private static final String ALERTS_PATH = "/api/v1/alerting/alerts/";
     private static final String TWO_LEVEL_POLICY = "{\"levels\":["
             + "{\"afterMinutes\":30,\"roles\":[\"DEPUTY_DIRECTOR\"]},"
             + "{\"afterMinutes\":60,\"roles\":[\"DEPUTY_DIRECTOR\"]}]}";
@@ -381,6 +382,86 @@ class AlertingIT extends AbstractIntegrationTest {
             // 1 dòng tiêu đề + đúng 1 cảnh báo của ca A
             assertThat(wb.getSheetAt(0).getPhysicalNumberOfRows()).isEqualTo(2);
         }
+    }
+
+    @Test
+    void scopedUserCannotActOnAlertOfAnotherLine() throws Exception {
+        String lineA = uniqueLine();
+        String lineB = uniqueLine();
+        UUID machineB = createMachineOnLine(lineB);
+        TestUser supervisorA = createUser(mvc, mapper, admin, "supA", "SHIFT_LEADER", "LINE", lineA);
+        TestUser supervisorB = createUser(mvc, mapper, admin, "supB", "SHIFT_LEADER", "LINE", lineB);
+        AlertRef ref = raiser.raise(machineCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), machineB));
+        String path = ALERTS_PATH + ref.alertId();
+
+        assertThat(mvc.perform(get(path).header("Authorization", "Bearer " + supervisorA.token())).andReturn()
+                .getResponse().getStatus()).isEqualTo(403);
+        assertThat(call(supervisorA, path + "/ack", "{}").getResponse().getStatus()).isEqualTo(403);
+        assertThat(call(supervisorB, path + "/ack", "{\"note\":\"Đã nhận\"}").getResponse().getStatus())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void listAndExportShowOnlyAlertsOfTheScopedLine() throws Exception {
+        String lineA = uniqueLine();
+        String lineB = uniqueLine();
+        TestUser supervisorA = createUser(mvc, mapper, admin, "supA", "SHIFT_LEADER", "LINE", lineA);
+        AlertRef inLineA = raiser.raise(machineCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), createMachineOnLine(lineA)));
+        AlertRef inLineB = raiser.raise(machineCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), createMachineOnLine(lineB)));
+
+        JsonNode list = json(mvc.perform(get("/api/v1/alerting/alerts").header("Authorization", "Bearer " + supervisorA.token()))
+                .andReturn());
+        List<String> listedIds = new ArrayList<>();
+        list.get("content").forEach(alert -> listedIds.add(alert.get("id").asText()));
+        assertThat(listedIds).contains(inLineA.alertId().toString())
+                .doesNotContain(inLineB.alertId().toString());
+
+        MvcResult export = mvc.perform(get(ALERTS_PATH + "export").header("Authorization", "Bearer " + supervisorA.token()))
+                .andReturn();
+        assertThat(export.getResponse().getStatus()).isEqualTo(200);
+        try (var wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
+                new java.io.ByteArrayInputStream(export.getResponse().getContentAsByteArray()))) {
+            // 1 dòng tiêu đề + đúng 1 cảnh báo của dây chuyền A
+            assertThat(wb.getSheetAt(0).getPhysicalNumberOfRows()).isEqualTo(2);
+        }
+    }
+
+    @Test
+    void alertWithoutLineIsVisibleOnlyToAllScope() throws Exception {
+        TestUser supervisorA = createUser(mvc, mapper, admin, "supA", "SHIFT_LEADER", "LINE", uniqueLine());
+        AlertRef ref = raiser.raise(command("MT_WASTE_HIGH", "M-" + UUID.randomUUID()));
+        String path = ALERTS_PATH + ref.alertId();
+
+        assertThat(mvc.perform(get(path).header("Authorization", "Bearer " + supervisorA.token())).andReturn()
+                .getResponse().getStatus()).isEqualTo(403);
+        assertThat(mvc.perform(get(path).header("Authorization", "Bearer " + admin)).andReturn()
+                .getResponse().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void unitScopeSeesNothingUntilUnitsAreMappedToLines() throws Exception {
+        UUID machine = createMachineOnLine(uniqueLine());
+        TestUser unitUser = createUser(mvc, mapper, admin, "uni", "SHIFT_LEADER", "UNIT", "U-" + UUID.randomUUID());
+        AlertRef ref = raiser.raise(machineCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), machine));
+
+        assertThat(mvc.perform(get(ALERTS_PATH + ref.alertId()).header("Authorization", "Bearer " + unitUser.token()))
+                .andReturn().getResponse().getStatus()).isEqualTo(403);
+    }
+
+    private static String uniqueLine() {
+        return "LN-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private UUID createMachineOnLine(String lineCode) {
+        UUID id = UUID.randomUUID();
+        jdbc.update("INSERT INTO md_machine (id, code, name, machine_type, line_code) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)",
+                id.toString(), "MC-" + id.toString().substring(0, 8), "Máy kiểm thử", "PACKER", lineCode);
+        return id;
+    }
+
+    private AlertCommand machineCommand(String rule, String subject, UUID machineId) {
+        return new AlertCommand(rule, "Machine", subject, machineId, null, "Cảnh báo " + rule,
+                "Chi tiết " + subject, Map.of("value", 4.2), null, null);
     }
 
     private AlertCommand shiftCommand(String rule, String subject, UUID shiftSessionId) {

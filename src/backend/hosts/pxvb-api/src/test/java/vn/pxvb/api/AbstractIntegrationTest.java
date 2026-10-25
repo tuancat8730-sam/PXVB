@@ -77,9 +77,17 @@ abstract class AbstractIntegrationTest {
                 .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password))).andReturn();
     }
 
-    /** Tạo người dùng có một vai trò, đổi mật khẩu lần đầu và trả token đã dùng được. */
+    /** Tạo người dùng có một vai trò (phạm vi ALL), đổi mật khẩu lần đầu và trả token đã dùng được. */
     static TestUser createUser(MockMvc mvc, ObjectMapper mapper, String adminToken, String prefix, String roleCode)
             throws Exception {
+        return createUser(mvc, mapper, adminToken, prefix, roleCode, null, null);
+    }
+
+    /** Như trên, nhưng vai trò được gán với phạm vi dữ liệu {@code scopeType}/{@code scopeValue} (FR-CC-006). */
+    static TestUser createUser(MockMvc mvc, ObjectMapper mapper, String adminToken, String prefix, String roleCode,
+                               String scopeType, String scopeValue) throws Exception {
+        String scope = scopeType == null ? ""
+                : ",\"scopeType\":\"%s\",\"scopeValue\":\"%s\"".formatted(scopeType, scopeValue);
         String username = prefix + UUID.randomUUID().toString().substring(0, 6);
         MvcResult created = mvc.perform(post("/api/v1/identity/users").header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -90,7 +98,7 @@ abstract class AbstractIntegrationTest {
         String id = mapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
         mvc.perform(put("/api/v1/identity/users/" + id + "/roles").header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"roles\":[{\"roleCode\":\"%s\"}]}".formatted(roleCode)))
+                        .content("{\"roles\":[{\"roleCode\":\"%s\"%s}]}".formatted(roleCode, scope)))
                 .andExpect(status().isNoContent());
         String firstToken = mapper.readTree(loginRaw(mvc, username, "Init#Passw0rd-Pxvb").getResponse()
                 .getContentAsString()).get("accessToken").asText();

@@ -2,7 +2,9 @@ package vn.pxvb.alerting.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +31,7 @@ import vn.pxvb.alerting.domain.AlertRule;
 import vn.pxvb.alerting.infrastructure.RealtimePublisher;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.common.security.DataScope;
 import vn.pxvb.dataio.application.ExportService;
 import vn.pxvb.identity.contract.IdentityDirectory;
 import vn.pxvb.masterdata.contract.MasterdataQueries;
@@ -64,6 +67,7 @@ public class AlertService implements AlertRaiser {
 
     private static final Set<Alert.Status> ACTIVE = Set.of(Alert.Status.OPEN, Alert.Status.ACK,
             Alert.Status.IN_PROGRESS);
+    private static final List<DataScope> ALL_SCOPES = List.of(DataScope.all());
 
     static final int MAX_EXPORT_ROWS = 50_000;
 
@@ -152,8 +156,8 @@ public class AlertService implements AlertRaiser {
 
         Alert.Severity severity = requestedSeverity == null ? rule.getSeverity() : requestedSeverity;
         Alert alert = alerts.save(new Alert(rule.getCode(), severity, rule.getModule(), c.subjectType(),
-                c.subjectId(), c.machineId(), c.shiftSessionId(), c.title(), c.message(), payloadJson, dedupKey,
-                now));
+                c.subjectId(), c.machineId(), lineCodeOf(c.machineId()), c.shiftSessionId(), c.title(), c.message(),
+                payloadJson, dedupKey, now));
         history.save(new AlertHistory(alert.getId(), null, Alert.Status.OPEN.name(), null, now, null));
 
         Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
@@ -164,17 +168,17 @@ public class AlertService implements AlertRaiser {
     // ---------- Vòng đời ----------
 
     @Transactional
-    public Alert acknowledge(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.ACK, userId, note, null);
+    public Alert acknowledge(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.ACK, userId, note, null, scopes);
     }
 
     @Transactional
-    public Alert startWork(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.IN_PROGRESS, userId, note, null);
+    public Alert startWork(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.IN_PROGRESS, userId, note, null, scopes);
     }
 
     @Transactional
-    public Alert resolve(UUID id, UUID userId, String cause, String note) {
+    public Alert resolve(UUID id, UUID userId, String cause, String note, List<DataScope> scopes) {
         if (cause == null || cause.isBlank()) {
             throw new BusinessException(ErrorCode.VALIDATION, "Cần chọn nguyên nhân khi xử lý xong cảnh báo",
                     Map.of("cause", List.of("Vui lòng chọn nguyên nhân")));
@@ -184,16 +188,18 @@ public class AlertService implements AlertRaiser {
                     Map.of("cause", List.of("Mã nguyên nhân '" + cause.trim()
                             + "' không thuộc danh mục ALERT_CAUSE")));
         }
-        return move(id, Alert.Status.RESOLVED, userId, requireResolutionNote(note), cause.trim());
+        return move(id, Alert.Status.RESOLVED, userId, requireResolutionNote(note), cause.trim(), scopes);
     }
 
     @Transactional
-    public Alert close(UUID id, UUID userId, String note) {
-        return move(id, Alert.Status.CLOSED, userId, note, null);
+    public Alert close(UUID id, UUID userId, String note, List<DataScope> scopes) {
+        return move(id, Alert.Status.CLOSED, userId, note, null, scopes);
     }
 
-    private Alert move(UUID id, Alert.Status target, UUID userId, String note, String cause) {
+    private Alert move(UUID id, Alert.Status target, UUID userId, String note, String cause,
+                       List<DataScope> scopes) {
         Alert alert = alerts.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        requireInScope(alert, scopes);
         Alert.Status from = alert.getStatus();
         Instant now = clock.instant();
         alert.transitionTo(target, userId, now);
@@ -280,8 +286,8 @@ public class AlertService implements AlertRaiser {
     /** Xuất danh sách cảnh báo ra Excel theo bộ lọc (FR-CC-054), tối đa 50.000 dòng. */
     @Transactional(readOnly = true)
     public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
-                         UUID shiftSessionId) {
-        Page<Alert> page = search(module, severity, status, machineId, shiftSessionId,
+                         UUID shiftSessionId, List<DataScope> scopes) {
+        Page<Alert> page = search(module, severity, status, machineId, shiftSessionId, scopes,
                 org.springframework.data.domain.PageRequest.of(0, MAX_EXPORT_ROWS + 1,
                         org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
                                 "raisedAt")));
@@ -299,7 +305,7 @@ public class AlertService implements AlertRaiser {
 
     @Transactional(readOnly = true)
     public Page<Alert> search(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
-                              UUID shiftSessionId, Pageable pageable) {
+                              UUID shiftSessionId, List<DataScope> scopes, Pageable pageable) {
         Specification<Alert> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (module != null && !module.isBlank()) {
@@ -317,15 +323,55 @@ public class AlertService implements AlertRaiser {
             if (shiftSessionId != null) {
                 predicates.add(cb.equal(root.get("shiftSessionId"), shiftSessionId));
             }
+            predicates.add(lineScope(root, cb, scopes));
             return cb.and(predicates.toArray(Predicate[]::new));
         };
         return alerts.findAll(spec, pageable);
     }
 
+    /** Chi tiết cảnh báo cho hệ thống (không lọc phạm vi). Người dùng thật phải dùng bản có {@code scopes}. */
     @Transactional(readOnly = true)
     public AlertDetail detail(UUID id) {
+        return detail(id, ALL_SCOPES);
+    }
+
+    @Transactional(readOnly = true)
+    public AlertDetail detail(UUID id, List<DataScope> scopes) {
         Alert alert = alerts.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        requireInScope(alert, scopes);
         return new AlertDetail(alert, history.findByAlertIdOrderByAt(id), recipients.findByAlertId(id));
+    }
+
+    /** Phạm vi ALL thấy mọi cảnh báo; LINE chỉ thấy cảnh báo có dây chuyền khớp; UNIT chưa có dữ liệu nên không khớp. */
+    private static Predicate lineScope(Root<Alert> root, CriteriaBuilder cb, List<DataScope> scopes) {
+        if (grantsAll(scopes)) {
+            return cb.conjunction();
+        }
+        List<String> lineCodes = scopes.stream()
+                .filter(scope -> scope.type() == DataScope.Type.LINE && scope.value() != null)
+                .map(DataScope::value)
+                .toList();
+        return lineCodes.isEmpty() ? cb.disjunction() : root.get("lineCode").in(lineCodes);
+    }
+
+    /** Ném 403 khi cảnh báo nằm ngoài phạm vi người dùng (FR-CC-006; quyết định L07). */
+    private static void requireInScope(Alert alert, List<DataScope> scopes) {
+        if (!DataScope.permits(scopes, DataScope.Type.LINE, alert.getLineCode())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    private static boolean grantsAll(List<DataScope> scopes) {
+        return scopes.stream().anyMatch(scope -> scope.type() == DataScope.Type.ALL);
+    }
+
+    /** Dây chuyền của máy tại thời điểm raise; null nếu không có máy hoặc máy chưa gán dây chuyền. */
+    private String lineCodeOf(UUID machineId) {
+        if (machineId == null) {
+            return null;
+        }
+        MasterdataQueries.MachineInfo machine = masterdata.machines(Set.of(machineId)).get(machineId);
+        return machine == null ? null : machine.lineCode();
     }
 
     // ---------- Chính sách ----------

@@ -52,6 +52,8 @@ public class Alert extends BaseEntity {
     @JdbcTypeCode(SqlTypes.BINARY)
     private UUID machineId;
 
+    private String lineCode;
+
     @JdbcTypeCode(SqlTypes.BINARY)
     private UUID shiftSessionId;
 
@@ -104,14 +106,15 @@ public class Alert extends BaseEntity {
     }
 
     public Alert(String ruleCode, Severity severity, String module, String subjectType, String subjectId,
-                 UUID machineId, UUID shiftSessionId, String title, String message, String payloadJson,
-                 String dedupKey, Instant now) {
+                 UUID machineId, String lineCode, UUID shiftSessionId, String title, String message,
+                 String payloadJson, String dedupKey, Instant now) {
         this.ruleCode = ruleCode;
         this.severity = severity;
         this.module = module;
         this.subjectType = subjectType;
         this.subjectId = subjectId;
         this.machineId = machineId;
+        this.lineCode = lineCode;
         this.shiftSessionId = shiftSessionId;
         this.title = title;
         this.message = message;
@@ -194,6 +197,11 @@ public class Alert extends BaseEntity {
 
     public UUID getMachineId() {
         return machineId;
+    }
+
+    /** Dây chuyền của máy tại thời điểm raise (snapshot, FR-CC-006); null nếu không có máy hoặc máy chưa gán dây chuyền. */
+    public String getLineCode() {
+        return lineCode;
     }
 
     public UUID getShiftSessionId() {

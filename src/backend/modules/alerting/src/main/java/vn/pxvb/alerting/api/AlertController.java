@@ -17,6 +17,7 @@ import vn.pxvb.alerting.application.AlertService;
 import vn.pxvb.alerting.application.AlertService.AlertDetail;
 import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.common.security.CurrentUser;
+import vn.pxvb.common.security.DataScope;
 import vn.pxvb.common.web.PageResponse;
 
 /** Trung tâm cảnh báo (FR-CC-051, FR-CC-054). */
@@ -81,8 +82,8 @@ public class AlertController {
                                          @RequestParam(defaultValue = "20") int pageSize) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "raisedAt"));
-        return PageResponse.of(service.search(module, severity, status, machineId, shiftSessionId, pageable),
-                AlertDto::from);
+        return PageResponse.of(service.search(module, severity, status, machineId, shiftSessionId, scopes(),
+                pageable), AlertDto::from);
     }
 
     @GetMapping("/export")
@@ -99,37 +100,42 @@ public class AlertController {
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
                         org.springframework.http.ContentDisposition.attachment().filename("canh-bao.xlsx").build()
                                 .toString())
-                .body(service.export(module, severity, status, machineId, shiftSessionId));
+                .body(service.export(module, severity, status, machineId, shiftSessionId, scopes()));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('alerting.alert.view')")
     public AlertDetailDto get(@PathVariable UUID id) {
-        return AlertDetailDto.from(service.detail(id));
+        return AlertDetailDto.from(service.detail(id, scopes()));
     }
 
     @PostMapping("/{id}/ack")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto ack(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.acknowledge(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.acknowledge(id, currentUser.require().userId(), note(req), scopes()));
     }
 
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto start(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.startWork(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.startWork(id, currentUser.require().userId(), note(req), scopes()));
     }
 
     @PostMapping("/{id}/resolve")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto resolve(@PathVariable UUID id, @RequestBody ResolveRequest req) {
-        return AlertDto.from(service.resolve(id, currentUser.require().userId(), req.cause(), req.note()));
+        return AlertDto.from(service.resolve(id, currentUser.require().userId(), req.cause(), req.note(), scopes()));
     }
 
     @PostMapping("/{id}/close")
     @PreAuthorize("hasAuthority('alerting.alert.handle')")
     public AlertDto close(@PathVariable UUID id, @RequestBody(required = false) NoteRequest req) {
-        return AlertDto.from(service.close(id, currentUser.require().userId(), note(req)));
+        return AlertDto.from(service.close(id, currentUser.require().userId(), note(req), scopes()));
+    }
+
+    /** Phạm vi dữ liệu của người dùng hiện tại (FR-CC-006); service lọc và từ chối theo phạm vi này. */
+    private List<DataScope> scopes() {
+        return currentUser.require().scopes();
     }
 
     private static String note(NoteRequest req) {

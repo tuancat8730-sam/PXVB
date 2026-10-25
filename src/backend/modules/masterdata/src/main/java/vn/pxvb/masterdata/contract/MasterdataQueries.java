@@ -38,7 +38,9 @@ public interface MasterdataQueries {
     /** {@code true} nếu mã lý do đang hoạt động trong nhóm (vd nhóm {@code ALERT_CAUSE}). */
     boolean reasonExists(String group, String code);
 
-    record MachineInfo(UUID id, String code, String machineType, String status, boolean active, String model) {
+    /** {@code lineCode} là dây chuyền của máy (null nếu chưa gán); dùng làm phạm vi LINE (FR-CC-006). */
+    record MachineInfo(UUID id, String code, String machineType, String status, boolean active, String model,
+                       String lineCode) {
     }
 
     record ProductInfo(UUID id, String code, String name, boolean active, Integer rodsPerPack) {
