@@ -154,6 +154,15 @@ public class Alert extends BaseEntity {
         return status;
     }
 
+    /** Nâng mức (chỉ tăng, không hạ). @return true nếu mức thực sự thay đổi. */
+    public boolean raiseSeverity(Severity requested) {
+        if (requested.compareTo(this.severity) <= 0) {
+            return false;
+        }
+        this.severity = requested;
+        return true;
+    }
+
     public void resolutionDetails(String cause, String note) {
         this.cause = cause;
         this.resolutionNote = note;

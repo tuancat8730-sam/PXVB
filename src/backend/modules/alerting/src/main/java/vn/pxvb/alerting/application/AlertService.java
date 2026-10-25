@@ -80,6 +80,15 @@ public class AlertService implements AlertRaiser {
         }
     }
 
+    /** Ghi chú xử lý bắt buộc khi RESOLVED: cắt khoảng trắng, không được rỗng (FR-CC-051, L64). */
+    static String requireResolutionNote(String note) {
+        if (note == null || note.isBlank()) {
+            throw new BusinessException(ErrorCode.VALIDATION, "Cần ghi chú khi xử lý xong cảnh báo",
+                    Map.of("note", List.of("Vui lòng nhập ghi chú xử lý")));
+        }
+        return note.trim();
+    }
+
     /** Từ chối xuất khi vượt trần, thay vì cắt im lặng (F6). */
     static void requireWithinExportLimit(long totalRows) {
         if (totalRows > MAX_EXPORT_ROWS) {
@@ -138,9 +147,7 @@ public class AlertService implements AlertRaiser {
                 .filter(a -> !a.getLastOccurredAt().isBefore(windowStart));
         String payloadJson = toJson(c.payload());
         if (existing.isPresent()) {
-            Alert alert = existing.get();
-            alert.recordRecurrence(now, c.message(), payloadJson);
-            return new AlertRef(alert.getId(), false);
+            return recur(existing.get(), rule, c, requestedSeverity, now, payloadJson);
         }
 
         Alert.Severity severity = requestedSeverity == null ? rule.getSeverity() : requestedSeverity;
@@ -177,7 +184,7 @@ public class AlertService implements AlertRaiser {
                     Map.of("cause", List.of("Mã nguyên nhân '" + cause.trim()
                             + "' không thuộc danh mục ALERT_CAUSE")));
         }
-        return move(id, Alert.Status.RESOLVED, userId, note, cause.trim());
+        return move(id, Alert.Status.RESOLVED, userId, requireResolutionNote(note), cause.trim());
     }
 
     @Transactional
@@ -232,14 +239,38 @@ public class AlertService implements AlertRaiser {
         return count;
     }
 
+    /**
+     * Tái diễn trong cửa sổ dedup (L66): luôn tăng bộ đếm. Nếu mức yêu cầu cao hơn thì nâng mức, ghi lịch sử và gửi
+     * lại cho người nhận hiện tại (kèm email nếu lên CRITICAL). Cùng mức hoặc thấp hơn thì không gửi lại.
+     */
+    private AlertRef recur(Alert alert, AlertRule rule, AlertCommand c, Alert.Severity requested, Instant now,
+                           String payloadJson) {
+        alert.recordRecurrence(now, c.message(), payloadJson);
+        if (requested != null && alert.raiseSeverity(requested)) {
+            history.save(new AlertHistory(alert.getId(), alert.getStatus().name(), alert.getStatus().name(), null,
+                    now, "Nâng mức lên " + requested.name()));
+            Set<UUID> targets = resolve(parsePolicy(rule.getRecipientPolicy()));
+            renotify(alert, targets, "UPDATED", c.title());
+        }
+        return new AlertRef(alert.getId(), false);
+    }
+
     private void deliver(Alert alert, Set<UUID> targets, int level, Instant now, String title) {
         if (targets.isEmpty()) {
             return;
         }
         recipients.saveAll(targets.stream().map(u -> new AlertRecipient(alert.getId(), u, level, now)).toList());
+        renotify(alert, targets, level == 0 ? "RAISED" : "ESCALATED", title);
+    }
+
+    /** Gửi thông báo trong ứng dụng, push realtime, và email nếu cảnh báo đang ở mức CRITICAL. */
+    private void renotify(Alert alert, Set<UUID> targets, String event, String title) {
+        if (targets.isEmpty()) {
+            return;
+        }
         notifications.notifyUsers(targets, "ALERT", title, alert.getMessage(), "/alerts/" + alert.getId(),
                 alert.getId());
-        realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(level == 0 ? "RAISED" : "ESCALATED", alert));
+        realtime.pushToUsers(targets, "/queue/alerts", AlertPush.of(event, alert));
         if (alert.getSeverity() == Alert.Severity.CRITICAL) {
             email.sendAfterCommit(targets, "[PXVB][CRITICAL] " + title,
                     alert.getMessage() == null ? alert.getTitle() : alert.getMessage(), "/alerts/" + alert.getId());

@@ -55,6 +55,41 @@ class AlertInputRulesTest {
     }
 
     @Test
+    void blankResolutionNoteIsRejectedAsValidationError() {
+        // Arrange
+        String input = "   ";
+
+        // Act / Assert
+        assertThatThrownBy(() -> AlertService.requireResolutionNote(input))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.errorCode()).isEqualTo(ErrorCode.VALIDATION);
+                    assertThat(e.fieldErrors()).containsKey("note");
+                });
+    }
+
+    @Test
+    void missingResolutionNoteIsRejectedAsValidationError() {
+        // Arrange / Act / Assert
+        assertThatThrownBy(() -> AlertService.requireResolutionNote(null))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.errorCode()).isEqualTo(ErrorCode.VALIDATION);
+                    assertThat(e.fieldErrors()).containsKey("note");
+                });
+    }
+
+    @Test
+    void resolutionNoteIsTrimmedWhenPresent() {
+        // Arrange
+        String input = "  Đã bổ sung  ";
+
+        // Act
+        String note = AlertService.requireResolutionNote(input);
+
+        // Assert
+        assertThat(note).isEqualTo("Đã bổ sung");
+    }
+
+    @Test
     void exportOverRowLimitFailsInsteadOfTruncating() {
         // Arrange
         long total = AlertService.MAX_EXPORT_ROWS + 1;

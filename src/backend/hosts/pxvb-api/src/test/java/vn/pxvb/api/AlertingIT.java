@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import vn.pxvb.alerting.application.AlertService;
 import vn.pxvb.alerting.contract.AlertRaiser;
+import vn.pxvb.alerting.domain.Alert;
 import vn.pxvb.alerting.contract.AlertRaiser.AlertCommand;
 import vn.pxvb.alerting.contract.AlertRaiser.AlertRef;
 import vn.pxvb.common.error.BusinessException;
@@ -54,6 +56,11 @@ class AlertingIT extends AbstractIntegrationTest {
     private AlertCommand command(String rule, String subject) {
         return new AlertCommand(rule, "Machine", subject, UUID.randomUUID(), null, "Cảnh báo " + rule,
                 "Chi tiết " + subject, Map.of("value", 4.2), null, null);
+    }
+
+    private AlertCommand severityCommand(String rule, String subject, String severity) {
+        return new AlertCommand(rule, "Machine", subject, UUID.randomUUID(), null, "Cảnh báo " + rule,
+                "Chi tiết " + subject, Map.of("value", 4.2), null, severity);
     }
 
     private JsonNode json(MvcResult r) throws Exception {
@@ -112,6 +119,49 @@ class AlertingIT extends AbstractIntegrationTest {
         JsonNode detail = json(mvc.perform(get(base).header("Authorization", "Bearer " + leader.token()))
                 .andReturn());
         assertThat(detail.get("history")).hasSize(5);
+    }
+
+    @Test
+    void resolveWithoutNoteIsRejectedAndKeepsStatus() throws Exception {
+        AlertRef ref = raiser.raise(command("PR_BUFFER_LOW", "M-" + UUID.randomUUID()));
+        String base = "/api/v1/alerting/alerts/" + ref.alertId();
+        call(leader, base + "/ack", "{\"note\":\"Đã nhận\"}");
+        call(leader, base + "/start", "{}");
+
+        assertThat(call(leader, base + "/resolve", "{\"cause\":\"MATERIAL_SHORTAGE\"}").getResponse().getStatus())
+                .isEqualTo(400);
+        assertThat(call(leader, base + "/resolve", "{\"cause\":\"MATERIAL_SHORTAGE\",\"note\":\"   \"}")
+                .getResponse().getStatus()).isEqualTo(400);
+        assertThat(alertService.detail(ref.alertId()).alert().getStatus()).isEqualTo(Alert.Status.IN_PROGRESS);
+    }
+
+    @Test
+    void higherSeverityRecurrenceEscalatesAndEmailsOnceWhileSameLevelOnlyCounts() throws Exception {
+        MailTestConfig.SENT.clear();
+        String subject = "M-" + UUID.randomUUID();
+        AlertRef first = raiser.raise(command("PR_STOP_LONG", subject));
+        assertThat(alertService.detail(first.alertId()).alert().getSeverity()).isEqualTo(Alert.Severity.WARN);
+        assertThat(MailTestConfig.SENT).isEmpty();
+
+        AlertRef escalated = raiser.raise(severityCommand("PR_STOP_LONG", subject, "CRITICAL"));
+        assertThat(escalated.created()).isFalse();
+        assertThat(escalated.alertId()).isEqualTo(first.alertId());
+        Alert afterEscalation = alertService.detail(first.alertId()).alert();
+        assertThat(afterEscalation.getSeverity()).isEqualTo(Alert.Severity.CRITICAL);
+        assertThat(afterEscalation.getOccurrenceCount()).isEqualTo(2);
+        // Escalation re-notifies every current policy target: one email per distinct recipient.
+        List<String> notifiedRecipients = MailTestConfig.SENT.stream().map(message -> message.getTo()[0]).toList();
+        assertThat(notifiedRecipients).isNotEmpty().doesNotHaveDuplicates();
+        assertThat(MailTestConfig.SENT).allSatisfy(message -> assertThat(message.getSubject()).contains("CRITICAL"));
+        int notifiedAfterEscalation = MailTestConfig.SENT.size();
+
+        raiser.raise(severityCommand("PR_STOP_LONG", subject, "CRITICAL"));
+        raiser.raise(command("PR_STOP_LONG", subject));
+
+        Alert afterRepeats = alertService.detail(first.alertId()).alert();
+        assertThat(afterRepeats.getSeverity()).isEqualTo(Alert.Severity.CRITICAL);
+        assertThat(afterRepeats.getOccurrenceCount()).isEqualTo(4);
+        assertThat(MailTestConfig.SENT).hasSize(notifiedAfterEscalation);
     }
 
     @Test
