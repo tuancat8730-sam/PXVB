@@ -109,6 +109,22 @@ Sinh bằng `docs/design/generator/` (`python3 specs.py` ghi vào `docs/design/s
 - Nhãn mức và trạng thái đã chốt theo L71–L72: Khẩn / Cảnh báo / Thông tin; trạng thái Chưa xác nhận → Đã đóng; "Cấp A/B/C" chỉ dùng cho cấp lỗi QC (`docs/plans/E04-completion.plan.md`, F18).
 - Số liệu, tên, mã trong các màn là **dữ liệu minh họa**. Chưa kiểm tra trong trình duyệt (cổng §8 chưa chạy).
 
+## Đợt 7 – Master data E08 (Pha 6a, 25/10/2026)
+
+| Màn hình | File | Thay đổi | Trạng thái |
+|---|---|---|---|
+| MD – Trình thiết kế biểu mẫu KSCL (U-1) | `W-KsclDesigner.dc.html` | Sinh từ bộ dựng (thay bản vẽ tay). Đổi thứ tự bằng nút Lên/Xuống (không kéo-thả). Hiển thị lỗi lược đồ bằng tiếng Việt | Đã vẽ, chờ duyệt (đợt 7). Bản tĩnh; chưa làm bản tương tác |
+| MD – Biểu mẫu KSCL: danh sách và phiên bản (U-2) | `W-KsclForms.dc.html` | Mới (mẫu W1): danh sách mã, nhóm, loại, phiên bản, trạng thái; khối phiên bản; nhân bản, kích hoạt | Đã vẽ, chờ duyệt (đợt 7) |
+| MD – Lỗi và luật phân cấp A/B/C (U-3) | `W-DefectRules.dc.html` | Mới (mẫu W3): lưới lỗi × cấp A/B/C; trùng hiệu lực hiển thị trên lưới | Đã vẽ, chờ duyệt (đợt 7). Cấp A và C chỉ minh họa (L75) |
+| MD – Công việc bảo trì chuẩn (U-4) | `W-MaintTemplate.dc.html` | Mới (mẫu W2): thông tin chung, checklist, vật tư dự kiến; trạng thái Nháp / Đang dùng | Đã vẽ, chờ duyệt (đợt 7). Vật tư hiển thị trong ghi chú (một bảng mỗi màn) |
+| MD – Liên kết thiết bị–phụ tùng (U-5) | `W-PartLinks.dc.html` | Mới (mẫu W1): chế độ theo máy và theo phụ tùng; cột phạm vi (trực tiếp / theo dòng máy) | Đã vẽ, chờ duyệt (đợt 7). Chuyển chế độ là nút, chưa có bản tương tác |
+| MD – Danh mục chung (U-6) | `W-MdCommonCatalog.dc.html` | Mới (mẫu W1), dùng cho phụ tùng; khối "Kiểm soát": người phụ trách, ngày cập nhật, phiên bản, trạng thái (chỉ đọc) | Đã vẽ, chờ duyệt (đợt 7). Các danh mục khác (NCC, lý do, loại tem) dùng cùng mẫu, chưa vẽ riêng |
+| MD – Chất lượng dữ liệu (U-7) | `W-MdDataQuality.dc.html` | Thêm 4 nhóm E08: biểu mẫu chưa có bản đang dùng, luật chồng lấn, bảo trì thiếu phụ tùng, phụ tùng thiếu NCC mặc định | Đã vẽ, chờ duyệt (đợt 7) |
+
+- Sinh bằng `generator/specs.py` và `states.py`; không sửa tay tệp trong `screens/`.
+- Dữ liệu trong màn là **dữ liệu minh họa**. Chưa kiểm tra trong trình duyệt (cổng §8 chưa chạy).
+- Chưa duyệt bản vẽ, nên chưa build UI (`DESIGN-SYSTEM.md` §9). Build màn MD (6b) đợi duyệt.
+
 ## Dựng thử trong trình duyệt (24/10/2026)
 
 Cách làm: chuyển 68 màn tĩnh + 60 màn trạng thái (128 trang) thành HTML thường, mở qua máy chủ cục bộ trong Chrome, quét tự động từng trang rồi xem ảnh chụp vài màn đại diện (W-PlanWeek, T41, W-RpKiosk, W-QcB21, S-W1-partial, S-TC-success).
@@ -145,7 +161,7 @@ Hậu tố: `loading`, `empty`, `error`, `partial`, `success`, `noperm`. Mẫu T
 
 - PIN 6 chữ số và danh sách "người dùng gần đây" trên T-01 (SDD chưa mô tả chi tiết).
 - Xung đột đồng bộ (T-62): hai lựa chọn "Dùng số liệu máy chủ" / "Gửi cho lãnh đạo ca xem xét"; không ghi đè ngầm.
-- Quy tắc cấp A/B/C trong trình thiết kế KSCL: ngoài biên một lần = B, liên tiếp = A. Ngưỡng/chuẩn chỉ minh họa, chờ Q10.
+- Quy tắc cấp A/B/C trong trình thiết kế KSCL: **B đã chốt (2026-10-25):** ngoài biên một lần = B (`OPEN-QUESTIONS.md` L74). **A và C chưa chốt** (quy tắc "liên tiếp", L75): mọi nội dung cấp A trong bản vẽ chỉ là minh họa. Ngưỡng/chuẩn chỉ minh họa, chờ Q10.
 - Điều kiện mở ca (T-60): đủ nhân sự, lệnh đã xác nhận, kiểm tra máy trước ca, ký mở ca.
 - Màn web MT/QC/TX/OH/SP suy từ bảng chức năng, chưa có trong SDD (xem DESIGN-SYSTEM.md §7.2).
 

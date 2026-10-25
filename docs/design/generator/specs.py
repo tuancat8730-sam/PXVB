@@ -233,8 +233,66 @@ add('W-MdDataQuality', 'MD – Chất lượng dữ liệu', 'web', w_list({
     'tools': ['Mức: Tất cả'], 'tools_r': ['Quét lại'],
     'cols': [('Danh mục', ''), ('Vấn đề', ''), ('Số bản ghi', 'n'), ('Mức', ''), ('Trạng thái', '')],
     'rows': [['Máy', 'Thiếu công suất', '1', 'warn:Cần chú ý', 'warn:Chưa xử lý'], ['Định mức', 'Hết hiệu lực chưa có bản mới', '2', 'bad:Nghiêm trọng', 'warn:Chưa xử lý'],
-             ['Mã lý do dừng', 'Trùng tên', '1', 'warn:Cần chú ý', 'ok:Đã xử lý'], ['Ngưỡng', 'Không có', '0', 'ok:Tốt', 'ok:Đã xử lý']], 'sel': 1,
-    'side': {'title': 'Định mức hết hiệu lực', 'chip': ('bad', 'Nghiêm trọng'), 'lines': [('Số bản ghi', '2'), ('Ảnh hưởng', 'Phiếu cấp phát không tự sinh')], 'actions': ['Xem danh sách', '*Mở trình soạn']}}))
+             ['Mã lý do dừng', 'Trùng tên', '1', 'warn:Cần chú ý', 'ok:Đã xử lý'], ['Ngưỡng', 'Không có', '0', 'ok:Tốt', 'ok:Đã xử lý'],
+             ['Biểu mẫu KSCL', 'Chưa có bản đang dùng', '1', 'warn:Cần chú ý', 'warn:Chưa xử lý'], ['Luật lỗi A/B/C', 'Chồng lấn khoảng hiệu lực', '2', 'bad:Nghiêm trọng', 'warn:Chưa xử lý'],
+             ['Bảo trì chuẩn', 'Dùng phụ tùng không tồn tại', '1', 'bad:Nghiêm trọng', 'warn:Chưa xử lý'], ['Phụ tùng', 'Thiếu NCC mặc định', '3', 'warn:Cần chú ý', 'warn:Chưa xử lý']], 'sel': 5,
+    'side': {'title': 'Luật lỗi chồng lấn', 'chip': ('bad', 'Nghiêm trọng'), 'lines': [('Số bản ghi', '2'), ('Ảnh hưởng', 'Một lỗi có thể bị tính hai luật cấp B')], 'actions': ['Xem danh sách', '*Mở lưới luật']}}))
+
+# ---------------- Web: MD (đợt 7, E08) ----------------
+add('W-KsclDesigner', 'MD – Trình thiết kế biểu mẫu KSCL', 'web', w_form({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục / Biểu mẫu KSCL', 'title': 'Trình thiết kế B06.01 (nháp v4)', 'status': ('bad', 'Lược đồ có lỗi'),
+    'fields': [('Mã biểu mẫu', 'B06.01', True), ('Nhóm', 'B06'), ('Loại', 'Trong ca'), ('Phiên bản', '4 (nháp)', True)],
+    'table_title': 'Mục và trường (đổi thứ tự bằng nút Lên / Xuống)', 'cols': [('STT', ''), ('Mục', ''), ('Mã trường', ''), ('Kiểu', ''), ('Bắt buộc', ''), ('Sắp xếp', '')],
+    'rows': [['1', 'Thông số', 'khoi_luong', 'NUMBER', 'Có', 'Lên · Xuống'], ['2', 'Thông số', 'do_cung', 'NUMBER', 'Có', 'Lên · Xuống'],
+             ['3', 'Cảm quan', 'cam_quan', 'CHECK', 'Không', 'Lên · Xuống'], ['4', 'Cảm quan', 'chon_co', 'SELECT', 'Có', 'Lên · Xuống']],
+    'note': ('bad', 'Trường "chon_co" (kiểu SELECT) chưa có danh sách lựa chọn. Chưa lưu được lược đồ.'),
+    'actions': ['Xem trước form', 'Thêm trường', '*Lưu nháp'], 'side_title': 'Phiên bản', 'history': ['v3 · 01/10/2026 · Đang dùng', 'v2 · 01/06/2026 · Đã ngừng']}))
+
+add('W-KsclForms', 'MD – Biểu mẫu KSCL: danh sách và phiên bản', 'web', w_list({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục', 'title': 'Biểu mẫu KSCL/ĐBCL', 'search': 'Tìm theo mã hoặc tên biểu mẫu',
+    'tools': ['Nhóm: Tất cả', 'Trạng thái: Tất cả'], 'tools_r': ['Nhập Excel', 'Xuất Excel', '*Thêm biểu mẫu'],
+    'cols': [('Mã', ''), ('Tên', ''), ('Nhóm', ''), ('Loại', ''), ('Phiên bản', 'n'), ('Trạng thái', '')],
+    'rows': [['B06.01', 'Kiểm tra khối lượng điếu', 'B06', 'Trong ca', '3', 'ok:Đang dùng'], ['B06.02', 'Kiểm tra độ cứng bao', 'B06', 'Đầu ca', '2', 'ok:Đang dùng'],
+             ['B08.01', 'Kiểm tra tem', 'B08', 'Trong ca', '1', 'warn:Nháp'], ['B08.03', 'Biểu mẫu cũ', 'B08', 'Trong ca', '1', 'off:Đã ngừng']], 'sel': 0,
+    'side': {'title': 'B06.01 · phiên bản', 'chip': ('ok', 'Đang dùng'), 'lines': [('Đang dùng', 'v3 (từ 01/10/2026)'), ('Bản nháp', 'v4 (chưa duyệt)'), ('Lịch sử', 'v1 đã ngừng · v2 đã ngừng · v3 đang dùng')],
+             'note': ('warn', 'Bản đang dùng không sửa trực tiếp. Muốn đổi, nhân bản thành phiên bản mới.'), 'actions': ['Xem trước', 'Nhân bản', '*Kích hoạt phiên bản']}}))
+
+add('W-DefectRules', 'MD – Lỗi và luật phân cấp A/B/C', 'web', w_grid({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục / Lỗi và luật', 'title': 'Lỗi và luật phân cấp A/B/C', 'tools': ['Nhóm áp dụng: ROD'], 'tools_r': ['*Thêm luật'],
+    'corner': 'Lỗi', 'first': 200, 'mono_rows': False, 'cols': ['Cấp A', 'Cấp B', 'Cấp C'],
+    'rows': ['Sứt đầu điếu', 'Điếu bị gãy', 'Lem keo'],
+    'cells': [['off:Chưa kích hoạt (L75)', 'ok:Ngoài biên 1 lần = B', 'off:Chưa định nghĩa (L75)'],
+              ['off:Chưa kích hoạt (L75)', 'warn:Trùng hiệu lực (2 luật)', 'off:Chưa định nghĩa (L75)'],
+              ['', 'ok:Ngoài biên 1 lần = B', '']], 'sel': (0, 1),
+    'legend': [('ok', 'Đã có luật'), ('warn', 'Trùng hiệu lực'), ('off', 'Chưa định nghĩa')],
+    'side': {'title': 'Sứt đầu điếu · cấp B', 'chip': ('ok', 'Đã chốt'), 'lines': [('Cách đo', 'Đếm trong mẫu'), ('Cỡ mẫu', '200 điếu (minh họa)'), ('Ngưỡng', '≥ 1 lần'), ('Hiệu lực', 'từ 01/11/2026')],
+             'note': ('warn', 'Cấp A và C chưa được định nghĩa (OPEN-QUESTIONS L75). Màn này không lưu luật cấp A.'), 'actions': ['Hủy', '*Lưu luật']}}))
+
+add('W-MaintTemplate', 'MD – Công việc bảo trì chuẩn', 'web', w_form({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục / Bảo trì chuẩn', 'title': 'Vệ sinh dao cắt', 'status': ('off', 'Nháp'),
+    'fields': [('Mã công việc', 'BT-VS-DC', True), ('Loại', 'Định kỳ'), ('Chu kỳ', '7 ngày'), ('Kỹ năng', 'Thợ bảo trì')],
+    'table_title': 'Checklist', 'cols': [('STT', ''), ('Nội dung', ''), ('Kiểu kết quả', ''), ('Min', ''), ('Max', '')],
+    'rows': [['1', 'Vệ sinh khu vực dao cắt', 'OK / NG', '—', '—'], ['2', 'Đo độ mòn lưỡi', 'Số', '0,00', '0,05'], ['3', 'Kiểm tra dầu bôi trơn', 'OK / NG', '—', '—']],
+    'note': ('warn', 'Vật tư dự kiến: Dao cắt DC-01 × 1; Dầu bôi trơn DB-03 × 0,5 lít. Chọn từ danh mục phụ tùng, không gõ tự do.'),
+    'actions': ['Hủy', 'Lưu nháp', '*Kích hoạt phiên bản'], 'side_title': 'Lịch sử phiên bản', 'history': ['Bản 1 · Nháp', 'Chưa có bản đang dùng']}))
+
+add('W-PartLinks', 'MD – Liên kết thiết bị–phụ tùng', 'web', w_list({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục', 'title': 'Liên kết thiết bị–phụ tùng', 'search': 'Tìm theo máy hoặc phụ tùng',
+    'tools': ['Chế độ: Theo máy', 'Đổi sang theo phụ tùng'], 'tools_r': ['*Thêm liên kết'],
+    'cols': [('Máy', ''), ('Cụm', ''), ('Phụ tùng', ''), ('Phạm vi', ''), ('Công việc bảo trì', '')],
+    'rows': [['m:VM-01', 'Cụm cấp giấy', 'Dao cắt DC-01', 'Trực tiếp', 'BT-VS-DC'], ['m:VM-02', 'Cụm cấp giấy', 'Dao cắt DC-01', 'Theo dòng máy', 'BT-VS-DC'],
+             ['m:VM-01', 'Cụm đóng gói', 'Băng tải BT-12', 'Trực tiếp', '—']], 'sel': 0,
+    'side': {'title': 'Dao cắt DC-01 · theo phụ tùng', 'lines': [('Đang gắn ở', '2 máy (VM-01, VM-02)'), ('Mã kho', 'DC-01'), ('Thẻ kho', 'TK-0412')],
+             'note': ('warn', 'VM-02 nhận liên kết theo dòng máy (G6): phụ tùng này áp cho mọi máy cùng dòng.'), 'actions': ['Hủy', '*Lưu']}}))
+
+add('W-MdCommonCatalog', 'MD – Danh mục chung (phụ tùng, NCC, lý do, loại tem)', 'web', w_list({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Danh mục', 'title': 'Phụ tùng', 'search': 'Tìm theo mã hàng, tên hoặc thẻ kho',
+    'tools': ['Nhóm: Tất cả'], 'tools_r': ['Nhập Excel', 'Xuất Excel', '*Thêm phụ tùng'],
+    'cols': [('Mã hàng', ''), ('Tên', ''), ('Thẻ kho', ''), ('ĐVT', ''), ('NCC mặc định', ''), ('Trạng thái', '')],
+    'rows': [['DC-01', 'Dao cắt', 'TK-0412', 'cái', 'Thép Bắc', 'ok:Đang dùng'], ['DB-03', 'Dầu bôi trơn', 'TK-0530', 'lít', '—', 'warn:Thiếu NCC'],
+             ['BT-12', 'Băng tải', 'TK-0877', 'cái', 'Cơ khí Nam', 'off:Ngừng dùng']], 'sel': 0,
+    'side': {'title': 'Kiểm soát · DC-01', 'lines': [('Người phụ trách', 'Phó giám đốc'), ('Ngày cập nhật', '18/10/2026 15:20'), ('Phiên bản', '3'), ('Trạng thái', 'Đang dùng')],
+             'note': ('off', 'Người phụ trách, phiên bản và trạng thái chỉ đọc. Thay đổi qua luồng duyệt của danh mục (D4).'), 'actions': ['Xem lịch sử', '*Nhân bản']}}))
 
 # ---------------- Web: PL ----------------
 add('W-PlanWeek', 'PL – Lưới KHSX tuần', 'web', w_grid({

@@ -16,7 +16,7 @@
 | Đối chiếu ERP (FR-MD-017 "file") | Import/đối chiếu file ERP | ❌ Chuyển E22 (D3) |
 | Tồn tối thiểu gợi ý từ lịch sử (FR-MD-018 P1) | Cần dữ liệu sử dụng từ RP | ⏸ Chờ RP |
 | Dữ liệu thật: 46 biểu mẫu KSCL, danh mục lỗi, ngưỡng A/B/C (Q10) | Import Excel, không đổi code | ⬜ Chờ PXVB |
-| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | ⬜ Bản vẽ chưa làm; build chờ khung `src/web` |
+| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | 🟡 Bản vẽ đã có (đợt 7, chờ duyệt); build (6b) chờ duyệt bản vẽ |
 
 **E08 được đánh ✅ khi:** Pha 1–5 xong, IT chạy xanh trên MySQL 8.0 và 8.4, tài liệu cập nhật (OpenAPI, OPEN-QUESTIONS, PROGRESS). Bản vẽ U-1…U-7 được duyệt và vẽ (không chặn đánh ✅ backend, nhưng chặn mục UI). Task 8 (Q10) là thao tác dữ liệu, không chặn đánh ✅ kỹ thuật.
 
@@ -59,7 +59,7 @@
 |---|---|---|
 | Q10 | 46 biểu mẫu KSCL, danh mục lỗi, ngưỡng A/B/C | Lược đồ v1 có thể phải đổi khi có mẫu thật (UQ2); E17 chờ Q10 |
 | Q11 | Quy cách tem | Không ảnh hưởng E08 (chỉ loại tem đã có) |
-| Khung `src/web` | Chưa tồn tại (`PROGRESS.md` §1) | Chặn Pha 6b (build UI) |
+| Khung `src/web` | Đã có (React/Vite, commit `d943998`); chưa có màn MD | Không chặn. Pha 6b chặn bởi duyệt bản vẽ |
 | Docker | Không chạy trên máy này | Chặn chạy IT (F1) |
 
 ## 5. Giả định đang áp dụng (chưa được PXVB xác nhận; đổi được)
@@ -142,11 +142,11 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
 | 6a.1 | Kế hoạch UI (U-1…U-7, quy ước, câu hỏi) | ✅ | |
-| 6a.2 | Vẽ U-2 (danh sách biểu mẫu KSCL và phiên bản) và U-6 (danh mục chung + kiểm soát) theo mẫu W2/W1 | ⬜ | 6a.1 |
-| 6a.3 | Vẽ U-1 (trình thiết kế KSCL, bản tương tác), U-3 (lỗi & luật), U-4 (bảo trì chuẩn) | ⬜ | 6a.1, UQ1 |
-| 6a.4 | Vẽ U-5 (liên kết 2 chiều) và U-7 (chất lượng dữ liệu, sửa) | ⬜ | 6a.1 |
-| 6a.5 | Cập nhật `docs/design/README.md` (đợt 7) và `DESIGN-SYSTEM.md` §10 | ⬜ | 6a.2–6a.4 |
-| 6b | Build màn hình web | ⬜ | Khung `src/web` (❌ chưa có), Pha 2–5 |
+| 6a.2 | Vẽ U-2 (`W-KsclForms`) và U-6 (`W-MdCommonCatalog`, khối Kiểm soát) theo mẫu W1 | ✅ | Sinh bằng `generator/specs.py`, không sửa tay. Chờ duyệt |
+| 6a.3 | Vẽ U-1 (`W-KsclDesigner`, thay bản tay), U-3 (`W-DefectRules`), U-4 (`W-MaintTemplate`) | 🟡 | U-1 là bản tĩnh (nút Lên/Xuống), chưa làm bản tương tác (UQ1). U-3 chỉ minh họa cấp A/C (L75). U-4 đưa vật tư vào ghi chú vì mẫu W2 có một bảng |
+| 6a.4 | Vẽ U-5 (`W-PartLinks`) và U-7 (`W-MdDataQuality`, thêm 4 nhóm E08) | ✅ | Chuyển chế độ là nút, chưa tương tác |
+| 6a.5 | Cập nhật `docs/design/README.md` (đợt 7) | ✅ | `DESIGN-SYSTEM.md` §10 chưa cập nhật số màn (các màn E08 không nằm trong §7) |
+| 6b | Build màn hình web MD (U-1…U-7) | ⬜ | Khung `src/web` đã có (commit `d943998`, React/Vite). Chặn bởi duyệt bản vẽ (`DESIGN-SYSTEM.md` §9), chưa duyệt |
 
 ### Pha 7 – Dữ liệu, tài liệu và nghiệm thu (Task 8 và mục Acceptance cũ)
 | ID | Việc | Trạng thái |

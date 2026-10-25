@@ -58,7 +58,7 @@ Phụ thuộc: màn triển khai cần khung `src/web` (React shell) — hiện 
 |---|---|---|
 | UQ1 | Trình thiết kế KSCL: có bắt buộc kéo-thả không, hay chấp nhận nút Lên/Xuống + bàn phím? | Nút Lên/Xuống + bàn phím (đúng quy tắc tiếp cận, §B2) |
 | UQ2 | Lược đồ biểu mẫu KSCL (các loại trường, cách gắn cấp lỗi) có phải lấy từ TLSG-QT-ĐBCL-01 lần 10 (Q10) không? Có file mẫu 2 biểu mẫu tham chiếu chưa? | Lược đồ v1 tối thiểu, đánh dấu ⚠ GIẢ ĐỊNH, chờ mẫu thật |
-| UQ3 | Màn lỗi & luật (U-3): cấp A/B/C theo quy tắc "ngoài biên một lần = B, liên tiếp = A" có đúng không? | Hiển thị đúng như vậy, ghi vào `docs/OPEN-QUESTIONS.md` là giả định chờ ĐBCL |
+| UQ3 | Màn lỗi & luật (U-3): cấp A/B/C. Cấp B đã chốt là "ngoài biên một lần = B" (`docs/OPEN-QUESTIONS.md` L74); cấp A ("liên tiếp") và cấp C còn mở (L75) | Cấp B hiển thị theo quy tắc đã chốt. Cấp A và C chỉ là minh họa, không trình bày như quy tắc thật. Đã chọn (a): E08 chưa lưu cấp A (L75) |
 | UQ4 | Nhóm FR-MD-022 "thay đổi sau vận hành qua workflow" có cần màn duyệt riêng ngay trong E08 không? | Chỉ hiển thị trạng thái và người duyệt; màn duyệt dùng lại màn phê duyệt chung của E03 |
 
 ## 6. Việc chưa làm trong kế hoạch này
