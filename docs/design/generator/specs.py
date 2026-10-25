@@ -100,12 +100,73 @@ add('W-Audit', 'CC – Tra cứu audit', 'web', w_list({
 
 add('W-AlertCenter', 'CC – Trung tâm cảnh báo', 'web', w_list({
     'nav': 'Tổng quan', 'crumb': 'Tổng quan', 'title': 'Trung tâm cảnh báo', 'search': 'Tìm theo rule, nguồn',
-    'tools': ['Cấp: Tất cả', 'Chưa xác nhận'], 'tools_r': ['Quy tắc cảnh báo'],
-    'cols': [('Thời điểm', ''), ('Cấp', ''), ('Quy tắc', ''), ('Nguồn', ''), ('Trạng thái', '')],
-    'rows': [['15:12', 'bad:Cấp A', 'Khối lượng điếu ngoài biên', 'm:VM-04', 'warn:Chưa xác nhận'], ['15:05', 'warn:Cấp B', 'Sản lượng chậm', 'm:VM-04', 'warn:Chưa xác nhận'],
-             ['15:00', 'warn:Cấp B', 'OEE thấp', 'Dây chuyền 2', 'ok:Đã biết'], ['14:30', 'info:Cấp C', 'Tồn tem thấp', 'm:BL-0142', 'ok:Đã biết']], 'sel': 0,
-    'side': {'title': 'Cảnh báo đang chọn', 'chip': ('bad', 'Cấp A'), 'lines': [('Quy tắc', 'Khối lượng điếu ngoài biên'), ('Nguồn', 'm:VM-04'), ('Gửi tới', 'Lãnh đạo ca, QC')],
-             'actions': ['Xem lượt KSCL', '*Xác nhận']}}))
+    'tools': ['Mức: Tất cả', 'Trạng thái: Tất cả', 'Ca: Ca 2', 'Máy: Tất cả', 'Ngày: 18/10/2026'],
+    'tools_r': ['Thống kê tần suất', 'Excel', 'Quy tắc cảnh báo'],
+    'cols': [('Thời điểm', ''), ('Mức', ''), ('Quy tắc', ''), ('Nguồn', ''), ('Trạng thái', ''), ('Bậc leo thang', '')],
+    'rows': [['15:12', 'bad:Khẩn', 'Khối lượng điếu ngoài biên', 'm:VM-04', 'warn:Chưa xác nhận', 'Bậc 0'],
+             ['15:05', 'warn:Cảnh báo', 'Sản lượng chậm', 'm:VM-04', 'warn:Chưa xác nhận', 'Bậc 0'],
+             ['15:00', 'warn:Cảnh báo', 'OEE thấp', 'Dây chuyền 2', 'ok:Đã biết', 'Bậc 1'],
+             ['14:30', 'info:Thông tin', 'Tồn tem thấp', 'm:BL-0142', 'off:Đã xử lý', 'Không']], 'sel': 0,
+    'foot': ('off', 'Thống kê ca 2 (minh họa): Khẩn 1 · Cảnh báo 2 · Thông tin 1. Khối lượng điếu ngoài biên tái diễn 3 lần trong 30 phút.'),
+    'side': {'title': 'Cảnh báo đang chọn', 'chip': ('bad', 'Khẩn'),
+             'lines': [('Quy tắc', 'Khối lượng điếu ngoài biên'), ('Nguồn', 'm:VM-04'), ('Gửi tới', 'Lãnh đạo ca, QC'),
+                       ('Nguyên nhân', 'Chưa chọn'), ('Bậc leo thang', 'Bậc 0, còn 18 phút tới Phó QĐ'), ('Số lần xảy ra', '3')],
+             'note': ('off', 'Lịch sử: 15:12 Mở (hệ thống) → 15:14 Nhận (Nguyễn Văn B). Chưa có xử lý.'),
+             'actions': ['Xem lượt KSCL', '*Xác nhận đã biết', '-Đã xử lý']}}))
+
+add('W-AlertRules', 'CC – Quy tắc cảnh báo', 'web', w_form({
+    'nav': 'Danh mục và quản trị', 'crumb': 'Quản trị', 'title': 'Quy tắc cảnh báo: Khối lượng điếu ngoài biên',
+    'fields': [('Mã rule', 'QC_DEFECT_A', True, True), ('Phân hệ', 'QC', True), ('Mức', 'Khẩn (CRITICAL)'), ('Cửa sổ khử trùng (phút)', '10'),
+               ('Leo thang sau (phút)', '30'), ('Có hiệu lực từ', '25/10/2026'), ('Trạng thái', 'Đang bật'), ('Phiên bản', 'v3', True, True)],
+    'table_title': 'Người nhận theo bước',
+    'cols': [('Bước', 'n'), ('Vai trò', ''), ('Thời điểm', ''), ('Ghi chú', '')],
+    'rows': [['0', 'Trưởng ca (SHIFT_LEADER)', 'Ngay khi phát sinh', 'Mọi người giữ vai trò'],
+             ['1', 'Phó quản đốc (DEPUTY_DIRECTOR)', 'Sau 30 phút chưa xác nhận', 'Nhận thêm, không thay thế']],
+    'note': ('warn', 'Thay đổi có hiệu lực từ ngày đã chọn. Cảnh báo đang mở giữ cấu hình cũ. Mọi lần lưu tạo phiên bản mới và ghi audit.'),
+    'history': ['v3 · 18/10/2026 · Nguyễn Văn A · Đổi cửa sổ khử trùng 30 → 10 phút', 'v2 · 02/10/2026 · Lê Văn C · Thêm bước leo thang', 'v1 · Seed hệ thống'],
+    'actions': ['Hủy', '*Lưu phiên bản mới']}))
+
+add('W-Notifications', 'CC – Thông báo trong ứng dụng', 'web', w_list({
+    'nav': 'Tổng quan', 'crumb': 'Tổng quan', 'title': 'Thông báo', 'search': 'Tìm theo nội dung',
+    'tools': ['Chưa đọc', 'Loại: Tất cả'], 'tools_r': ['Đánh dấu tất cả đã đọc'],
+    'cols': [('Thời điểm', ''), ('Loại', ''), ('Nội dung', ''), ('Liên kết', ''), ('Trạng thái', '')],
+    'rows': [['15:12', 'Cảnh báo', 'Khối lượng điếu ngoài biên · VM-04', 'm:/alerts/…', 'warn:Chưa đọc'],
+             ['15:10', 'Duyệt', 'Yêu cầu duyệt KHSX tuần 43', 'm:/approvals/…', 'warn:Chưa đọc'],
+             ['14:58', 'Điều chỉnh', 'DC-2610-007 đã được duyệt', 'm:/adjustments/…', 'ok:Đã đọc']], 'sel': 0,
+    'side': {'title': 'Thông báo đang chọn', 'chip': ('warn', 'Chưa đọc'),
+             'lines': [('Loại', 'Cảnh báo'), ('Nội dung', 'Khối lượng điếu ngoài biên · VM-04'), ('Thời điểm', '15:12')],
+             'actions': ['Mở cảnh báo', '*Đánh dấu đã đọc']}}))
+
+def t12_alerts():
+    items = [('Khối lượng điếu ngoài biên liên tiếp', 'Lượt KSCL · 15:12', 'bad', 'Khẩn', True),
+             ('Sản lượng chậm so với kế hoạch giờ này', 'Giờ 15:00 · 15:05', 'warn', 'Cảnh báo'),
+             ('Tem còn dưới 100 chiếc', 'Lúc 13:20 · đã biết', 'info', 'Thông tin')]
+    steps = [('ok', 'Tiếp nhận cảnh báo', 'Nguyễn Văn B · 15:14'),
+             ('warn', 'Đang xử lý', 'Kiểm tra lượt KSCL lúc 15:12'),
+             ('off', 'Chọn nguyên nhân', 'Bắt buộc, chọn từ danh mục ALERT_CAUSE'),
+             ('off', 'Ghi chú xử lý', 'Bắt buộc, không để trống'),
+             ('off', 'Hoàn tất xử lý', 'Chỉ mở khi đã có nguyên nhân và ghi chú')]
+    labels = {'ok': 'Xong', 'warn': 'Đang làm', 'bad': 'Chặn', 'off': 'Chưa làm'}
+    st = ''
+    for i, (k, t, s) in enumerate(steps, 1):
+        bd = 'border-color:#F2B01E;' if k == 'warn' else ''
+        st += ('<div class="row" style="' + bd + 'min-height:84px"><span style="width:44px;height:44px;border-radius:50%;background:var(--offs);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;flex:none">'
+               + str(i) + '</span><span style="flex:1"><b>' + t + '</b><small>' + s + '</small></span>' + chip(k, labels[k]) + '</div>')
+    side = {'title': 'Xử lý cảnh báo', 'text': 'Hoàn tất xử lý ghi nguyên nhân và ghi chú vào lịch sử. Nút mở khi đủ hai mục bắt buộc.',
+            'primary': '-Hoàn tất xử lý', 'second': ['Tiếp nhận', 'Xem lượt KSCL']}
+    body = ('<section style="width:340px;display:flex;flex-direction:column;gap:12px">' + t_h1('Cảnh báo') + rows_html(items) + '</section>'
+            '<section style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0">' + t_h1('Khẩn · Khối lượng điếu ngoài biên') + st + '</section>' + tside(side, 340))
+    return t_page({'title': 'T-12 Cảnh báo', 'left': tl('VM-04')}, body)
+
+add('T12-Alerts', 'T-12 Cảnh báo', 'tab', t12_alerts())
+
+add('T13-Notifications', 'T-13 Thông báo', 'tab', t_list({
+    'title': 'T-13 Thông báo', 'left': tl('VM-04'), 'h1': 'Thông báo',
+    'items': [('Cảnh báo mới: Khối lượng điếu ngoài biên', 'VM-04 · 15:12', 'bad', 'Khẩn', True),
+              ('Yêu cầu duyệt KHSX tuần 43', 'Từ Lê Văn C · 15:10', 'warn', 'Chờ duyệt'),
+              ('Điều chỉnh DC-2610-007 đã được duyệt', '14:58', 'ok', 'Đã đọc')],
+    'side': {'title': 'Thông báo đã chọn', 'text': 'Mở để xem nội dung, tiếp nhận và xử lý cảnh báo. Đánh dấu đã đọc không xóa thông báo.',
+             'primary': 'Mở cảnh báo', 'second': ['Đánh dấu đã đọc']}}))
 
 add('W-DeviceSync', 'CC – Giám sát thiết bị và đồng bộ', 'web', w_list({
     'nav': 'Danh mục và quản trị', 'crumb': 'Quản trị', 'title': 'Giám sát thiết bị và đồng bộ', 'search': 'Tìm theo mã thiết bị, máy',

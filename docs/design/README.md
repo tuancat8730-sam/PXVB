@@ -95,6 +95,20 @@ Sinh bằng `docs/design/generator/` (`python3 specs.py` ghi vào `docs/design/s
 | RP – Báo cáo sản lượng ca | `W-RpReports.dc.html` | Đã vẽ, chờ duyệt (đợt 5) |
 | RP – Đăng ký nhận báo cáo | `W-RpSubs.dc.html` | Đã vẽ, chờ duyệt (đợt 5) |
 
+## Đợt 6 – màn cảnh báo và thông báo (E04, 25/10/2026)
+
+| Màn hình | File | Thay đổi | Trạng thái |
+|---|---|---|---|
+| T-12 Cảnh báo (tablet) | `T12-Alerts.dc.html` | Vẽ lại: luồng xử lý 5 bước (tiếp nhận, đang xử lý, chọn nguyên nhân, ghi chú, hoàn tất). Nút "Hoàn tất xử lý" chỉ mở khi đủ hai mục bắt buộc | Đã vẽ, chờ duyệt (đợt 6) |
+| T-13 Thông báo (tablet) | `T13-Notifications.dc.html` | Mới: danh sách thông báo, mở cảnh báo, đánh dấu đã đọc | Đã vẽ, chờ duyệt (đợt 6) |
+| CC – Trung tâm cảnh báo | `W-AlertCenter.dc.html` | Bổ sung lọc theo ca, máy, ngày; nút Excel; thống kê tần suất; cột leo thang; chi tiết có nguyên nhân và lịch sử xử lý | Đã vẽ, chờ duyệt (đợt 6) |
+| CC – Quy tắc cảnh báo | `W-AlertRules.dc.html` | Mới (mẫu W2): người nhận theo bước, cửa sổ khử trùng, leo thang, hiệu lực từ, lịch sử phiên bản | Đã vẽ, chờ duyệt (đợt 6) |
+| CC – Thông báo trong ứng dụng | `W-Notifications.dc.html` | Mới: danh sách, lọc chưa đọc, đánh dấu đã đọc | Đã vẽ, chờ duyệt (đợt 6) |
+
+- Nút **Thông báo** (có số chưa đọc) đã thêm vào header của mọi màn web (`lib.web_shell`) và thanh trạng thái tablet (`lib.tab_shell`). Thay đổi này làm mọi tệp web và tablet đổi phần header.
+- Nhãn mức và trạng thái đã chốt theo L71–L72: Khẩn / Cảnh báo / Thông tin; trạng thái Chưa xác nhận → Đã đóng; "Cấp A/B/C" chỉ dùng cho cấp lỗi QC (`docs/plans/E04-completion.plan.md`, F18).
+- Số liệu, tên, mã trong các màn là **dữ liệu minh họa**. Chưa kiểm tra trong trình duyệt (cổng §8 chưa chạy).
+
 ## Dựng thử trong trình duyệt (24/10/2026)
 
 Cách làm: chuyển 68 màn tĩnh + 60 màn trạng thái (128 trang) thành HTML thường, mở qua máy chủ cục bộ trong Chrome, quét tự động từng trang rồi xem ảnh chụp vài màn đại diện (W-PlanWeek, T41, W-RpKiosk, W-QcB21, S-W1-partial, S-TC-success).

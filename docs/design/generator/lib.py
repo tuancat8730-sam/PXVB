@@ -124,6 +124,7 @@ def web_shell(active, crumb, title, body, status=None, updated='Cập nhật lú
         '<div style="flex:1;display:flex;flex-direction:column;min-width:0">'
         '<header style="height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 24px;flex:none">'
         '<span style="color:var(--ink3)">' + esc(crumb) + ' /</span><b>' + esc(title) + '</b>' + st + '<span style="flex:1"></span>'
+        '<button class="btn" aria-label="Thông báo, 3 chưa đọc" style="margin-right:4px">Thông báo <b>3</b></button>'
         '<span style="color:var(--ink2)">' + esc(updated) + '</span></header>' + body + '</div></div>')
 
 
@@ -278,7 +279,8 @@ def w_kiosk(c):
 def tab_shell(left, body, sync=('ok', 'Đã đồng bộ 15:28'), clock='15:30'):
     return ('<div style="width:1280px;height:800px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column">'
             '<div style="height:64px;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;padding:0 24px;gap:28px;font-size:20px;flex:none">'
-            + left + '<span style="flex:1"></span>' + chip(*sync) + '<b style="font-size:22px">' + esc(clock) + '</b></div>'
+            + left + '<span style="flex:1"></span>' + '<button class="btn" aria-label="Thông báo, 2 chưa đọc" style="height:56px;font-size:18px">Thông báo <b>2</b></button>'
+            + chip(*sync) + '<b style="font-size:22px">' + esc(clock) + '</b></div>'
             '<div style="flex:1;display:flex;gap:24px;padding:24px;min-height:0">' + body + '</div></div>')
 
 
