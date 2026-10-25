@@ -76,7 +76,50 @@ Mẫu: `docs/plans/TEMPLATE.md` (cấu trúc lấy từ `docs/plans/E04-completi
 - Nếu task làm đổi trạng thái một yêu cầu, cập nhật mục 8.
 - Thêm một dòng vào mục 10 (nhật ký): ngày, ID task, kết quả kiểm chứng, và chỗ nào lệch so với kế hoạch.
 - Nếu phát hiện mới trong lúc làm, thêm vào mục 3 (F#) hoặc mục 6 (D#/L#); không để chỉ nằm trong câu trả lời.
-- Không commit trừ khi được yêu cầu.
+- Commit và push theo mục "Git theo epic" bên dưới, trong cùng lượt làm task.
+
+## Git theo epic (bắt buộc)
+
+Nhánh gốc là `main` (repo không dùng `master`). Mỗi epic làm trên một nhánh riêng, tạo từ `main` mới nhất. Mỗi task
+hoàn thành được commit và push ngay; khi epic xong thì mở PR vào `main`.
+
+**Bắt đầu epic**
+
+1. Kiểm tra cây làm việc: `git status`. Nếu còn thay đổi chưa commit của việc khác, dừng và hỏi; không tự commit,
+   stash hay xóa.
+2. `git checkout main && git pull --ff-only origin main`
+3. `git checkout -b feat/e<nn>-<slug>` (ví dụ `feat/e08-masterdata-kscl`). Không dùng lại nhánh đã merge hoặc nhánh của
+   epic khác.
+4. Tạo plan của epic (mục "Kế hoạch theo epic"), commit `docs(e<nn>): add completion plan`, rồi
+   `git push -u origin feat/e<nn>-<slug>`.
+
+**Sau mỗi task** (khi task ✅ và đã kiểm chứng; không gom nhiều task vào một commit)
+
+1. Cập nhật plan (mục 7, 8, 10) trong cùng commit với mã của task.
+2. Chạy kiểm chứng của task (test liên quan; IT qua failsafe theo mục Docker). Nếu test đỏ, không commit task đó
+   là ✅; ghi trạng thái thật vào plan.
+3. `git add <tệp cụ thể>` (không dùng `git add -A`). Kiểm tra `git diff --cached`: không có bí mật, không có
+   `target/`, `node_modules/`, `.DS_Store`.
+4. Commit theo Conventional Commits, có ID: `<type>(<scope>): <mô tả> (E<nn> <ID task>)`, với type thuộc
+   `feat | fix | refactor | docs | test | chore | perf | ci`. Thân commit ghi ID FR/BR/AC và kết quả kiểm chứng.
+5. `git push` (nhánh đã có upstream).
+
+**Hoàn thành epic**
+
+1. Điều kiện "E<nn> được đánh ✅" trong plan đã đạt; `git status` sạch; nhánh đã push.
+2. Cập nhật `docs/PROGRESS.md` cho epic (cùng commit cuối).
+3. Đồng bộ với `main` bằng merge, không rebase sau khi đã push: `git fetch origin && git merge origin/main`. Chạy lại
+   kiểm chứng sau khi merge.
+4. Push, rồi tạo PR: `gh pr create --base main --head feat/e<nn>-<slug>`. Tiêu đề `feat(e<nn>): <mô tả>`. Nội dung:
+   tóm tắt; danh sách commit; ID đã phủ; kiểm chứng đã chạy (lệnh, kết quả) và chưa chạy (lý do); baseline còn lại;
+   việc chưa làm (dẫn tới plan).
+5. Không tự merge PR. Không force-push nhánh đã có PR.
+
+**Quy tắc chung**
+
+- Không commit lên `main` trực tiếp; không `--no-verify`; không `git push --force` trừ khi được yêu cầu rõ.
+- Nhánh cũ `feat/e02-audit-ratelimit` và PR #3 không theo quy trình này; không thêm epic mới vào nhánh đó.
+- Mọi commit dùng tác giả cấu hình sẵn của máy. Không thêm `Co-Authored-By` trừ khi cấu hình cho phép.
 
 ## Thiết kế UI (`docs/design/`)
 
@@ -119,7 +162,7 @@ cổng kiểm tra §8, duyệt §9). Mọi kết quả thiết kế nằm trong 
 - Cập nhật `docs/DESIGN-SYSTEM.md` §10 khi số màn đã vẽ hoặc việc chưa làm thay đổi.
 - Kế hoạch UI của epic: `docs/design/<EPIC>-ui-plan.md` (ví dụ `E08-ui-plan.md`). Sau mỗi màn, cập nhật dòng tương ứng
   và thêm nhật ký. Plan epic trong `docs/plans/` chỉ tham chiếu tới đó (xem mục "Kế hoạch theo epic").
-- Không commit trừ khi được yêu cầu.
+- Commit và push theo mục "Git theo epic" bên dưới.
 
 ## Trạng thái triển khai
 
