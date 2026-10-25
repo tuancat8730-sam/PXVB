@@ -60,6 +60,7 @@ public class CatalogService {
     private final ApplicationEventPublisher events;
     private final List<UsageChecker> checkers;
     private final ExportService exports;
+    private final CatalogReferenceChecks references;
 
     public CatalogService(JdbcTemplate jdbc, ObjectMapper mapper, AuditLogWriter audit, CurrentUser currentUser,
                           ApplicationEventPublisher events, List<UsageChecker> checkers, ExportService exports) {
@@ -70,6 +71,7 @@ public class CatalogService {
         this.events = events;
         this.checkers = checkers;
         this.exports = exports;
+        this.references = new CatalogReferenceChecks(jdbc);
     }
 
     public CatalogSpec spec(String resource) {
@@ -889,6 +891,11 @@ public class CatalogService {
                     add(errors, "scopeValue", "Cần nhập giá trị cho phạm vi " + type);
                 }
             }
+            case "qc-form-templates", "overhaul-forms" -> addAll(errors, "formSchema",
+                    QcFormSchemaRules.violations(asTree(v.get("formSchema"))));
+            case "maint-task-templates" -> validateMaintTemplate(v, errors);
+            case "defect-grade-rules" -> validateDefectRule(v, errors);
+            case "machine-part-links" -> validatePartLink(v, errors);
             case "spare-part-min-stock" -> {
                 if (v.get("minQty") instanceof BigDecimal q && q.signum() < 0) {
                     add(errors, "minQty", "Tồn tối thiểu không được âm");
@@ -901,6 +908,67 @@ public class CatalogService {
         if (from != null && to != null && asDate(from).isAfter(asDate(to))) {
             add(errors, "effectiveTo", "Hiệu lực đến phải sau hiệu lực từ");
         }
+    }
+
+    private void validateMaintTemplate(Map<String, Object> v, Map<String, List<String>> errors) {
+        JsonNode parts = asTree(v.get("parts"));
+        addAll(errors, "checklist", MaintTemplateRules.checklistViolations(asTree(v.get("checklist"))));
+        addAll(errors, "parts", MaintTemplateRules.partsViolations(parts));
+        addAll(errors, "cycleValue", MaintTemplateRules.cycleViolations(
+                v.get("cycleValue") instanceof Integer n ? n : null));
+        List<String> unknown = references.unknownPartNos(MaintTemplateRules.partNumbers(parts));
+        if (!unknown.isEmpty()) {
+            add(errors, "parts", "Phụ tùng không tồn tại: " + String.join(", ", unknown));
+        }
+    }
+
+    private void validateDefectRule(Map<String, Object> v, Map<String, List<String>> errors) {
+        BigDecimal threshold = v.get("thresholdValue") instanceof BigDecimal d ? d : null;
+        Integer sampleSize = v.get("sampleSize") instanceof Integer n ? n : null;
+        addAll(errors, "thresholdValue",
+                DefectGradeRules.violations(str(v.get("metric")), threshold, sampleSize));
+        if (v.get("defectCode") == null || v.get("effectiveFrom") == null) {
+            return;
+        }
+        LocalDate to = v.get("effectiveTo") == null ? null : asDate(v.get("effectiveTo"));
+        if (references.overlapsExistingGradeRule(v.get("id"), str(v.get("defectCode")), str(v.get("appliesTo")),
+                str(v.get("grade")), asDate(v.get("effectiveFrom")), to)) {
+            add(errors, "effectiveFrom", "Trùng khoảng hiệu lực với luật khác cùng lỗi, nhóm áp dụng và cấp");
+        }
+    }
+
+    private void validatePartLink(Map<String, Object> v, Map<String, List<String>> errors) {
+        Object machine = v.get("machineId");
+        Object component = v.get("componentId");
+        String modelCode = str(v.get("modelCode"));
+        if (machine == null && (modelCode == null || modelCode.isBlank())) {
+            add(errors, "machineId", "Cần chọn máy hoặc nhập dòng máy");
+        }
+        if (component != null && machine == null) {
+            add(errors, "componentId", "Cần chọn máy trước khi chọn cụm");
+        } else if (component != null && !references.componentBelongsToMachine(str(component), str(machine))) {
+            add(errors, "componentId", "Cụm không thuộc máy đã chọn");
+        }
+    }
+
+    /** Giá trị JSON có thể là chuỗi (đầu vào mới) hoặc đã phân tích (bản ghi hiện có); chuỗi lỗi đã bị coerce chặn. */
+    private JsonNode asTree(Object value) {
+        if (value == null || value instanceof JsonNode) {
+            return (JsonNode) value;
+        }
+        try {
+            return mapper.readTree(value.toString());
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private static void addAll(Map<String, List<String>> errors, String key, List<String> messages) {
+        messages.forEach(message -> add(errors, key, message));
+    }
+
+    private static String str(Object o) {
+        return o == null ? null : o.toString();
     }
 
     private static LocalDate asDate(Object o) {
