@@ -57,6 +57,22 @@ public class DataQualityService {
         check(issues, "SPARE_PART_NO_MIN_STOCK", "INFO", "Phụ tùng chưa có mức tồn tối thiểu",
                 "SELECT s.part_no FROM md_spare_part s WHERE s.is_active = 1 AND NOT EXISTS ("
                         + "SELECT 1 FROM md_spare_part_min_stock m WHERE m.spare_part_id = s.id) ORDER BY s.part_no");
+        check(issues, "QC_FORM_NO_ACTIVE", "WARN", "Biểu mẫu KSCL chưa có bản ACTIVE nào",
+                "SELECT code FROM md_qc_form_template GROUP BY code HAVING SUM(status = 'ACTIVE') = 0 ORDER BY code");
+        check(issues, "DEFECT_RULE_OVERLAP", "ERROR", "Luật lỗi A/B/C chồng lấn khoảng hiệu lực",
+                "SELECT DISTINCT CONCAT_WS(' / ', a.defect_code, a.applies_to, a.grade) FROM md_defect_grade_rule a "
+                        + "JOIN md_defect_grade_rule b ON a.id < b.id AND a.defect_code <=> b.defect_code "
+                        + "AND a.applies_to = b.applies_to AND a.grade = b.grade AND a.is_active = 1 AND b.is_active = 1 "
+                        + "AND a.effective_from <= COALESCE(b.effective_to, '9999-12-31') "
+                        + "AND b.effective_from <= COALESCE(a.effective_to, '9999-12-31') ORDER BY 1");
+        check(issues, "MAINT_PART_MISSING", "ERROR", "Công việc bảo trì chuẩn dùng phụ tùng không tồn tại",
+                "SELECT DISTINCT CONCAT(t.code, ' / ', jt.part_no) FROM md_maint_task_template t "
+                        + "JOIN JSON_TABLE(t.parts, '$[*]' COLUMNS (part_no VARCHAR(50) PATH '$.partNo')) jt "
+                        + "WHERE jt.part_no IS NOT NULL AND NOT EXISTS ("
+                        + "SELECT 1 FROM md_spare_part s WHERE s.part_no = jt.part_no) ORDER BY 1");
+        check(issues, "SPARE_PART_NO_SUPPLIER", "WARN", "Phụ tùng chưa có nhà cung cấp mặc định",
+                "SELECT part_no FROM md_spare_part WHERE is_active = 1 AND default_supplier_id IS NULL "
+                        + "ORDER BY part_no");
         boolean errors = issues.stream().anyMatch(i -> "ERROR".equals(i.severity()));
         return new Report(Instant.now(), errors, issues);
     }

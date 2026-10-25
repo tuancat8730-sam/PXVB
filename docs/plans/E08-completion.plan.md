@@ -32,7 +32,7 @@
 | FR-MD-018 Tồn tối thiểu | 🟡 | `spare-part-min-stock` có phiên bản. Gợi ý từ lịch sử ⏸ (RP) |
 | FR-MD-019 Liên kết 2 chiều | ✅ backend | Ghi: `componentId` phải thuộc `machineId`, phải có máy hoặc dòng máy (code). Đọc: `GET md/machines/{id}/parts`, `GET md/spare-parts/{id}/machines` (`PartLinkQueries`, `PartLinkController`; `MasterdataLinkIT` 5/5). UI U-5 ⬜ |
 | FR-MD-011 / FR-MD-014 | ✅ | `reason-codes`, `stamp-types` đã có; không cần thay đổi |
-| FR-MD-021 Chất lượng dữ liệu | ⬜ | `DataQualityService` có sẵn; nhóm kiểm tra E08 chưa thêm (Pha 4) |
+| FR-MD-021 Chất lượng dữ liệu | 🟡 | `DataQualityService` có 8 nhóm cũ + 4 nhóm E08 (Pha 4, `MasterdataDataQualityIT` 4/4 trên 8.0 và 8.4). Còn: UI `W-MdDataQuality` chưa có nhóm mới |
 | FR-MD-022 Kiểm soát danh mục | ⬜ | Có `status`, `approvers`; chưa hiển thị người phụ trách/ngày cập nhật (Pha 5). Không làm luồng duyệt mới (D4) |
 | Kiểm thử | 🟡 | Unit: 20/20 xanh (3 lớp quy tắc). IT xanh trên 8.0 và 8.4: `MasterdataE08IT` 4/4, `MasterdataLinkIT` 5/5, `DataImportIT` 6/6 (AC-MD-002). `MasterdataIT` 9/9 (đã chạy trước đó). Còn lại: IT Pha 4–5 |
 | ArchUnit | ✅ | `ArchitectureTest` 16/16 xanh (chạy offline) |
@@ -51,6 +51,7 @@
 | F6 | TB | Lỗi vẫn dùng mã `VALIDATION` chung, chưa có mã `PXVB-MD-nnnn` riêng | Ghi nhận; đồng bộ với các module khác khi chuẩn hóa mã |
 | F7 | TB (thiết kế) | Bản vẽ masterdata chưa có: lỗi & luật A/B/C, công việc bảo trì chuẩn, liên kết 2 chiều, danh sách biểu mẫu KSCL có phiên bản | Kế hoạch U-1…U-7 (`docs/design/E08-ui-plan.md`) |
 | F8 | TB (thiết kế) | `W-KsclDesigner` là bản tĩnh, chưa có thao tác bàn phím thay kéo-thả (DESIGN-SYSTEM §10, B2) | U-1: nút Lên/Xuống + bàn phím (UQ1, mặc định) |
+| F11 | TB | Quyết định UQ3b (a) chưa thực thi trong code: `defect-grade-rules` vẫn nhận grade A (`Catalogs.java:219`), và `MasterdataE08IT.defectGradeRulesWithOverlappingValidityAreRejected` dùng grade A | Chờ người dùng quyết: thêm guard chỉ nhận B (TDD, sửa IT) hay chấp nhận tạm thời |
 
 ## 4. Phụ thuộc và rủi ro dữ liệu
 
@@ -66,7 +67,7 @@
 | # | Giả định | Nếu đổi |
 |---|---|---|
 | G1 | Lược đồ KSCL v1: `schemaVersion = 1`, `sections[]`, `fields[]` với kiểu `NUMBER/TEXT/CHECK/SELECT` | Tăng `SUPPORTED_VERSION` và viết thêm nhánh kiểm trong `QcFormSchemaRules` |
-| G2 | Cấp A/B/C: "ngoài biên một lần = B, liên tiếp = A" (UQ3). E08 chỉ lưu luật, việc đánh giá thuộc E18 | Đổi trong E18, không ảnh hưởng E08 |
+| G2 | Cấp A/B/C: cấp B đã chốt (UQ3a, L74); cấp A "liên tiếp" và cấp C chưa chốt (UQ3b, L75). E08 chỉ lưu luật, việc đánh giá thuộc E18. Đã chọn (a): không đổi schema, cấp A chưa kích hoạt | Đổi trong E18. Nếu sau này chọn (b) thì đổi schema `md_defect_grade_rule` trong E08 |
 | G3 | Phụ tùng trong vật tư bảo trì chỉ cần **tồn tại**, không kiểm trạng thái (bảng không có cột trạng thái trong đặc tả) | Thêm kiểm trạng thái khi bảng có cột đó |
 | G4 | Chỉ kiểm phụ tùng khi có vật tư; không kiểm phụ tùng có NCC mặc định (D5) | Thêm vào chất lượng dữ liệu (Pha 4) |
 | G5 | Seed hiện có (ngưỡng, giờ ca) là giá trị giả định (L25) | Thay bằng dữ liệu thật qua import |
@@ -82,7 +83,8 @@
 | D4 | Không làm luồng duyệt mới (`MD_NORM_CHANGE`); dùng `approvers` và luồng E03 | ✅ Chốt mặc định |
 | D5 | "Phụ tùng phải có NCC mặc định" chỉ là cảnh báo, không chặn | ✅ Chốt mặc định |
 | UQ1 | Trình thiết kế KSCL dùng nút Lên/Xuống và bàn phím thay kéo-thả | ✅ Chốt mặc định (dùng trong U-1) |
-| UQ3 | Quy tắc cấp A/B/C | ⬜ Chờ ĐBCL xác nhận (ghi OPEN-QUESTIONS) |
+| UQ3a | Quy tắc cấp B: "ngoài biên một lần = B" (`COUNT_IN_SAMPLE` ≥ 1) | ✅ Chốt 2026-10-25 theo yêu cầu người dùng; ĐBCL xác nhận lại nhãn (L74) |
+| UQ3b | Quy tắc cấp A ("liên tiếp") và định nghĩa cấp C | 🟡 Đã chọn (a) 2026-10-25 (theo người dùng): E08 chỉ lưu B, cấp A chưa kích hoạt. Còn thiếu định nghĩa phạm vi, N, reset và cấp C (L75). Chưa thực thi trong code (F11) |
 
 ## 7. Kế hoạch thực hiện
 
@@ -123,11 +125,11 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 3.3 | IT: một phụ tùng gắn 2 máy, hiện đủ 2 chiều | ✅ | `MasterdataLinkIT.sparePartShowsEveryMachineItIsLinkedTo` xanh trên 8.0 và 8.4 |
 
 ### Pha 4 – Chất lượng dữ liệu (FR-MD-021; Task 6)
-| ID | Việc | Trạng thái |
-|---|---|---|
-| 4.1 | Thêm nhóm: biểu mẫu KSCL không có bản ACTIVE; luật lỗi chồng lấn; công việc bảo trì có phụ tùng không tồn tại | ⬜ |
-| 4.2 | Cảnh báo phụ tùng không có NCC mặc định (D5) | ⬜ |
-| 4.3 | IT: dữ liệu thiếu → báo đúng nhóm | ⬜ |
+| ID | Việc | Trạng thái | Kết quả |
+|---|---|---|---|
+| 4.1 | Thêm nhóm: biểu mẫu KSCL không có bản ACTIVE (`QC_FORM_NO_ACTIVE`, WARN); luật lỗi chồng lấn (`DEFECT_RULE_OVERLAP`, ERROR); công việc bảo trì có phụ tùng không tồn tại (`MAINT_PART_MISSING`, ERROR) | ✅ | TDD: IT đỏ 4/4 (số đếm 0 ≠ 1), rồi `DataQualityService` thêm 3 nhóm, xanh |
+| 4.2 | Cảnh báo phụ tùng không có NCC mặc định (`SPARE_PART_NO_SUPPLIER`, WARN; D5: chỉ cảnh báo, phụ tùng vẫn tạo được) | ✅ | Cùng đợt; test kiểm mức WARN và `201` khi tạo |
+| 4.3 | IT `MasterdataDataQualityIT` (4 test): số đếm từng nhóm tăng đúng 1 khi có dữ liệu sai; biểu mẫu về lại khi kích hoạt bản ACTIVE | ✅ | Xanh 4/4 trên MySQL 8.0 và 8.4 (2026-10-25). Dữ liệu chồng lấn và công việc thiếu phụ tùng được chèn bằng JDBC vì API từ chối |
 
 ### Pha 5 – Kiểm soát danh mục (FR-MD-022; Task 7)
 | ID | Việc | Trạng thái |
@@ -153,7 +155,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 7.3 | Đo coverage lớp mới (mục tiêu ≥ 80%) | ⬜ |
 | 7.4 | Chỉ mục `md_defect_grade_rule` nếu đo thấy chậm (F4) | ⬜ |
 | 7.5 | OpenAPI: endpoint mới (Pha 3) và lỗi validation | ⬜ |
-| 7.6 | `docs/OPEN-QUESTIONS.md`: ghi UQ2, UQ3, D1, G1–G5 như giả định ⚠ | ⬜ |
+| 7.6 | `docs/OPEN-QUESTIONS.md`: ghi UQ2, UQ3, D1, G1–G6 như giả định ⚠ | 🟡 UQ3 đã ghi (L74–L75, 2026-10-25). Còn UQ2, D1, G1–G6 |
 | 7.7 | `docs/PROGRESS.md`: cập nhật E08 khi xong Pha 1–5 | ⬜ |
 | 7.8 | Task 8: nạp dữ liệu thật qua import (Q10) và chạy `DataQualityService` | ⬜ (chờ PXVB) |
 
@@ -182,6 +184,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | TB | Validator chậm khi nhập hàng loạt (2.500 NVL, ≥ 10.000 phụ tùng) | Đo ở 7.2 với dữ liệu cỡ thật; kiểm phụ tùng theo lô nếu cần (F5) |
 | TB | Thiếu khung `src/web` nên UI không chạy được | Pha 6b chờ khung; E08 giao bản vẽ trước |
 | THẤP | Thiếu chỉ mục cho kiểm chồng lấn | Đo rồi thêm (F4, 7.4) |
+| CAO | Cấp A không được đánh giá: SLA 30' (FR-QC-005, BR-QC-004) có thể im lặng khi "liên tiếp" chưa được định nghĩa | Chấp nhận theo (a) (UQ3b, L75). AC FR-QC-005 và AC-QC-003 ghi là chưa đạt, bị chặn bởi UQ3b. Hạn chốt: trước khi E18 bắt đầu |
 
 ## 10. Nhật ký thực hiện
 
@@ -198,3 +201,6 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2026-10-25 | Chạy `MasterdataE08IT` và `MasterdataIT`: 4/4 và 9/9 xanh trên 8.0 và 8.4. Lần đầu có 4 lỗi 400 vs 422: sửa kỳ vọng test sang 400 (đúng quy ước VALIDATION) |
 | 2026-10-25 | Full `verify` 8.0: phát hiện hồi quy do validator mới (`MasterdataIT.qcFormVersionsAreImmutableOnceActive`, lược đồ không có `schemaVersion`). Sửa fixture sang lược đồ v1 (F9). Baseline 13 lỗi ProductionIT/MaterialIT không thuộc E08 |
 | 2026-10-25 | Pha 2–3 theo TDD. 2.5 đã có sẵn ở `DataImportIT` (xanh). Pha 3: viết `MasterdataLinkIT` (5 test), chạy đỏ 4 lỗi 404; thêm `PartLinkQueries` và `PartLinkController` → xanh 5/5 trên 8.0 và 8.4. Đọc được cả hai chiều, liên kết theo dòng máy có `scope = MODEL` (G6). ArchUnit 16/16 và unit 20/20 xanh. Lệch: chưa cập nhật OpenAPI (7.5) và OPEN-QUESTIONS (7.6); chưa commit; chưa chạy full `verify` sau thay đổi |
+| 2026-10-25 | UQ3 (dev-team: PM, Architect, Developer, QA). Chốt UQ3a: cấp B = ngoài biên một lần (theo yêu cầu người dùng). Ghi UQ3b vào OPEN-QUESTIONS (L75): cấp A "liên tiếp" và cấp C chưa chốt, hai phương án (a) hoãn sang E18, (b) metric chuỗi trong E08. Cập nhật `docs/design/README.md` (B chốt, A/C mở) và plan (mục 5 G2, mục 6, 7.6) |
+| 2026-10-25 | UQ3b (dev-team: PM, Architect, Developer, QA; tất cả nghiêng về (a)). Người dùng chọn (a): E08 chỉ lưu B, cấp A chưa kích hoạt. Ghi L75 (đã chọn (a), rủi ro SLA chấp nhận), cập nhật plan (mục 3 F11, mục 5 G2, mục 6, mục 9 rủi ro CAO). Chưa thực thi guard trong code (F11), chưa định nghĩa phạm vi/N/reset/cấp C |
+| 2026-10-25 | Pha 4 theo TDD: viết `MasterdataDataQualityIT` (4 test), chạy đỏ 4/4 (số đếm 0). Thêm 4 nhóm vào `DataQualityService` (QC_FORM_NO_ACTIVE, DEFECT_RULE_OVERLAP, MAINT_PART_MISSING, SPARE_PART_NO_SUPPLIER). Lần 1 xanh 3/4; test kích hoạt biểu mẫu lỗi 403 vì dùng admin: sửa sang người dùng QA_HEAD như `MasterdataIT` (lỗi ở test, không ở mã). Xanh 22/22 IT masterdata trên 8.0 và 8.4. Lệch: không thêm nhóm vào `W-MdDataQuality` (UI, Pha 6) |
