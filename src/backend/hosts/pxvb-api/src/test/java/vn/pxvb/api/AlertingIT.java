@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Instant;
 import java.sql.Timestamp;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -349,15 +350,52 @@ class AlertingIT extends AbstractIntegrationTest {
 
     @Test
     void notificationsCanBeMarkedRead() throws Exception {
-        raiser.raise(command("PR_OEE_LOW", "M-" + UUID.randomUUID()));
-        JsonNode unread = json(mvc.perform(get("/api/v1/alerting/notifications/unread-count")
-                .header("Authorization", "Bearer " + leader.token())).andReturn());
-        assertThat(unread.get("unread").asLong()).isGreaterThanOrEqualTo(1);
+        AlertRef ref = raiser.raise(command("PR_OEE_LOW", "M-" + UUID.randomUUID()));
+        assertThat(notificationFor(leader, ref.alertId()).get("readAt").isNull()).isTrue();
 
         mvc.perform(post("/api/v1/alerting/notifications/read-all").header("Authorization",
                 "Bearer " + leader.token())).andExpect(status().isOk());
-        JsonNode after = json(mvc.perform(get("/api/v1/alerting/notifications/unread-count")
-                .header("Authorization", "Bearer " + leader.token())).andReturn());
-        assertThat(after.get("unread").asLong()).isZero();
+
+        // Chỉ kiểm thông báo vừa tạo: scanner nền có thể tạo thêm thông báo khác giữa hai bước (F1).
+        assertThat(notificationFor(leader, ref.alertId()).get("readAt").isNull()).isFalse();
+    }
+
+    @Test
+    void alertListAndExportCanBeFilteredByShiftSession() throws Exception {
+        UUID shiftA = UUID.randomUUID();
+        AlertRef inShiftA = raiser.raise(shiftCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), shiftA));
+        AlertRef inOtherShift = raiser.raise(shiftCommand("MT_WASTE_HIGH", "M-" + UUID.randomUUID(), UUID.randomUUID()));
+
+        JsonNode list = json(mvc.perform(get("/api/v1/alerting/alerts").param("shiftSessionId", shiftA.toString())
+                .header("Authorization", "Bearer " + admin)).andReturn());
+        List<String> listedIds = new ArrayList<>();
+        list.get("content").forEach(alert -> listedIds.add(alert.get("id").asText()));
+        assertThat(listedIds).contains(inShiftA.alertId().toString())
+                .doesNotContain(inOtherShift.alertId().toString());
+
+        MvcResult export = mvc.perform(get("/api/v1/alerting/alerts/export").param("shiftSessionId", shiftA.toString())
+                .header("Authorization", "Bearer " + admin)).andReturn();
+        assertThat(export.getResponse().getStatus()).isEqualTo(200);
+        try (var wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
+                new java.io.ByteArrayInputStream(export.getResponse().getContentAsByteArray()))) {
+            // 1 dòng tiêu đề + đúng 1 cảnh báo của ca A
+            assertThat(wb.getSheetAt(0).getPhysicalNumberOfRows()).isEqualTo(2);
+        }
+    }
+
+    private AlertCommand shiftCommand(String rule, String subject, UUID shiftSessionId) {
+        return new AlertCommand(rule, "Machine", subject, UUID.randomUUID(), shiftSessionId, "Cảnh báo " + rule,
+                "Chi tiết " + subject, Map.of("value", 4.2), null, null);
+    }
+
+    private JsonNode notificationFor(TestUser user, UUID alertId) throws Exception {
+        JsonNode page = json(mvc.perform(get("/api/v1/alerting/notifications").param("pageSize", "100")
+                .header("Authorization", "Bearer " + user.token())).andReturn());
+        for (JsonNode notification : page.get("content")) {
+            if (alertId.toString().equals(notification.path("alertId").asText())) {
+                return notification;
+            }
+        }
+        throw new AssertionError("Không có thông báo cho cảnh báo " + alertId);
     }
 }

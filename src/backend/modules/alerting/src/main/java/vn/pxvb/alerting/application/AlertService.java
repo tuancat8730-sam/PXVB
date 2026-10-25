@@ -279,8 +279,9 @@ public class AlertService implements AlertRaiser {
 
     /** Xuất danh sách cảnh báo ra Excel theo bộ lọc (FR-CC-054), tối đa 50.000 dòng. */
     @Transactional(readOnly = true)
-    public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId) {
-        Page<Alert> page = search(module, severity, status, machineId,
+    public byte[] export(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
+                         UUID shiftSessionId) {
+        Page<Alert> page = search(module, severity, status, machineId, shiftSessionId,
                 org.springframework.data.domain.PageRequest.of(0, MAX_EXPORT_ROWS + 1,
                         org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
                                 "raisedAt")));
@@ -298,7 +299,7 @@ public class AlertService implements AlertRaiser {
 
     @Transactional(readOnly = true)
     public Page<Alert> search(String module, Alert.Severity severity, Alert.Status status, UUID machineId,
-                              Pageable pageable) {
+                              UUID shiftSessionId, Pageable pageable) {
         Specification<Alert> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (module != null && !module.isBlank()) {
@@ -312,6 +313,9 @@ public class AlertService implements AlertRaiser {
             }
             if (machineId != null) {
                 predicates.add(cb.equal(root.get("machineId"), machineId));
+            }
+            if (shiftSessionId != null) {
+                predicates.add(cb.equal(root.get("shiftSessionId"), shiftSessionId));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };

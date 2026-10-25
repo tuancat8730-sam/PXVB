@@ -76,11 +76,13 @@ public class AlertController {
                                          @RequestParam(required = false) Alert.Severity severity,
                                          @RequestParam(required = false) Alert.Status status,
                                          @RequestParam(required = false) UUID machineId,
+                                         @RequestParam(required = false) UUID shiftSessionId,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "20") int pageSize) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(pageSize, 1), MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "raisedAt"));
-        return PageResponse.of(service.search(module, severity, status, machineId, pageable), AlertDto::from);
+        return PageResponse.of(service.search(module, severity, status, machineId, shiftSessionId, pageable),
+                AlertDto::from);
     }
 
     @GetMapping("/export")
@@ -89,14 +91,15 @@ public class AlertController {
             @RequestParam(required = false) String module,
             @RequestParam(required = false) Alert.Severity severity,
             @RequestParam(required = false) Alert.Status status,
-            @RequestParam(required = false) UUID machineId) {
+            @RequestParam(required = false) UUID machineId,
+            @RequestParam(required = false) UUID shiftSessionId) {
         return org.springframework.http.ResponseEntity.ok()
                 .contentType(org.springframework.http.MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
                         org.springframework.http.ContentDisposition.attachment().filename("canh-bao.xlsx").build()
                                 .toString())
-                .body(service.export(module, severity, status, machineId));
+                .body(service.export(module, severity, status, machineId, shiftSessionId));
     }
 
     @GetMapping("/{id}")

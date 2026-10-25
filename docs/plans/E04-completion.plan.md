@@ -142,24 +142,24 @@ Quy ước như E02: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 1 – Ổn định nền (không đổi nghiệp vụ)
 | ID | Việc | Trạng thái | Mức |
 |---|---|---|---|
-| 1.1 | Sửa F1: test không giả định `unread == 0` toàn cục. Cách sửa tùy kết quả 0.2 (tắt scanner trong test, hoặc đếm theo phần tử vừa tạo). Test đỏ trước khi sửa nếu tái hiện được | ⬜ | CAO |
+| 1.1 | Sửa F1: test không giả định `unread == 0` toàn cục. Cách sửa tùy kết quả 0.2 (tắt scanner trong test, hoặc đếm theo phần tử vừa tạo). Test đỏ trước khi sửa nếu tái hiện được | ✅ Chọn cách đếm theo phần tử vừa tạo: `notificationsCanBeMarkedRead` chỉ kiểm thông báo của cảnh báo vừa raise (không phụ thuộc số thông báo toàn cục). F1 chưa tái hiện, nên không có test đỏ | CAO |
 | 1.2 | F7: severity không hợp lệ → `BusinessException(VALIDATION)`, test đỏ trước | ✅ `AlertService.parseSeverity` (kiểm tra ngay đầu `raise`); test đơn vị `AlertInputRulesTest` đỏ rồi xanh | TB |
 | 1.3 | F6: vượt 50.000 dòng → lỗi VALIDATION rõ ràng, không cắt im lặng; test | ✅ `requireWithinExportLimit` + lấy `MAX+1` dòng để đếm; test đơn vị ở `AlertInputRulesTest` (IT với 50.001 dòng không thực tế) | TB |
-| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | ⬜ | TB |
+| 1.4 | F5 (một phần): bỏ qua rule không active, tải rule một lần (map theo code) thay vì N+1; test | 🟡 Bỏ qua rule không active ✅ (`escalateDue`, test `disabledRuleDoesNotEscalateOpenAlerts`). Còn lại: tải rule một lần thay vì N+1 | TB |
 
 ### Pha 2 – Vòng đời và leo thang
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
 | 2.1 | F3: ghi chú bắt buộc khi RESOLVED; test đỏ trước | 🟡 Code + unit (`AlertInputRulesTest` 8/8 xanh) xong. IT `resolveWithoutNoteIsRejectedAndKeepsStatus` đã viết nhưng **chưa chạy được** (xem nhật ký) | L64 (đã chốt) |
 | 2.2 | F2: nâng mức khi tái diễn (chỉ tăng, không hạ); khi nâng thì gửi lại thông báo và email nếu CRITICAL. Nhánh alert đã tồn tại hiện bỏ qua mức yêu cầu. IT `higherSeverityRecurrenceEscalatesAndEmailsOnceWhileSameLevelOnlyCounts` đã viết | 🟡 Code xong (`AlertService.recur`, `Alert.raiseSeverity`, `renotify`). IT **chưa chạy được** (xem nhật ký) | L66 (đã chốt) |
-| 2.3 | F11: tái diễn cùng mức trong cửa sổ dedup chỉ tăng bộ đếm; sau cửa sổ tạo alert mới | 🟡 Cùng mã với 2.2. Phần cùng mức đã có trong IT ở 2.2; "sau cửa sổ tạo alert mới" đã có từ trước, chưa có test riêng | L66 (đã chốt) |
+| 2.3 | F11: tái diễn cùng mức trong cửa sổ dedup chỉ tăng bộ đếm; sau cửa sổ tạo alert mới | ✅ Cùng mã với 2.2 (IT ở 2.2). IT `recurrenceAfterDedupWindowCreatesNewAlert` (backdate `last_occurred_at` qua JDBC) xanh | L66 (đã chốt) |
 | 2.4 | F10: kiểm tra phạm vi dây chuyền/máy khi xử lý. Chỉ làm sau L07; đến lúc đó giữ permission-only (xem L65) | ⬜ | L65 (đã chốt), L07 |
-| 2.5 | Test leo thang đa cấp: không leo lại cấp đã leo; ACK hoặc IN_PROGRESS dừng leo thang; rule tắt thì không leo | ⬜ | G1 |
+| 2.5 | Test leo thang đa cấp: không leo lại cấp đã leo; ACK hoặc IN_PROGRESS dừng leo thang; rule tắt thì không leo | ✅ 4 IT: `escalationAdvancesOneLevelAtATimeAndNeverRepeatsALevel`, `acknowledgedAlertStopsEscalation`, `inProgressAlertStopsEscalation`, `disabledRuleDoesNotEscalateOpenAlerts`. Lỗi thật đã sửa: `escalateDue` không kiểm tra rule tắt (test đỏ trước) | G1 |
 
 ### Pha 3 – Trung tâm cảnh báo (API)
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
-| 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ⬜ | Không |
+| 3.1 | F4a: lọc theo `shiftSessionId` ở `GET /alerts` và `GET /alerts/export`; IT | ✅ Thêm tham số `shiftSessionId` ở controller và `AlertService.search`/`export`. IT `alertListAndExportCanBeFilteredByShiftSession` đỏ trước, xanh sau (danh sách và số dòng xuất Excel) | Không |
 | 3.2 | F4b: `GET /alerts/stats` đếm theo rule và BusinessDate trong khoảng tối đa 90 ngày; index `(rule_code, raised_at)`; IT kiểm ranh giới ngày theo BusinessDate, không theo UTC | ⬜ | L68 (đã chốt) |
 | 3.3 | F9: audit trước/sau và lý do thay đổi bắt buộc khi sửa rule; alert lưu snapshot ngưỡng và mã phiên bản rule lúc raise; IT kiểm snapshot không đổi khi rule đổi sau đó | ⬜ | L67 (đã chốt, có điều kiện CLAUDE.md) |
 
