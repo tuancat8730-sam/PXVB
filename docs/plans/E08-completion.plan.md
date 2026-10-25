@@ -2,7 +2,7 @@
 
 **Nguồn:** `docs/PROGRESS.md` (E08 🟡), `docs/PXVB-SRS-SDD.md` §5 (FR-MD-011…022, BR-MD-003/004/009, AC-MD-001…005), §18.2 (E08: M, R0/R2, phụ thuộc E06); `docs/OPEN-QUESTIONS.md` Q10, Q11, L25, L71; bản vẽ `docs/design/` (`W-KsclDesigner`, `W-MdDataQuality`, `DESIGN-SYSTEM.md` §5.7, §9.4).
 **Độ phức tạp:** Trung bình (backend) + trung bình (thiết kế UI). **Cập nhật lần cuối:** 2026-10-25.
-**Phương pháp:** rà soát tĩnh `modules/masterdata` (`Catalogs`, `CatalogSpec`, `CatalogService`, `CatalogImportTemplates`, migration `md_*`), đối chiếu với SRS §5 và bản vẽ. Đã làm theo TDD: test đỏ (không biên dịch được) → xanh. **Chưa chạy IT** (Docker không hoạt động trên máy này).
+**Phương pháp:** rà soát tĩnh `modules/masterdata` (`Catalogs`, `CatalogSpec`, `CatalogService`, `CatalogImportTemplates`, migration `md_*`), đối chiếu với SRS §5 và bản vẽ. Đã làm theo TDD: test đỏ (không biên dịch được) → xanh. IT đã chạy trên MySQL 8.0 và 8.4 (2026-10-25, Pha 2–3).
 **Chú giải:** ✅ xong · 🟡 xong một phần · ⬜ chưa làm · ⏸ hoãn (có quyết định) · ❌ bị chặn
 
 ## 1. Phạm vi và điều kiện "E08 hoàn tất"
@@ -12,7 +12,7 @@
 | Kho danh mục (CRUD, audit, phiên bản, import/export, kiểm tra tham chiếu) | `Catalogs`, `CatalogService`, `CatalogImportTemplates` | ✅ Đã có trước E08, không đổi |
 | Kiểm nội dung các trường JSON (biểu mẫu KSCL/TDT, checklist, vật tư bảo trì) | Validator cấu trúc | ✅ Có (Pha 1–2) |
 | Luật lỗi A/B/C (không chồng lấn, miền giá trị) | Validator + kiểm DB | ✅ Có (Pha 2) |
-| Liên kết thiết bị–phụ tùng: ghi (cụm thuộc máy) và đọc 2 chiều | Validator + API đọc | 🟡 Ghi có; đọc 2 chiều ⬜ (Pha 3) |
+| Liên kết thiết bị–phụ tùng: ghi (cụm thuộc máy) và đọc 2 chiều | Validator + API đọc | ✅ Ghi và đọc 2 chiều (Pha 3). UI U-5 ⬜ |
 | Đối chiếu ERP (FR-MD-017 "file") | Import/đối chiếu file ERP | ❌ Chuyển E22 (D3) |
 | Tồn tối thiểu gợi ý từ lịch sử (FR-MD-018 P1) | Cần dữ liệu sử dụng từ RP | ⏸ Chờ RP |
 | Dữ liệu thật: 46 biểu mẫu KSCL, danh mục lỗi, ngưỡng A/B/C (Q10) | Import Excel, không đổi code | ⬜ Chờ PXVB |
@@ -30,11 +30,11 @@
 | FR-MD-016 TDT | 🟡 | `overhaul-forms` dùng cùng `QcFormSchemaRules` (lược đồ dùng chung) |
 | FR-MD-017 Phụ tùng & thẻ kho | 🟡 | `spare-parts` có sẵn (tìm theo thẻ kho). Đối chiếu ERP chuyển E22 (D3) |
 | FR-MD-018 Tồn tối thiểu | 🟡 | `spare-part-min-stock` có phiên bản. Gợi ý từ lịch sử ⏸ (RP) |
-| FR-MD-019 Liên kết 2 chiều | 🟡 | Ghi: `componentId` phải thuộc `machineId`, phải có máy hoặc dòng máy (code). Đọc 2 chiều ⬜ (Pha 3) |
+| FR-MD-019 Liên kết 2 chiều | ✅ backend | Ghi: `componentId` phải thuộc `machineId`, phải có máy hoặc dòng máy (code). Đọc: `GET md/machines/{id}/parts`, `GET md/spare-parts/{id}/machines` (`PartLinkQueries`, `PartLinkController`; `MasterdataLinkIT` 5/5). UI U-5 ⬜ |
 | FR-MD-011 / FR-MD-014 | ✅ | `reason-codes`, `stamp-types` đã có; không cần thay đổi |
 | FR-MD-021 Chất lượng dữ liệu | ⬜ | `DataQualityService` có sẵn; nhóm kiểm tra E08 chưa thêm (Pha 4) |
 | FR-MD-022 Kiểm soát danh mục | ⬜ | Có `status`, `approvers`; chưa hiển thị người phụ trách/ngày cập nhật (Pha 5). Không làm luồng duyệt mới (D4) |
-| Kiểm thử | 🟡 | Unit: 20 test mới xanh (3 lớp quy tắc). IT: `MasterdataE08IT` (4 test) biên dịch được, **chưa chạy**. `MasterdataIT` có sẵn, chưa chạy lại |
+| Kiểm thử | 🟡 | Unit: 20/20 xanh (3 lớp quy tắc). IT xanh trên 8.0 và 8.4: `MasterdataE08IT` 4/4, `MasterdataLinkIT` 5/5, `DataImportIT` 6/6 (AC-MD-002). `MasterdataIT` 9/9 (đã chạy trước đó). Còn lại: IT Pha 4–5 |
 | ArchUnit | ✅ | `ArchitectureTest` 16/16 xanh (chạy offline) |
 
 ## 3. Phát hiện từ rà soát và từ triển khai
@@ -70,6 +70,7 @@
 | G3 | Phụ tùng trong vật tư bảo trì chỉ cần **tồn tại**, không kiểm trạng thái (bảng không có cột trạng thái trong đặc tả) | Thêm kiểm trạng thái khi bảng có cột đó |
 | G4 | Chỉ kiểm phụ tùng khi có vật tư; không kiểm phụ tùng có NCC mặc định (D5) | Thêm vào chất lượng dữ liệu (Pha 4) |
 | G5 | Seed hiện có (ngưỡng, giờ ca) là giá trị giả định (L25) | Thay bằng dữ liệu thật qua import |
+| G6 | Liên kết chỉ có `modelCode` (không có máy) áp cho mọi máy cùng `model`; đọc từ cả hai phía, hiển thị `scope = MODEL` ⚠ | Đổi trong `PartLinkQueries` nếu PXVB chọn chỉ liên kết trực tiếp |
 
 ## 6. Quyết định (PO/PXVB đã duyệt 2026-10-25, theo mặc định)
 
@@ -112,14 +113,14 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2.2 | `CatalogService.validateRules`: nhánh cho 5 danh mục (`qc-form-templates`, `overhaul-forms`, `maint-task-templates`, `defect-grade-rules`, `machine-part-links`); áp cho create, update, import | ✅ code | Lệch: không áp ở `activate-version` (F3) |
 | 2.3 | Giữ nguyên chữ ký constructor `CatalogService`; `Catalogs.java` không đổi | ✅ | Đã kiểm: host (`test-compile`) biên dịch được với các nơi tham chiếu |
 | 2.4 | IT `MasterdataE08IT` (4 test: lược đồ sai, phụ tùng không tồn tại, luật chồng lấn, cụm không thuộc máy → 400 VALIDATION) | ✅ | Xanh trên MySQL 8.0 và 8.4 (2026-10-25) |
-| 2.5 | IT import 30 dòng lỗi không ghi dòng nào (AC-MD-002) | ⬜ | Chưa viết |
+| 2.5 | IT import 30 dòng lỗi không ghi dòng nào (AC-MD-002) | ✅ | Đã có sẵn `DataImportIT.invalidRowsAreReportedAndNothingIsWrittenUntilCommit` (2.470 dòng hợp lệ + 30 dòng lỗi; `md_material` 0 dòng trước commit). Xanh 6/6 trên 8.0 và 8.4 |
 
 ### Pha 3 – Liên kết hai chiều (FR-MD-019; Task 4 của kế hoạch cũ)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 3.1 | `GET /api/v1/md/machines/{id}/parts` (kèm cụm, công việc) | ⬜ | |
-| 3.2 | `GET /api/v1/md/spare-parts/{id}/machines` | ⬜ | |
-| 3.3 | IT: một phụ tùng gắn 2 máy, hiện đủ 2 chiều | ⬜ | |
+| 3.1 | `GET /api/v1/md/machines/{id}/parts` (kèm cụm và mã công việc `taskTemplateId`) | ✅ | Viết test đỏ trước (4 test lỗi 404), rồi `PartLinkController` + `PartLinkQueries.partsOfMachine`. Tên công việc chưa kèm (chỉ id) |
+| 3.2 | `GET /api/v1/md/spare-parts/{id}/machines` | ✅ | `PartLinkQueries.machinesOfPart`; gồm liên kết gắn máy trực tiếp và theo dòng máy (`scope`) |
+| 3.3 | IT: một phụ tùng gắn 2 máy, hiện đủ 2 chiều | ✅ | `MasterdataLinkIT.sparePartShowsEveryMachineItIsLinkedTo` xanh trên 8.0 và 8.4 |
 
 ### Pha 4 – Chất lượng dữ liệu (FR-MD-021; Task 6)
 | ID | Việc | Trạng thái |
@@ -147,7 +148,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 7 – Dữ liệu, tài liệu và nghiệm thu (Task 8 và mục Acceptance cũ)
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 7.1 | Chạy IT trên Docker: `MasterdataE08IT`, `MasterdataIT`, IT mới ở Pha 3–5 | ⬜ (F1) |
+| 7.1 | Chạy IT trên Docker: `MasterdataE08IT`, `MasterdataIT`, IT mới ở Pha 3–5 | 🟡 (F1). Xanh 8.0 và 8.4 cho E08, Link, DataImport; Pha 4–5 chưa viết |
 | 7.2 | `./mvnw verify` xanh trên MySQL 8.0 và 8.4 | ⬜ |
 | 7.3 | Đo coverage lớp mới (mục tiêu ≥ 80%) | ⬜ |
 | 7.4 | Chỉ mục `md_defect_grade_rule` nếu đo thấy chậm (F4) | ⬜ |
@@ -166,7 +167,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | FR-MD-016 | 🟡 | ✅ | 1.2, 2.2 |
 | FR-MD-017 | 🟡 | ✅ (ERP ở E22) | D3 |
 | FR-MD-018 | 🟡 | ⏸ gợi ý từ lịch sử (RP) | – |
-| FR-MD-019 | 🟡 | ✅ (ghi, đọc 2 chiều; UI U-5) | 2.2, 3.1–3.3 |
+| FR-MD-019 | ✅ backend | ✅ (ghi, đọc 2 chiều; UI U-5) | 2.2, 3.1–3.3 |
 | FR-MD-021 | ⬜ | ✅ | 4.1–4.3 |
 | FR-MD-022 | ⬜ | ✅ (hiển thị; không luồng mới) | 5.1, 5.2 |
 | Dữ liệu thật | ⬜ | ✅ (import, không đổi code) | 7.8 |
@@ -196,3 +197,4 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2026-10-25 | Docker chạy được (Colima). `DOCKER_HOST` trong shell trỏ tới socket Docker Desktop không tồn tại; chạy với `env -u DOCKER_HOST` là đủ. IT qua failsafe chạy được với Testcontainers 1.21.3 mặc định (không cần nâng phiên bản); Ryuk không cần tắt. Quy trình ghi vào `CLAUDE.md` |
 | 2026-10-25 | Chạy `MasterdataE08IT` và `MasterdataIT`: 4/4 và 9/9 xanh trên 8.0 và 8.4. Lần đầu có 4 lỗi 400 vs 422: sửa kỳ vọng test sang 400 (đúng quy ước VALIDATION) |
 | 2026-10-25 | Full `verify` 8.0: phát hiện hồi quy do validator mới (`MasterdataIT.qcFormVersionsAreImmutableOnceActive`, lược đồ không có `schemaVersion`). Sửa fixture sang lược đồ v1 (F9). Baseline 13 lỗi ProductionIT/MaterialIT không thuộc E08 |
+| 2026-10-25 | Pha 2–3 theo TDD. 2.5 đã có sẵn ở `DataImportIT` (xanh). Pha 3: viết `MasterdataLinkIT` (5 test), chạy đỏ 4 lỗi 404; thêm `PartLinkQueries` và `PartLinkController` → xanh 5/5 trên 8.0 và 8.4. Đọc được cả hai chiều, liên kết theo dòng máy có `scope = MODEL` (G6). ArchUnit 16/16 và unit 20/20 xanh. Lệch: chưa cập nhật OpenAPI (7.5) và OPEN-QUESTIONS (7.6); chưa commit; chưa chạy full `verify` sau thay đổi |
