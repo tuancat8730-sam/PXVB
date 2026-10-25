@@ -102,7 +102,7 @@ Sinh bằng `docs/design/generator/` (`python3 specs.py` ghi vào `docs/design/s
 | T-12 Cảnh báo (tablet) | `T12-Alerts.dc.html` | Vẽ lại: luồng xử lý 5 bước (tiếp nhận, đang xử lý, chọn nguyên nhân, ghi chú, hoàn tất). Nút "Hoàn tất xử lý" chỉ mở khi đủ hai mục bắt buộc | Đã vẽ, chờ duyệt (đợt 6) |
 | T-13 Thông báo (tablet) | `T13-Notifications.dc.html` | Mới: danh sách thông báo, mở cảnh báo, đánh dấu đã đọc | Đã vẽ, chờ duyệt (đợt 6) |
 | CC – Trung tâm cảnh báo | `W-AlertCenter.dc.html` | Bổ sung lọc theo ca, máy, ngày; nút Excel; thống kê tần suất; cột leo thang; chi tiết có nguyên nhân và lịch sử xử lý | Đã vẽ, chờ duyệt (đợt 6) |
-| CC – Quy tắc cảnh báo | `W-AlertRules.dc.html` | Mới (mẫu W2): người nhận theo bước, cửa sổ khử trùng, leo thang, hiệu lực từ, lịch sử phiên bản | Đã vẽ, chờ duyệt (đợt 6). **Cần sửa theo L67:** bỏ "hiệu lực từ" và "lịch sử phiên bản", thay bằng lịch sử thay đổi (audit) có lý do; bản vẽ chưa sửa (plan D8) |
+| CC – Quy tắc cảnh báo | `W-AlertRules.dc.html` | Mới (mẫu W2): người nhận theo bước, cửa sổ khử trùng, leo thang, số lần sửa, ô lý do bắt buộc, lịch sử thay đổi (audit) | Đã vẽ, chờ duyệt (đợt 6). Đã sửa theo L67 (plan D8): không còn "hiệu lực từ" và "lịch sử phiên bản"; ghi chú nêu alert giữ snapshot rule |
 | CC – Thông báo trong ứng dụng | `W-Notifications.dc.html` | Mới: danh sách, lọc chưa đọc, đánh dấu đã đọc | Đã vẽ, chờ duyệt (đợt 6) |
 
 - Nút **Thông báo** (có số chưa đọc) đã thêm vào header của mọi màn web (`lib.web_shell`) và thanh trạng thái tablet (`lib.tab_shell`). Thay đổi này làm mọi tệp web và tablet đổi phần header.

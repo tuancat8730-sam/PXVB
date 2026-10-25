@@ -117,14 +117,15 @@ add('W-AlertCenter', 'CC – Trung tâm cảnh báo', 'web', w_list({
 add('W-AlertRules', 'CC – Quy tắc cảnh báo', 'web', w_form({
     'nav': 'Danh mục và quản trị', 'crumb': 'Quản trị', 'title': 'Quy tắc cảnh báo: Khối lượng điếu ngoài biên',
     'fields': [('Mã rule', 'QC_DEFECT_A', True, True), ('Phân hệ', 'QC', True), ('Mức', 'Khẩn (CRITICAL)'), ('Cửa sổ khử trùng (phút)', '10'),
-               ('Leo thang sau (phút)', '30'), ('Có hiệu lực từ', '25/10/2026'), ('Trạng thái', 'Đang bật'), ('Phiên bản', 'v3', True, True)],
+               ('Leo thang sau (phút)', '30'), ('Trạng thái', 'Đang bật'), ('Số lần sửa', '3', True, True), ('Lý do thay đổi (bắt buộc)', '')],
     'table_title': 'Người nhận theo bước',
     'cols': [('Bước', 'n'), ('Vai trò', ''), ('Thời điểm', ''), ('Ghi chú', '')],
     'rows': [['0', 'Trưởng ca (SHIFT_LEADER)', 'Ngay khi phát sinh', 'Mọi người giữ vai trò'],
              ['1', 'Phó quản đốc (DEPUTY_DIRECTOR)', 'Sau 30 phút chưa xác nhận', 'Nhận thêm, không thay thế']],
-    'note': ('warn', 'Thay đổi có hiệu lực từ ngày đã chọn. Cảnh báo đang mở giữ cấu hình cũ. Mọi lần lưu tạo phiên bản mới và ghi audit.'),
-    'history': ['v3 · 18/10/2026 · Nguyễn Văn A · Đổi cửa sổ khử trùng 30 → 10 phút', 'v2 · 02/10/2026 · Lê Văn C · Thêm bước leo thang', 'v1 · Seed hệ thống'],
-    'actions': ['Hủy', '*Lưu phiên bản mới']}))
+    'note': ('warn', 'Thay đổi áp dụng cho alert phát sinh sau khi lưu. Mỗi alert giữ snapshot cấu hình rule lúc phát sinh, nên alert đang mở không đổi. Mọi lần lưu bắt buộc nhập lý do và ghi audit trước/sau.'),
+    'side_title': 'Lịch sử thay đổi (audit)',
+    'history': ['18/10/2026 · Nguyễn Văn A · Cửa sổ khử trùng 30 → 10 phút · Lý do: Giảm trễ phát hiện điếu ngoài biên', '02/10/2026 · Lê Văn C · Thêm bước leo thang · Lý do: Theo đề nghị Quản đốc', '01/10/2026 · Hệ thống · Seed mặc định'],
+    'actions': ['Hủy', '*Lưu thay đổi']}))
 
 add('W-Notifications', 'CC – Thông báo trong ứng dụng', 'web', w_list({
     'nav': 'Tổng quan', 'crumb': 'Tổng quan', 'title': 'Thông báo', 'search': 'Tìm theo nội dung',
