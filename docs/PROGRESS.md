@@ -1,7 +1,7 @@
 # PXVB – Theo dõi tiến độ triển khai
 
 Nguồn backlog: `docs/PXVB-SRS-SDD.md` §18.2. Điểm cần chốt/giả định: `docs/OPEN-QUESTIONS.md` (mã L01–L63). Quyết định kiến trúc: `docs/adr/`.
-Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
+Cập nhật lần cuối: 2026-10-30 (duyệt bản vẽ E08 đợt 7; mở build web MD 6b).
 
 **Chú giải trạng thái:** ✅ Xong · 🟡 Xong một phần (còn việc, xem cột Ghi chú) · ⬜ Chưa làm
 
@@ -27,7 +27,7 @@ Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
 | E05 | Import/Export Excel engine | ✅ | `31f7da2` | Mẫu nhập đã có cho danh mục MD, định mức, KHSX tháng |
 | E06 | MD: máy, cụm, ghép cặp, ca, khung giờ, nhân sự | ✅ | `31f7da2` | Ghép cặp nhập trên lưới (L24 đã chốt) |
 | E07 | MD: SP, NVL, định mức (phiên bản), ngưỡng, mã dừng/lý do, tem | ✅ | `31f7da2` | Giá trị seed (giờ ca, ngưỡng, mã dừng) là giả định L25; quy cách tem chờ Q11 |
-| E08 | MD: biểu mẫu KSCL (store), lỗi/luật, bảo trì, phụ tùng, liên kết | 🟡 | `31f7da2` | Mới có kho lưu; 46 biểu mẫu thật + lỗi + ngưỡng A/B/C chờ PXVB (Q10) |
+| E08 | MD: biểu mẫu KSCL (store), lỗi/luật, bảo trì, phụ tùng, liên kết | 🟡 | `31f7da2`, `79b1bd1` (nhánh `feat/e08-masterdata-kscl`) | Xong: validator KSCL/bảo trì/luật lỗi, kiểm tham chiếu, import không ghi khi có lỗi (AC-MD-002), liên kết hai chiều (`MasterdataLinkIT` 5/5, 8.0 và 8.4). Luật cấp B đã chốt (L74); cấp A chờ định nghĩa "liên tiếp" và cấp C (L75, phương án (a) đã chọn, chưa thực thi trong code). Pha 4–5 xong (chất lượng dữ liệu, kiểm soát danh mục). Còn: OpenAPI, 46 biểu mẫu thật + ngưỡng A/B/C (Q10), build UI U-1…U-7 (bản vẽ duyệt 30/10/2026; đang làm 6b) |
 | E09 | Sync service + tablet shell offline | 🟡 | `ba6e225` | Backend xong (push/pull/xung đột/giám sát). Tablet: chỉ lõi TS; UI RN + adapter op-sqlite chưa kiểm chứng (L31); tombstone bảng hard-delete chưa có (L30) |
 | E10 | PL: KHSX tháng/tuần, lệnh SX, bố trí nhân sự, điều chỉnh | 🟡 | `ba6e225` | Thuật toán gợi ý lệnh đơn giản (L32); theo dõi thực hiện kế hoạch FR-PL-007/008 chờ dữ liệu PR (L34) |
 | E11 | PR: phiên ca, sản lượng, dừng máy, đổi mác, tồn điếu | 🟡 | `97f1f02` | Chưa có: tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/nhập hộ UI (FR-PR-010), tạo yêu cầu sửa chữa 1 chạm (chờ PM), cảnh báo >110% công suất (L35–L41) |
@@ -119,6 +119,7 @@ Kế hoạch theo `docs/adr/ADR-0001-rp-fact-grain-projection.md` §5. Câu hỏ
 | Xác nhận giả định giờ ca, ngưỡng, mã dừng | L25 |
 | PO duyệt ADR-0001 và trả lời L57 (gộp OEE khi trần hiệu năng), L58 (revision báo cáo), L60 (thời hạn lưu/đối soát) | E15, AC-RP-003 |
 | Dev lead trả lời L59 (ánh xạ điều chỉnh về phiên ca) và L61 (mốc đo SLA READY ≤ 5') | E15, AC-RP-001 |
+| QC lead / ĐBCL định nghĩa "liên tiếp" (phạm vi, N, reset) và cấp C để chốt cấp A (L75, đã chọn phương án (a)) | E08, E18, FR-QC-005, AC-QC-003 |
 
 ## 6. Cách chạy kiểm thử
 

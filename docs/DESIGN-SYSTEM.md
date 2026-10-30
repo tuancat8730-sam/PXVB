@@ -155,7 +155,7 @@ SDD chưa mô tả đầy đủ màn hình web của MT, QC, TX, OH, SP; ánh x�
 
 ## 10. Tiến độ thiết kế màn hình
 
-Cập nhật 24/10/2026 (sau đợt 5). Cách đếm: mỗi mục ngăn bằng "·" trong §7 là một màn hình; RP tính 4 loại (dashboard `DB_*`, `DB_WALL`, báo cáo `R_*`, subscription). Bản vẽ nguồn và trạng thái từng màn: `docs/design/README.md`; bản xem được: https://claude.ai/artifact/976ez4LHLR95GAre8a8Bng.
+Cập nhật 30/10/2026 (duyệt đợt 7 E08; trước đó 24/10/2026 sau đợt 5). Cách đếm: mỗi mục ngăn bằng "·" trong §7 là một màn hình; RP tính 4 loại (dashboard `DB_*`, `DB_WALL`, báo cáo `R_*`, subscription). Bản vẽ nguồn và trạng thái từng màn: `docs/design/README.md`; bản xem được: https://claude.ai/artifact/976ez4LHLR95GAre8a8Bng.
 
 | Nhóm | Tổng | Đã vẽ | Chưa vẽ |
 |---|---|---|---|
@@ -163,7 +163,7 @@ Cập nhật 24/10/2026 (sau đợt 5). Cách đếm: mỗi mục ngăn bằng "
 | Web (§7.2) | 53 | 53 | **0** |
 | Cộng | 77 | 77 | **0** |
 
-Mọi màn trong §7 đã có bản vẽ **đề xuất, chờ duyệt**. Trong đó 4 màn tablet (T-03, T-04, T-05, T-11) nằm ở bảng mẫu đợt 1; 73 màn còn lại nằm ở canvas bổ sung. Từ đợt 5, 49 màn được sinh từ bộ dựng `docs/design/generator/` (mẫu W1–W6, K1, T-A…T-F), nên cùng một khung và dễ sửa hàng loạt, nhưng mỗi màn chỉ có **một trạng thái nội dung** và nội dung là dữ liệu minh họa.
+Mọi màn trong §7 đã có bản vẽ **đề xuất**. Đợt 7 (E08 MD, U-1…U-7) đã **duyệt ngày 30/10/2026**; các đợt còn lại vẫn **chờ duyệt**. Trong đó 4 màn tablet (T-03, T-04, T-05, T-11) nằm ở bảng mẫu đợt 1; 73 màn còn lại nằm ở canvas bổ sung. Từ đợt 5, 49 màn được sinh từ bộ dựng `docs/design/generator/` (mẫu W1–W6, K1, T-A…T-F), nên cùng một khung và dễ sửa hàng loạt, nhưng mỗi màn chỉ có **một trạng thái nội dung** và nội dung là dữ liệu minh họa.
 
 ### Đã làm (24/10/2026)
 

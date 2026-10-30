@@ -1,6 +1,6 @@
 # E08 – Kế hoạch thiết kế màn hình (MD: biểu mẫu KSCL, lỗi/luật, bảo trì, phụ tùng, liên kết)
 
-**Trạng thái:** đề xuất, chờ PXVB/Dev lead duyệt (chưa viết code UI).
+**Trạng thái:** đã duyệt 30/10/2026 (PXVB). Build theo `docs/plans/E08-completion.plan.md` mục 6b (chưa xong khi viết dòng này).
 **Nguồn:** `docs/PXVB-SRS-SDD.md` §5 (FR-MD-011…022, BR-MD-003/004/009), `docs/DESIGN-SYSTEM.md` §5.7 và §9.4, `docs/design/README.md`, `docs/plans/E08-completion.plan.md` (phần backend).
 **Phạm vi UI:** chỉ web quản trị (React). E08 không có màn tablet; hiển thị biểu mẫu KSCL trên tablet thuộc E17.
 

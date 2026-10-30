@@ -16,7 +16,7 @@
 | Đối chiếu ERP (FR-MD-017 "file") | Import/đối chiếu file ERP | ❌ Chuyển E22 (D3) |
 | Tồn tối thiểu gợi ý từ lịch sử (FR-MD-018 P1) | Cần dữ liệu sử dụng từ RP | ⏸ Chờ RP |
 | Dữ liệu thật: 46 biểu mẫu KSCL, danh mục lỗi, ngưỡng A/B/C (Q10) | Import Excel, không đổi code | ⬜ Chờ PXVB |
-| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | 🟡 Bản vẽ đã có (đợt 7, chờ duyệt); build (6b) chờ duyệt bản vẽ |
+| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | 🟡 Bản vẽ đã duyệt (30/10/2026); build 6b đang làm (Pha 6b) |
 
 **E08 được đánh ✅ khi:** Pha 1–5 xong, IT chạy xanh trên MySQL 8.0 và 8.4, tài liệu cập nhật (OpenAPI, OPEN-QUESTIONS, PROGRESS). Bản vẽ U-1…U-7 được duyệt và vẽ (không chặn đánh ✅ backend, nhưng chặn mục UI). Task 8 (Q10) là thao tác dữ liệu, không chặn đánh ✅ kỹ thuật.
 
@@ -142,11 +142,25 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | ID | Việc | Trạng thái | Phụ thuộc |
 |---|---|---|---|
 | 6a.1 | Kế hoạch UI (U-1…U-7, quy ước, câu hỏi) | ✅ | |
-| 6a.2 | Vẽ U-2 (`W-KsclForms`) và U-6 (`W-MdCommonCatalog`, khối Kiểm soát) theo mẫu W1 | ✅ | Sinh bằng `generator/specs.py`, không sửa tay. Chờ duyệt |
-| 6a.3 | Vẽ U-1 (`W-KsclDesigner`, thay bản tay), U-3 (`W-DefectRules`), U-4 (`W-MaintTemplate`) | 🟡 | U-1 là bản tĩnh (nút Lên/Xuống), chưa làm bản tương tác (UQ1). U-3 chỉ minh họa cấp A/C (L75). U-4 đưa vật tư vào ghi chú vì mẫu W2 có một bảng |
+| 6a.2 | Vẽ U-2 (`W-KsclForms`) và U-6 (`W-MdCommonCatalog`, khối Kiểm soát) theo mẫu W1 | ✅ | Sinh bằng `generator/specs.py`, không sửa tay. Đã duyệt 30/10/2026 |
+| 6a.3 | Vẽ U-1 (`W-KsclDesigner`, thay bản tay), U-3 (`W-DefectRules`), U-4 (`W-MaintTemplate`) | 🟡 | Bản vẽ đã duyệt 30/10/2026. U-1 là bản tĩnh; bản tương tác (UQ1) làm ở 6b.4. U-3 chỉ minh họa cấp A/C (L75). U-4 đưa vật tư vào ghi chú vì mẫu W2 có một bảng |
 | 6a.4 | Vẽ U-5 (`W-PartLinks`) và U-7 (`W-MdDataQuality`, thêm 4 nhóm E08) | ✅ | Chuyển chế độ là nút, chưa tương tác |
 | 6a.5 | Cập nhật `docs/design/README.md` (đợt 7) | ✅ | `DESIGN-SYSTEM.md` §10 chưa cập nhật số màn (các màn E08 không nằm trong §7) |
-| 6b | Build màn hình web MD (U-1…U-7) | ⬜ | Khung `src/web` đã có (commit `d943998`, React/Vite). Chặn bởi duyệt bản vẽ (`DESIGN-SYSTEM.md` §9), chưa duyệt |
+| 6b | Build màn hình web MD (U-1…U-7) | 🟡 | Bản vẽ đã duyệt 30/10/2026. Khung `src/web` (commit `d943998`) chỉ là khung mẫu; chi tiết 6b.0–6b.9 bên dưới |
+
+### Pha 6b – Chi tiết build web MD (duyệt 30/10/2026)
+| ID | Việc | Trạng thái | Ghi chú |
+|---|---|---|---|
+| 6b.0 | Dựng khung `src/web`: entry Vite, tsconfig, Tailwind, token CSS, điều hướng nhóm MD, Vitest + RTL | ⬜ | Khung cũ có `Dashboard.tsx` lỗi (icon `Machine`), không dùng |
+| 6b.1 | Lớp API MD: danh mục (list/get/create/update/clone/activate-version), kiểm dữ liệu, liên kết; lỗi hiển thị tiếng Việt | ⬜ | Dùng `/api/v1/md/{resource}` có sẵn |
+| 6b.2 | Thành phần dùng chung: chip trạng thái, khối Kiểm soát (chỉ đọc), trạng thái tải/trống/lỗi/một phần/không quyền/thành công | ⬜ | `DESIGN-SYSTEM.md` §5 |
+| 6b.3 | U-6 Danh mục chung (phụ tùng) | ⬜ | W1 |
+| 6b.4 | U-1 Trình thiết kế KSCL: Lên/Xuống, thêm trường, lỗi lược đồ tiếng Việt | ⬜ | UQ1 |
+| 6b.5 | U-2 Biểu mẫu KSCL: danh sách, phiên bản, nhân bản, kích hoạt | ⬜ | W2 |
+| 6b.6 | U-3 Lỗi và luật A/B/C: chỉ lưu cấp B; A và C hiện "chưa kích hoạt" | ⬜ | L75; F11 (backend còn nhận A) |
+| 6b.7 | U-4 Công việc bảo trì chuẩn: checklist, vật tư, Nháp / Đang dùng | ⬜ | W2 |
+| 6b.8 | U-5 Liên kết hai chiều; U-7 Chất lượng dữ liệu (4 nhóm E08) | ⬜ | W1 |
+| 6b.9 | Kiểm trình duyệt 1366×768, bàn phím, tương phản đo; cập nhật bản vẽ và PROGRESS | ⬜ | DESIGN-SYSTEM §8 |
 
 ### Pha 7 – Dữ liệu, tài liệu và nghiệm thu (Task 8 và mục Acceptance cũ)
 | ID | Việc | Trạng thái |
@@ -205,4 +219,5 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2026-10-25 | UQ3 (dev-team: PM, Architect, Developer, QA). Chốt UQ3a: cấp B = ngoài biên một lần (theo yêu cầu người dùng). Ghi UQ3b vào OPEN-QUESTIONS (L75): cấp A "liên tiếp" và cấp C chưa chốt, hai phương án (a) hoãn sang E18, (b) metric chuỗi trong E08. Cập nhật `docs/design/README.md` (B chốt, A/C mở) và plan (mục 5 G2, mục 6, 7.6) |
 | 2026-10-25 | UQ3b (dev-team: PM, Architect, Developer, QA; tất cả nghiêng về (a)). Người dùng chọn (a): E08 chỉ lưu B, cấp A chưa kích hoạt. Ghi L75 (đã chọn (a), rủi ro SLA chấp nhận), cập nhật plan (mục 3 F11, mục 5 G2, mục 6, mục 9 rủi ro CAO). Chưa thực thi guard trong code (F11), chưa định nghĩa phạm vi/N/reset/cấp C |
 | 2026-10-25 | Pha 4 theo TDD: viết `MasterdataDataQualityIT` (4 test), chạy đỏ 4/4 (số đếm 0). Thêm 4 nhóm vào `DataQualityService` (QC_FORM_NO_ACTIVE, DEFECT_RULE_OVERLAP, MAINT_PART_MISSING, SPARE_PART_NO_SUPPLIER). Lần 1 xanh 3/4; test kích hoạt biểu mẫu lỗi 403 vì dùng admin: sửa sang người dùng QA_HEAD như `MasterdataIT` (lỗi ở test, không ở mã). Xanh 22/22 IT masterdata trên 8.0 và 8.4. Lệch: không thêm nhóm vào `W-MdDataQuality` (UI, Pha 6) |
+| 2026-10-30 | Người dùng xác nhận bản vẽ đợt 7 (U-1…U-7) đã duyệt. Cập nhật `docs/design/README.md`, `DESIGN-SYSTEM.md` §10, `docs/design/E08-ui-plan.md`, mục 1 và Pha 6 của plan. Mở Pha 6b (6b.0–6b.9) |
 | 2026-10-25 | Pha 5 theo TDD: viết `MasterdataCatalogControlIT` (3 test), chạy đỏ (NPE: `owner` null). Thêm `CatalogSpec.owner()` (G7) và `addStewardship` trong `mapRow`. Xanh 31/31 IT masterdata trên 8.0 và 8.4. Full `verify` 8.0: 13 lỗi = baseline. Lệch: `CatalogService` hiện 1.005 dòng (vượt ngưỡng mềm 800, đã có trước pha này); tách sau nếu cần |

@@ -109,21 +109,21 @@ Sinh bằng `docs/design/generator/` (`python3 specs.py` ghi vào `docs/design/s
 - Nhãn mức và trạng thái đã chốt theo L71–L72: Khẩn / Cảnh báo / Thông tin; trạng thái Chưa xác nhận → Đã đóng; "Cấp A/B/C" chỉ dùng cho cấp lỗi QC (`docs/plans/E04-completion.plan.md`, F18).
 - Số liệu, tên, mã trong các màn là **dữ liệu minh họa**. Chưa kiểm tra trong trình duyệt (cổng §8 chưa chạy).
 
-## Đợt 7 – Master data E08 (Pha 6a, 25/10/2026)
+## Đợt 7 – Master data E08 (Pha 6a, vẽ 25/10/2026; duyệt 30/10/2026)
 
 | Màn hình | File | Thay đổi | Trạng thái |
 |---|---|---|---|
-| MD – Trình thiết kế biểu mẫu KSCL (U-1) | `W-KsclDesigner.dc.html` | Sinh từ bộ dựng (thay bản vẽ tay). Đổi thứ tự bằng nút Lên/Xuống (không kéo-thả). Hiển thị lỗi lược đồ bằng tiếng Việt | Đã vẽ, chờ duyệt (đợt 7). Bản tĩnh; chưa làm bản tương tác |
-| MD – Biểu mẫu KSCL: danh sách và phiên bản (U-2) | `W-KsclForms.dc.html` | Mới (mẫu W1): danh sách mã, nhóm, loại, phiên bản, trạng thái; khối phiên bản; nhân bản, kích hoạt | Đã vẽ, chờ duyệt (đợt 7) |
-| MD – Lỗi và luật phân cấp A/B/C (U-3) | `W-DefectRules.dc.html` | Mới (mẫu W3): lưới lỗi × cấp A/B/C; trùng hiệu lực hiển thị trên lưới | Đã vẽ, chờ duyệt (đợt 7). Cấp A và C chỉ minh họa (L75) |
-| MD – Công việc bảo trì chuẩn (U-4) | `W-MaintTemplate.dc.html` | Mới (mẫu W2): thông tin chung, checklist, vật tư dự kiến; trạng thái Nháp / Đang dùng | Đã vẽ, chờ duyệt (đợt 7). Vật tư hiển thị trong ghi chú (một bảng mỗi màn) |
-| MD – Liên kết thiết bị–phụ tùng (U-5) | `W-PartLinks.dc.html` | Mới (mẫu W1): chế độ theo máy và theo phụ tùng; cột phạm vi (trực tiếp / theo dòng máy) | Đã vẽ, chờ duyệt (đợt 7). Chuyển chế độ là nút, chưa có bản tương tác |
-| MD – Danh mục chung (U-6) | `W-MdCommonCatalog.dc.html` | Mới (mẫu W1), dùng cho phụ tùng; khối "Kiểm soát": người phụ trách, ngày cập nhật, phiên bản, trạng thái (chỉ đọc) | Đã vẽ, chờ duyệt (đợt 7). Các danh mục khác (NCC, lý do, loại tem) dùng cùng mẫu, chưa vẽ riêng |
-| MD – Chất lượng dữ liệu (U-7) | `W-MdDataQuality.dc.html` | Thêm 4 nhóm E08: biểu mẫu chưa có bản đang dùng, luật chồng lấn, bảo trì thiếu phụ tùng, phụ tùng thiếu NCC mặc định | Đã vẽ, chờ duyệt (đợt 7) |
+| MD – Trình thiết kế biểu mẫu KSCL (U-1) | `W-KsclDesigner.dc.html` | Sinh từ bộ dựng (thay bản vẽ tay). Đổi thứ tự bằng nút Lên/Xuống (không kéo-thả). Hiển thị lỗi lược đồ bằng tiếng Việt | Đã duyệt 30/10/2026 (PXVB). Bản tĩnh; chưa làm bản tương tác |
+| MD – Biểu mẫu KSCL: danh sách và phiên bản (U-2) | `W-KsclForms.dc.html` | Mới (mẫu W1): danh sách mã, nhóm, loại, phiên bản, trạng thái; khối phiên bản; nhân bản, kích hoạt | Đã duyệt 30/10/2026 (PXVB) |
+| MD – Lỗi và luật phân cấp A/B/C (U-3) | `W-DefectRules.dc.html` | Mới (mẫu W3): lưới lỗi × cấp A/B/C; trùng hiệu lực hiển thị trên lưới | Đã duyệt 30/10/2026 (PXVB). Cấp A và C chỉ minh họa (L75) |
+| MD – Công việc bảo trì chuẩn (U-4) | `W-MaintTemplate.dc.html` | Mới (mẫu W2): thông tin chung, checklist, vật tư dự kiến; trạng thái Nháp / Đang dùng | Đã duyệt 30/10/2026 (PXVB). Vật tư hiển thị trong ghi chú (một bảng mỗi màn) |
+| MD – Liên kết thiết bị–phụ tùng (U-5) | `W-PartLinks.dc.html` | Mới (mẫu W1): chế độ theo máy và theo phụ tùng; cột phạm vi (trực tiếp / theo dòng máy) | Đã duyệt 30/10/2026 (PXVB). Chuyển chế độ là nút, chưa có bản tương tác |
+| MD – Danh mục chung (U-6) | `W-MdCommonCatalog.dc.html` | Mới (mẫu W1), dùng cho phụ tùng; khối "Kiểm soát": người phụ trách, ngày cập nhật, phiên bản, trạng thái (chỉ đọc) | Đã duyệt 30/10/2026 (PXVB). Các danh mục khác (NCC, lý do, loại tem) dùng cùng mẫu, chưa vẽ riêng |
+| MD – Chất lượng dữ liệu (U-7) | `W-MdDataQuality.dc.html` | Thêm 4 nhóm E08: biểu mẫu chưa có bản đang dùng, luật chồng lấn, bảo trì thiếu phụ tùng, phụ tùng thiếu NCC mặc định | Đã duyệt 30/10/2026 (PXVB) |
 
 - Sinh bằng `generator/specs.py` và `states.py`; không sửa tay tệp trong `screens/`.
 - Dữ liệu trong màn là **dữ liệu minh họa**. Chưa kiểm tra trong trình duyệt (cổng §8 chưa chạy).
-- Chưa duyệt bản vẽ, nên chưa build UI (`DESIGN-SYSTEM.md` §9). Build màn MD (6b) đợi duyệt.
+- **Đã duyệt** bản vẽ U-1…U-7 ngày 30/10/2026 (PXVB). Build màn MD (6b) theo bản vẽ này; phần tương tác của U-1 (nút Lên/Xuống, bàn phím) làm trong 6b, không sửa tệp bản vẽ tĩnh.
 
 ## Dựng thử trong trình duyệt (24/10/2026)
 
