@@ -1,21 +1,12 @@
 import { formatDateTime } from '../../lib/format';
-import { StatusChip, type ChipTone } from './StatusChip';
+import { statusDisplay } from '../../lib/status';
+import { StatusChip } from './StatusChip';
 
 interface ControlPanelProps {
   owner: string;
   updatedAt: Date | null;
   version: number;
   status: string;
-}
-
-const STATUS_LABELS: Record<string, { label: string; tone: ChipTone }> = {
-  ACTIVE: { label: 'Đang dùng', tone: 'ok' },
-  DRAFT: { label: 'Nháp', tone: 'warn' },
-  RETIRED: { label: 'Đã ngừng', tone: 'off' },
-};
-
-function statusDisplay(status: string): { label: string; tone: ChipTone } {
-  return STATUS_LABELS[status] ?? { label: status, tone: 'info' };
 }
 
 // Khối "Kiểm soát" (FR-MD-022): chỉ đọc. Thay đổi đi qua luồng duyệt của danh mục (D4).

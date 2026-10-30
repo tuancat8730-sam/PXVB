@@ -79,6 +79,100 @@ textarea:focus-visible {
   color: var(--ink3);
 }
 
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.screen-header h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.screen-crumb {
+  margin: 0 0 2px;
+  color: var(--ink3);
+  font-size: 12px;
+}
+
+.screen-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-input {
+  height: 36px;
+  width: 320px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.screen-split {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.screen-list {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.screen-list .state-notice {
+  margin: 12px;
+}
+
+.catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.catalog-table th {
+  height: 36px;
+  padding: 0 12px;
+  background: var(--sf2);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.catalog-table td {
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.catalog-table tr.is-selected td {
+  background: var(--brand-soft);
+}
+
+.row-select {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace;
+  text-align: left;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

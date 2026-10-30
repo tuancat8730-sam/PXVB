@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { CommonCatalogScreen } from '../screens/md/CommonCatalogScreen';
 import { PlaceholderScreen } from './PlaceholderScreen';
 
 export type MdScreenKey =
@@ -22,6 +23,6 @@ export const MD_SCREENS: readonly MdScreen[] = [
   { key: 'defectRules', label: 'Lỗi và luật A/B/C', Component: PlaceholderScreen },
   { key: 'maintTemplates', label: 'Bảo trì chuẩn', Component: PlaceholderScreen },
   { key: 'partLinks', label: 'Liên kết máy–phụ tùng', Component: PlaceholderScreen },
-  { key: 'commonCatalog', label: 'Danh mục chung', Component: PlaceholderScreen },
+  { key: 'commonCatalog', label: 'Danh mục chung', Component: CommonCatalogScreen },
   { key: 'dataQuality', label: 'Chất lượng dữ liệu', Component: PlaceholderScreen },
 ];
