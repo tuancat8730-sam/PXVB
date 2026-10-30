@@ -136,6 +136,91 @@ textarea:focus-visible {
   margin: 12px;
 }
 
+.screen-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.designer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.add-field-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.add-field-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.add-field-form input,
+.add-field-form select {
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.designer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-primary,
+.btn-secondary,
+.sort-buttons button {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.btn-primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.btn-primary:disabled,
+.sort-buttons button:disabled {
+  border-color: var(--offs);
+  background: var(--offs);
+  color: var(--off);
+  cursor: not-allowed;
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.sort-buttons button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
 .catalog-table {
   width: 100%;
   border-collapse: collapse;

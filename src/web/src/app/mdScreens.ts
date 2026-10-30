@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { CommonCatalogScreen } from '../screens/md/CommonCatalogScreen';
+import { KsclDesignerScreen } from '../screens/md/KsclDesignerScreen';
 import { PlaceholderScreen } from './PlaceholderScreen';
 
 export type MdScreenKey =
@@ -19,7 +20,7 @@ export interface MdScreen {
 
 export const MD_SCREENS: readonly MdScreen[] = [
   { key: 'ksclForms', label: 'Biểu mẫu KSCL', Component: PlaceholderScreen },
-  { key: 'ksclDesigner', label: 'Trình thiết kế KSCL', Component: PlaceholderScreen },
+  { key: 'ksclDesigner', label: 'Trình thiết kế KSCL', Component: KsclDesignerScreen },
   { key: 'defectRules', label: 'Lỗi và luật A/B/C', Component: PlaceholderScreen },
   { key: 'maintTemplates', label: 'Bảo trì chuẩn', Component: PlaceholderScreen },
   { key: 'partLinks', label: 'Liên kết máy–phụ tùng', Component: PlaceholderScreen },
