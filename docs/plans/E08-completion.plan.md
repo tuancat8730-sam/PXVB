@@ -16,7 +16,7 @@
 | Đối chiếu ERP (FR-MD-017 "file") | Import/đối chiếu file ERP | ❌ Chuyển E22 (D3) |
 | Tồn tối thiểu gợi ý từ lịch sử (FR-MD-018 P1) | Cần dữ liệu sử dụng từ RP | ⏸ Chờ RP |
 | Dữ liệu thật: 46 biểu mẫu KSCL, danh mục lỗi, ngưỡng A/B/C (Q10) | Import Excel, không đổi code | ⬜ Chờ PXVB |
-| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | 🟡 Bản vẽ đã duyệt (30/10/2026); build 6b đang làm (Pha 6b) |
+| Giao diện web quản trị masterdata (U-1…U-7) | `docs/design/E08-ui-plan.md` | 🟡 Bản vẽ đã duyệt (30/10/2026); đã build 7/7 màn (6b.0–6b.8, 94 test xanh). Còn: kiểm bàn phím, tương phản, 1366×768 chính xác, dữ liệu thật (6b.9) |
 
 **E08 được đánh ✅ khi:** Pha 1–5 xong, IT chạy xanh trên MySQL 8.0 và 8.4, tài liệu cập nhật (OpenAPI, OPEN-QUESTIONS, PROGRESS). Bản vẽ U-1…U-7 được duyệt và vẽ (không chặn đánh ✅ backend, nhưng chặn mục UI). Task 8 (Q10) là thao tác dữ liệu, không chặn đánh ✅ kỹ thuật.
 
@@ -160,7 +160,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 6b.6 | U-3 Lỗi và luật A/B/C: lưới lỗi × A/B/C, trùng hiệu lực trên lưới, chỉ lưu cấp B; A và C hiện "chưa kích hoạt" | ✅ | TDD: `lib/defectRules` (7 test: luật, tỷ lệ %, trống, chưa kích hoạt, trùng, không trùng khi nối tiếp, khác lỗi) và `DefectRulesScreen` (6 test). Tổng 77/77. ⚠ Nếu backend đã có luật cấp A (F11), lưới vẫn hiện "chưa kích hoạt" cho A. Lệch: bản vẽ có mục thêm luật từ ô, đã làm qua khối bên phải |
 | 6b.7 | U-4 Công việc bảo trì chuẩn: danh sách, checklist và vật tư (chỉ đọc), lịch sử phiên bản, nhân bản, kích hoạt | ✅ | Tách `VersionActions` dùng chung với U-2 (U-2 vẫn 77/77 sau tách). `MaintTemplatesScreen` (5 test, 83/83 xanh). ⚠ Chưa chạy đỏ riêng cho file này: test và màn được viết liền nhau rồi chạy xanh. Lệch: không có trình soạn checklist và vật tư (sửa nội dung), để sau |
 | 6b.8 | U-5 Liên kết hai chiều (theo máy / theo phụ tùng); U-7 Chất lượng dữ liệu (quét lại, ví dụ bản ghi) | ✅ | TDD: 4 file test đỏ (thiếu module, đã kiểm) rồi xanh. `partLinkApi`, `qualityApi`, `useAsyncRows`, `PartLinksScreen` (3 test), `DataQualityScreen` (5 test), 2 test API. Tổng 94/94. Xóa `PlaceholderScreen` (không còn dùng). Lệch: U-5 chưa có ô tìm kiếm; U-7 chưa có "Đối chiếu"/xuất (bản vẽ không yêu cầu) |
-| 6b.9 | Kiểm trình duyệt 1366×768, bàn phím, tương phản đo; cập nhật bản vẽ và PROGRESS | ⬜ | DESIGN-SYSTEM §8 |
+| 6b.9 | Kiểm trình duyệt 1366×768, bàn phím, tương phản đo; cập nhật bản vẽ và PROGRESS | 🟡 | Đã kiểm (Chrome devtools, 2026-10-30): 7/7 màn render, không tràn ngang ở 1200×774 (cửa sổ không đổi được về 1366), nhãn trạng thái lỗi tiếng Việt khi không có backend. CHƯA kiểm: đúng 1366×768, bàn phím/thứ tự Tab, đo tương phản, dữ liệu thật từ backend (chưa chạy backend). Extension Claude-in-Chrome không kết nối được |
 
 ### Pha 7 – Dữ liệu, tài liệu và nghiệm thu (Task 8 và mục Acceptance cũ)
 | ID | Việc | Trạng thái |
@@ -219,6 +219,7 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 2026-10-25 | UQ3 (dev-team: PM, Architect, Developer, QA). Chốt UQ3a: cấp B = ngoài biên một lần (theo yêu cầu người dùng). Ghi UQ3b vào OPEN-QUESTIONS (L75): cấp A "liên tiếp" và cấp C chưa chốt, hai phương án (a) hoãn sang E18, (b) metric chuỗi trong E08. Cập nhật `docs/design/README.md` (B chốt, A/C mở) và plan (mục 5 G2, mục 6, 7.6) |
 | 2026-10-25 | UQ3b (dev-team: PM, Architect, Developer, QA; tất cả nghiêng về (a)). Người dùng chọn (a): E08 chỉ lưu B, cấp A chưa kích hoạt. Ghi L75 (đã chọn (a), rủi ro SLA chấp nhận), cập nhật plan (mục 3 F11, mục 5 G2, mục 6, mục 9 rủi ro CAO). Chưa thực thi guard trong code (F11), chưa định nghĩa phạm vi/N/reset/cấp C |
 | 2026-10-25 | Pha 4 theo TDD: viết `MasterdataDataQualityIT` (4 test), chạy đỏ 4/4 (số đếm 0). Thêm 4 nhóm vào `DataQualityService` (QC_FORM_NO_ACTIVE, DEFECT_RULE_OVERLAP, MAINT_PART_MISSING, SPARE_PART_NO_SUPPLIER). Lần 1 xanh 3/4; test kích hoạt biểu mẫu lỗi 403 vì dùng admin: sửa sang người dùng QA_HEAD như `MasterdataIT` (lỗi ở test, không ở mã). Xanh 22/22 IT masterdata trên 8.0 và 8.4. Lệch: không thêm nhóm vào `W-MdDataQuality` (UI, Pha 6) |
+| 2026-10-30 | 6b.9 (một phần): chạy Vite, mở bằng Chrome devtools (extension Claude-in-Chrome không kết nối). 7 màn render, không tràn ngang, lỗi mạng hiện tiếng Việt. Chưa làm: Tab, tương phản, 1366×768 chính xác, dữ liệu thật. Đã dừng dev server |
 | 2026-10-30 | 6b.8: U-5 và U-7. TDD đỏ rồi xanh 94/94. Sửa khi chạy: test `findByRole('status')` bắt nhầm thông báo đang tải (đổi sang chờ theo chữ); mock axios cần ép kiểu. Xóa placeholder |
 | 2026-10-30 | 6b.7: U-4 và tách `VersionActions` (U-2 không đổi hành vi, 83/83). Lỗi nhỏ: chưa chạy đỏ riêng cho file U-4 (ghi lại ở 6b.7) |
 | 2026-10-30 | 6b.6: U-3. TDD: 77/77 xanh. Nối U-3 vào điều hướng ở bước cuối (sau khi test xanh) |
