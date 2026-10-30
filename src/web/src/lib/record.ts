@@ -12,6 +12,16 @@ export function readNumber(record: CatalogRecord, key: string): number {
   return typeof value === 'number' ? value : 0;
 }
 
+function isRecord(value: unknown): value is CatalogRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// Đọc mảng JSON (checklist, vật tư). Phần tử không phải đối tượng bị bỏ qua.
+export function readList(record: CatalogRecord, key: string): CatalogRecord[] {
+  const value = record[key];
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
 export function readDate(record: CatalogRecord, key: string): Date | null {
   const value = readText(record, key);
   if (value === '') {

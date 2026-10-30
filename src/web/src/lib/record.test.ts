@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { readDate, readNumber, readText } from './record';
+import { readDate, readList, readNumber, readText } from './record';
+
+describe('readList', () => {
+  it('returns only the object items of a JSON array, and nothing for other values', () => {
+    const record = { checklist: [{ seq: 1 }, 'bỏ qua', null], parts: 'không phải mảng' };
+
+    expect(readList(record, 'checklist')).toEqual([{ seq: 1 }]);
+    expect(readList(record, 'parts')).toEqual([]);
+    expect(readList(record, 'missing')).toEqual([]);
+  });
+});
 
 describe('record readers', () => {
   const record = {

@@ -149,6 +149,10 @@ textarea:focus-visible {
   width: 320px;
 }
 
+.screen-side--wide {
+  width: 440px;
+}
+
 .side-card {
   display: flex;
   flex-direction: column;
