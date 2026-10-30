@@ -155,23 +155,26 @@ Quy ước như E04: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 6b.1 | Lớp API MD: danh mục (list/get/create/update/clone/activate-version); lỗi RFC 7807 hiển thị tiếng Việt | ✅ | TDD: 2 file test đỏ (thiếu module) rồi xanh 12/12 cùng test shell. `services/md/catalogApi.ts`, `services/apiError.ts`, `services/md/types.ts`. Client kiểm dữ liệu và liên kết viết ở 6b.8 (test trước) |
 | 6b.2 | Thành phần dùng chung: chip trạng thái, khối Kiểm soát (chỉ đọc), trạng thái tải/trống/lỗi/một phần/không quyền/thành công | ✅ | TDD: 4 file test đỏ rồi xanh (26/26 cùng test cũ). `StatusChip`, `ControlPanel`, `StateNotice` (6 loại, vai trò ARIA `status`/`alert`), `lib/format.ts` (dd/MM/yyyy HH:mm). `DESIGN-SYSTEM.md` §5 |
 | 6b.3 | U-6 Danh mục chung (phụ tùng): tìm kiếm, bảng, khối Kiểm soát chỉ đọc, 6 trạng thái | ✅ | TDD: 4 file test đỏ rồi xanh. Kiểm thử thêm: `useCatalogList`, `CatalogTable`, `record` (đọc trường; lỗi thật: ngày không hợp lệ trả Invalid Date, đã sửa thành `null`). 40/40 xanh. Chưa làm nút "Thêm / Nhân bản / Xuất Excel" của bản vẽ: ghi và Excel sẽ làm ở 6b.4–6b.5 khi có form. Chờ kiểm trình duyệt (6b.9) |
+| 6b.3b | Thêm phụ tùng (form U-6): bắt buộc mã, tên, ĐVT; thẻ kho tùy chọn | ✅ | TDD: `SparePartCreateForm` (3 test) và nút "Thêm phụ tùng" trên màn (1 test). Chưa có Xuất Excel và Nhân bản phụ tùng (bản vẽ có, chưa làm; Nhân bản phụ tùng không có trong backend cho danh mục này) |
 | 6b.4 | U-1 Trình thiết kế KSCL: Lên/Xuống, thêm trường (có lựa chọn cho SELECT), lỗi lược đồ tiếng Việt, lưu nháp | ✅ | TDD: 2 file test đỏ rồi xanh. `lib/kscl/formSchema.ts` (11 test: đổi chỗ bất biến, trùng mã, SELECT thiếu lựa chọn, kiểu lạ, nhãn trống, không có mục) khớp `QcFormSchemaRules.java`. `KsclDesignerScreen` (6 test). Tổng 57/57. Lệch: chưa có "Xem trước form" và chưa xóa trường (bản vẽ có "Xem trước"; xóa không có trong bản vẽ) |
+| 6b.4b | Xem trước form (U-1): nút "Xem trước form" hiện biểu mẫu như người nhập thấy; NUMBER/TEXT/CHECK/SELECT, đánh dấu bắt buộc | ✅ | TDD: `KsclFormPreview` (3 test) và nút trên màn (1 test). Không lưu dữ liệu |
 | 6b.5 | U-2 Biểu mẫu KSCL: danh sách, lịch sử phiên bản, nhân bản, kích hoạt (có ngày hiệu lực), mở U-1 | ✅ | TDD: test đỏ rồi xanh. `KsclFormsScreen` (7 test), `useCatalogList.reload`, `ScreenProps` + điều hướng trong `App` (mở đúng bản ghi U-1). Tổng 64/64. ⚠ GIẢ ĐỊNH: nhãn loại `QA` = "Kiểm tra ĐBCL" (bản vẽ ghi "Đầu ca"/"Trong ca"; PXVB xác nhận). Lệch: chưa có "Xem trước form" |
 | 6b.6 | U-3 Lỗi và luật A/B/C: lưới lỗi × A/B/C, trùng hiệu lực trên lưới, chỉ lưu cấp B; A và C hiện "chưa kích hoạt" | ✅ | TDD: `lib/defectRules` (7 test: luật, tỷ lệ %, trống, chưa kích hoạt, trùng, không trùng khi nối tiếp, khác lỗi) và `DefectRulesScreen` (6 test). Tổng 77/77. ⚠ Nếu backend đã có luật cấp A (F11), lưới vẫn hiện "chưa kích hoạt" cho A. Lệch: bản vẽ có mục thêm luật từ ô, đã làm qua khối bên phải |
 | 6b.7 | U-4 Công việc bảo trì chuẩn: danh sách, checklist và vật tư (chỉ đọc), lịch sử phiên bản, nhân bản, kích hoạt | ✅ | Tách `VersionActions` dùng chung với U-2 (U-2 vẫn 77/77 sau tách). `MaintTemplatesScreen` (5 test, 83/83 xanh). ⚠ Chưa chạy đỏ riêng cho file này: test và màn được viết liền nhau rồi chạy xanh. Lệch: không có trình soạn checklist và vật tư (sửa nội dung), để sau |
+| 6b.7b | Sửa nháp checklist và vật tư (U-4): thêm, đổi chỗ, xóa mục; thêm, xóa vật tư; kiểm như `MaintTemplateRules`; lưu qua `PUT` | ✅ | TDD: `lib/maintTemplate` (10 test) và `MaintTemplateEditor` (3 test), nút "Sửa nháp" (1 test). Chỉ với bản nháp. Mục checklist giữ min/max đã có nhưng chưa sửa được hai ô này |
 | 6b.8 | U-5 Liên kết hai chiều (theo máy / theo phụ tùng); U-7 Chất lượng dữ liệu (quét lại, ví dụ bản ghi) | ✅ | TDD: 4 file test đỏ (thiếu module, đã kiểm) rồi xanh. `partLinkApi`, `qualityApi`, `useAsyncRows`, `PartLinksScreen` (3 test), `DataQualityScreen` (5 test), 2 test API. Tổng 94/94. Xóa `PlaceholderScreen` (không còn dùng). Lệch: U-5 chưa có ô tìm kiếm; U-7 chưa có "Đối chiếu"/xuất (bản vẽ không yêu cầu) |
 | 6b.9 | Kiểm trình duyệt 1366×768, bàn phím, tương phản; cập nhật tài liệu | 🟡 | Chrome devtools, 2026-10-30, viewport đúng 1366×768: 7/7 màn không tràn ngang; chữ không đạt 4,5:1 không có ở các trạng thái rỗng/lỗi; cặp màu chip đo bằng token (tối thiểu 4,64:1, chip "Đang dùng"). Tab: thứ tự nút điều hướng theo DOM, có viền tiêu điểm. CHƯA kiểm: dữ liệu thật qua backend (backend không chạy), bàn phím trên trạng thái có dữ liệu (Lên/Xuống, chọn dòng), đo tương phản bằng công cụ chuẩn. Extension Claude-in-Chrome không kết nối được nên dùng devtools |
 
 ### Pha 7 – Dữ liệu, tài liệu và nghiệm thu (Task 8 và mục Acceptance cũ)
 | ID | Việc | Trạng thái |
 |---|---|---|
-| 7.1 | Chạy IT trên Docker: `MasterdataE08IT`, `MasterdataIT`, IT mới ở Pha 3–5 | 🟡 (F1). Xanh 8.0 và 8.4 cho E08, Link, DataImport; Pha 4–5 chưa viết |
-| 7.2 | `./mvnw verify` xanh trên MySQL 8.0 và 8.4 | ⬜ |
-| 7.3 | Đo coverage lớp mới (mục tiêu ≥ 80%) | ⬜ |
-| 7.4 | Chỉ mục `md_defect_grade_rule` nếu đo thấy chậm (F4) | ⬜ |
-| 7.5 | OpenAPI: endpoint mới (Pha 3) và lỗi validation | ⬜ |
-| 7.6 | `docs/OPEN-QUESTIONS.md`: ghi UQ2, UQ3, D1, G1–G6 như giả định ⚠ | 🟡 UQ3 đã ghi (L74–L75, 2026-10-25). Còn UQ2, D1, G1–G6 |
-| 7.7 | `docs/PROGRESS.md`: cập nhật E08 khi xong Pha 1–5 | ⬜ |
+| 7.1 | Chạy IT trên Docker: `MasterdataE08IT`, `MasterdataIT`, IT mới ở Pha 3–5 | ✅ 2026-10-30 | Docker (Colima) chạy với `DOCKER_HOST` trỏ socket Colima và `TESTCONTAINERS_RYUK_DISABLED=true`. Full `verify` 8.0 và 8.4: 128 test, 13 lỗi, đều là baseline (ProductionIT 11, MaterialIT 2). Không có IT E08 nào đỏ (MasterdataE08IT, MasterdataIT, MasterdataLinkIT, DataImportIT, MasterdataCatalogControlIT, MasterdataDataQualityIT) |
+| 7.2 | `./mvnw verify` xanh trên MySQL 8.0 và 8.4 | 🟡 Chạy đủ trên 8.0 và 8.4; không xanh vì 13 lỗi baseline ngoài E08 (ProductionIT, MaterialIT), đã biết từ 2026-10-25. Không sửa vì không thuộc E08 |
+| 7.3 | Đo coverage lớp mới (mục tiêu ≥ 80%) | ⬜ Chưa đo: pom không có JaCoCo; web không có coverage tool. Cần PXVB/dev lead đồng ý thêm plugin |
+| 7.4 | Chỉ mục `md_defect_grade_rule` nếu đo thấy chậm (F4) | ⏸ Chưa có dữ liệu thật để đo (chờ 7.8) |
+| 7.5 | OpenAPI: endpoint mới (Pha 3) và lỗi validation | ⏸ Spec do springdoc sinh lúc chạy, repo không có tệp spec tĩnh. Chỉ kiểm được khi chạy ứng dụng |
+| 7.6 | `docs/OPEN-QUESTIONS.md`: ghi UQ2, UQ3, D1, G1–G6 như giả định ⚠ | ✅ 2026-10-30 | L74–L75 (UQ3), L76–L81 (UQ2, D1, G1–G7) |
+| 7.7 | `docs/PROGRESS.md`: cập nhật E08 khi xong Pha 1–5 | 🟡 Đã cập nhật dòng E08 và ngày; giữ 🟡 vì còn 7.3, 7.8 và build web chưa kiểm dữ liệu thật |
 | 7.8 | Task 8: nạp dữ liệu thật qua import (Q10) và chạy `DataQualityService` | ⬜ (chờ PXVB) |
 
 ## 8. Trạng thái theo yêu cầu (đích cần đạt)
