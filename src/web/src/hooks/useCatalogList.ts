@@ -9,13 +9,21 @@ export interface CatalogListState {
   status: ListStatus;
   rows: CatalogRecord[];
   errorMessage: string | null;
+  reload: () => void;
 }
 
-const LOADING_STATE: CatalogListState = { status: 'loading', rows: [], errorMessage: null };
+interface LoadedState {
+  status: ListStatus;
+  rows: CatalogRecord[];
+  errorMessage: string | null;
+}
+
+const LOADING_STATE: LoadedState = { status: 'loading', rows: [], errorMessage: null };
 
 // Tải danh sách một danh mục theo ô tìm kiếm. Bỏ kết quả cũ khi người dùng gõ tiếp.
 export function useCatalogList(resource: string, query: string): CatalogListState {
-  const [state, setState] = useState<CatalogListState>(LOADING_STATE);
+  const [state, setState] = useState<LoadedState>(LOADING_STATE);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let isCurrent = true;
@@ -36,7 +44,7 @@ export function useCatalogList(resource: string, query: string): CatalogListStat
     return () => {
       isCurrent = false;
     };
-  }, [resource, query]);
+  }, [resource, query, reloadToken]);
 
-  return state;
+  return { ...state, reload: () => setReloadToken((token) => token + 1) };
 }
