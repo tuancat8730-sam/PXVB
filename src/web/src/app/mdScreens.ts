@@ -3,8 +3,9 @@ import { CommonCatalogScreen } from '../screens/md/CommonCatalogScreen';
 import { KsclDesignerScreen } from '../screens/md/KsclDesignerScreen';
 import { DefectRulesScreen } from '../screens/md/DefectRulesScreen';
 import { KsclFormsScreen } from '../screens/md/KsclFormsScreen';
+import { DataQualityScreen } from '../screens/md/DataQualityScreen';
 import { MaintTemplatesScreen } from '../screens/md/MaintTemplatesScreen';
-import { PlaceholderScreen } from './PlaceholderScreen';
+import { PartLinksScreen } from '../screens/md/PartLinksScreen';
 import type { MdScreenKey, ScreenProps } from './screenProps';
 
 export interface MdScreen {
@@ -18,7 +19,7 @@ export const MD_SCREENS: readonly MdScreen[] = [
   { key: 'ksclDesigner', label: 'Trình thiết kế KSCL', Component: KsclDesignerScreen },
   { key: 'defectRules', label: 'Lỗi và luật A/B/C', Component: DefectRulesScreen },
   { key: 'maintTemplates', label: 'Bảo trì chuẩn', Component: MaintTemplatesScreen },
-  { key: 'partLinks', label: 'Liên kết máy–phụ tùng', Component: PlaceholderScreen },
+  { key: 'partLinks', label: 'Liên kết máy–phụ tùng', Component: PartLinksScreen },
   { key: 'commonCatalog', label: 'Danh mục chung', Component: CommonCatalogScreen },
-  { key: 'dataQuality', label: 'Chất lượng dữ liệu', Component: PlaceholderScreen },
+  { key: 'dataQuality', label: 'Chất lượng dữ liệu', Component: DataQualityScreen },
 ];
