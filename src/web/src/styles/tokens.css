@@ -1,0 +1,20 @@
+/* Token dùng chung, lấy từ docs/design/generator/lib.py (TOKENS). Đổi màu ở đây, không rải giá trị vào component. */
+:root {
+  --brand: #174e86;
+  --brand-soft: #e6eef8;
+  --ink: #16202b;
+  --ink2: #3f4b5a;
+  --ink3: #5e6a7a;
+  --bg: #f3f5f8;
+  --sf2: #f8fafc;
+  --line: #d9dfe6;
+  --line2: #b9c2cd;
+  --ok: #1e7a46;
+  --oks: #e2f3e9;
+  --warn: #8a5a00;
+  --warns: #fff0c7;
+  --bad: #b3261e;
+  --bads: #fbe3e0;
+  --off: #4a5666;
+  --offs: #e6e9ed;
+}
