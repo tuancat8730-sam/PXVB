@@ -82,8 +82,8 @@ Bổ sung cho SDD §17. Mỗi mục: quyết định đang áp dụng, ảnh hư
 | L27 | Nguyên nhân cảnh báo (L16) | Đã đổi sang danh mục `ALERT_CAUSE`; seed 6 mã giả định | PXVB cung cấp danh sách thật |
 | L28 | Chốt ca `SHIFT_CLOSE` | 4 bên bắt buộc, mỗi bên là nhóm vai trò "bất kỳ" (Thống kê = STAT_OUTPUT/MATERIAL/STAMP; KSCL = QC_INLINE/QA_INSPECTOR/QA_SUPERVISOR). Tự bỏ qua bên "không phát sinh" làm ở PR | PXVB xác nhận nhóm vai trò |
 | L29 | Đăng nhập PIN trên thiết bị | Không bị chặn bởi cờ "phải đổi mật khẩu" (PIN do quản trị cấp); mật khẩu web vẫn bắt buộc đổi lần đầu | PO xác nhận |
-| L30 | Đồng bộ: chưa có handler nghiệp vụ | Engine, xung đột, giám sát đã xong; handler `PR.*`, `MT.*`, `QC.*`, `TX.*` làm cùng từng phân hệ. Chưa có tombstone cho bảng hard-delete ngoài cờ `alwaysFull` | Dev lead |
-| L31 | Tablet RN | Chỉ có lõi TypeScript (hàng đợi, SyncClient) đã test; adapter op-sqlite và UI **chưa build/chạy** trên thiết bị | Dev lead |
+| L30 | Đồng bộ: chưa có handler nghiệp vụ | Engine, xung đột, giám sát đã xong; handler `PR.*`, `MT.*` đã có (E11, E13); `QC.*`, `TX.*`, `PM.*`, `SP.*` làm cùng từng phân hệ. **Đóng một phần (2026-11-03, E09):** không có resource delta nào xóa cứng được ngoài `alwaysFull`, nên chưa xây tombstone; bất biến `MasterdataPullDeletionInvariantTest` khóa điều kiện này. Khi thêm xóa cứng cho resource delta, làm tombstone trước | Dev lead |
+| L31 | Tablet RN | Lõi TypeScript đã test (16/16, 2026-11-03: hàng đợi, phục hồi file, nháp, đo 72 giờ, SyncClient). Adapter op-sqlite và UI **chưa build/chạy** trên thiết bị: **còn mở** (Pha 7 của E09, cần thiết bị tablet thật) | Dev lead |
 | L32 | Gợi ý lệnh SX | Phân bổ đều tổng sản lượng ngày của SP vào các ô (ca × máy bao) khả dụng theo ghép cặp + SP được phép + trạng thái máy; một máy bao một lệnh/ca. Chưa xét lịch bảo trì (chờ PM) và công suất lý thuyết | PXVB xác nhận thuật toán |
 | L33 | Lệnh RUNNING/COMPLETED | Do PR chuyển trạng thái khi mở/chốt ca (chưa có PR) | Dev lead |
 | L34 | Theo dõi thực hiện kế hoạch (FR-PL-007/008) | Chờ dữ liệu sản lượng từ PR; hiện chỉ có kế hoạch & tiến độ phân bổ | Dev lead |

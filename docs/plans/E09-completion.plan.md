@@ -87,6 +87,7 @@
 | D2 | PIN-hash và người dùng có được đồng bộ xuống tablet không? (bảo mật, FR-CC-062) | Không đồng bộ hash; đăng nhập lần đầu bắt buộc online (FR-CC-069); tablet xác thực qua server | ✅ (2026-11-03) |
 | D3 | Tombstone: bảng `sync_tombstone` chung hay cờ `deleted_at` trên từng bảng? | Quyết định ban đầu: bảng `sync_tombstone` chung. **Điều chỉnh 2026-11-03 theo bằng chứng (S9):** không có resource nào được pull mà xóa cứng được ngoài `product-allowed-machines` (đã alwaysFull) và `thresholds` (cấm xóa). Nên chưa xây tombstone; bất biến `MasterdataPullDeletionInvariantTest` khóa điều kiện này. Khi có resource delta xóa cứng, làm tombstone trước | ✅ điều chỉnh (2026-11-03) |
 | D4 | Có duyệt T-70 và W-DeviceSync trong E09 không? | Không duyệt; Pha 8 chờ duyệt, các pha khác không phụ thuộc | ✅ (2026-11-03) |
+| D6 | Thiết bị tablet được gắn với máy nào, để pull "ca đang chạy của các máy gắn với thiết bị" (FR-CC-062, 3.3)? Lựa chọn: (a) danh sách máy gắn khi đăng ký thiết bị (cần trường mới trên thiết bị); (b) theo trạm/vị trí (`position`) đã có; (c) theo người đăng nhập trên thiết bị | ⬜ | Mặc định: không làm 3.3 (⏸); FR-CC-062 thiếu một nguồn dữ liệu cho đến khi chốt |
 | D5 | Pha 7 (RN trên thiết bị) có bắt buộc để E09 ✅ không? | Có, bắt buộc (theo L31). E09 chỉ ✅ khi Pha 7 xong; hiện chưa có thiết bị nên Pha 7 ❌ | ✅ (2026-11-03) |
 
 ## 7. Kế hoạch thực hiện
@@ -96,32 +97,32 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 0 – Rà soát và chuẩn bị
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 0.1 | Kiểm FR-CC-060…069 theo mã (bảng mục 2): đánh dấu ❓ thành ✅/🟡/⬜ | ⬜ | Mục 2 |
-| 0.2 | Baseline: `npm test` (tablet) và `SyncIT` trên 8.0 | 🟡 | Tablet 10/10 xanh (2026-10-31). `SyncIT` xanh trong full verify 2026-10-30 |
-| 0.3 | Kiểm giới hạn 100 lệnh/lô và 500 lệnh cảnh báo (FR-CC-068) bằng test | 🟡 | 500 lệnh: xong ở 4.2. Còn test 100 lệnh/lô (`SyncService` dòng 102, chưa có test) |
+| 0.1 | Kiểm FR-CC-060…069 theo mã (bảng mục 2): đánh dấu ❓ thành ✅/🟡/⬜ | ✅ | Mục 2 và mục 8 cập nhật 2026-11-03 |
+| 0.2 | Baseline: `npm test` (tablet) và `SyncIT` trên 8.0 | ✅ | Tablet baseline xanh (10/10, typecheck 0). `SyncIT` 5/5 trên 8.0 và 8.4 (2026-11-03) |
+| 0.3 | Kiểm giới hạn 100 lệnh/lô và 500 lệnh cảnh báo (FR-CC-068) bằng test | ✅ | 100 lệnh/lô: `SyncIT.batchLimitAndDeviceRequirementAreEnforced` (đã có, xanh 8.0 và 8.4). 500: `SyncMonitorQueueBacklogTest` (4.2) |
 | 0.4 | Chốt D1–D5 | ✅ | Mục 6, 2026-11-03 (theo mặc định) |
 
 ### Pha 1 – Contract lệnh (SRS §4.7, S3)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 1.1 | Tạo `docs/sync-commands/` với JSON schema cho mỗi loại lệnh đang có handler (PR.*, MT.*, TestSync) | ⬜ | Đối chiếu `ProductionSyncHandlers`, `MaterialSyncHandlers` |
-| 1.2 | Kiểm payload theo schema khi `push` (lỗi REJECTED với lý do tiếng Việt) | ⬜ | Test đỏ: payload thiếu trường → REJECTED |
-| 1.3 | Trường bắt buộc `baseVersion`, `shiftSessionId`, `machineId` (FR-CC-060) | ⬜ | |
+| 1.1 | Tạo `docs/sync-commands/` với JSON schema cho mỗi loại lệnh đang có handler (PR.*, MT.*, TestSync) | 🟡 | `docs/sync-commands/payloads.schema.json` (2020-12, một file với `$defs` theo loại; lệch so với "một file mỗi loại" để giữ một nguồn). Đủ 8 loại PR.* và MT.*. `TEST.Set` chỉ dùng trong test, không đưa vào contract. JSON hợp lệ (kiểm bằng `JSON.parse`). Chưa có kiểm schema tự động (1.2) |
+| 1.2 | Kiểm payload theo schema khi `push` (lỗi REJECTED với lý do tiếng Việt) | ⏸ | Không thêm thư viện JSON-Schema vào backend (cần phê duyệt phụ thuộc). Hiện các service nghiệp vụ đã từ chối dữ liệu sai (ném lỗi → REJECTED), nhưng chưa có test riêng cho từng loại. Mở việc khi có quyết định về thư viện |
+| 1.3 | Trường bắt buộc `baseVersion`, `shiftSessionId`, `machineId` (FR-CC-060) | 🟡 | Envelope chưa bắt buộc ở `SyncService` (trường nullable). Với PR/MT, `shiftSessionId` và `machineId` do service dùng, nên thiếu thì lệnh bị từ chối. `baseVersion` chỉ bắt buộc với lệnh sửa bản ghi (có IT). Chưa có quy tắc chung |
 
 ### Pha 2 – Xung đột và idempotent (FR-CC-061, 063, 064)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 2.1 | IT: `baseVersion` lệch → CONFLICT, không ghi đè | ⬜ | Test đỏ trước |
-| 2.2 | IT: ca đã khóa → CONFLICT hoặc REJECTED (theo quy tắc FR-CC-063) | ⬜ | |
-| 2.3 | IT: lô trùng `clientCommandId` → DUPLICATE, không ghi hai lần | ⬜ | |
-| 2.4 | Thứ tự theo `occurredAt` trong một lô | ⬜ | |
+| 2.1 | IT: `baseVersion` lệch → CONFLICT, không ghi đè | ✅ | Đã có: `SyncIT.staleBaseVersionCreatesConflictWithoutOverwriteAndCanBeResolved` (CONFLICT, alert `CC_SYNC_CONFLICT`, giải quyết được). Xanh 8.0 và 8.4 |
+| 2.2 | IT: ca đã khóa → CONFLICT hoặc REJECTED (theo quy tắc FR-CC-063) | 🟡 | Đường mã có: `RecordingService` ném `DATA_LOCKED` khi ca CLOSING/CLOSED, `processOne` đổi thành CONFLICT. **Chưa có IT qua sync** (cần mở và chốt ca thật trong `SyncIT`). Việc còn lại |
+| 2.3 | IT: lô trùng `clientCommandId` → DUPLICATE, không ghi hai lần | ✅ | Đã có: `SyncIT.pushIsOrderedIdempotentAndReportsEachCommand` (gửi lại → DUPLICATE, `version` vẫn 1). Xanh 8.0 và 8.4 |
+| 2.4 | Thứ tự theo `occurredAt` trong một lô | 🟡 | Tablet: `pending()` sắp theo `occurredAt` rồi `seq` (đã sửa, test đỏ trước). Server xử lý theo thứ tự mảng gửi lên, không sắp lại theo `occurredAt`; cùng test kiểm thứ tự kết quả |
 
 ### Pha 3 – Pull đủ và tombstone (FR-CC-062, L30, S1, S2)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
 | 3.1 | Thiết kế bảng `sync_tombstone` và ghi khi hard-delete (theo D3) | ⏸ | Không cần hiện tại: xem S9 và D3 (điều chỉnh). Bất biến `MasterdataPullDeletionInvariantTest` 1/1 khóa lại điều kiện này |
 | 3.2 | `pull` trả tombstone theo `since` | ⏸ | Hoãn cùng 3.1 |
-| 3.3 | `SyncPullProvider` cho ca đang chạy theo thiết bị (máy gắn với thiết bị) | ⬜ | Dùng `PlanningQueries`/`ProductionQueries` đã có |
+| 3.3 | `SyncPullProvider` cho ca đang chạy theo thiết bị (máy gắn với thiết bị) | ⏸ | **Cần quyết định D6:** hệ thống chưa có liên kết thiết bị–máy (`DeviceRegistry` không có khái niệm máy). Không tự đặt quy tắc. Xem câu hỏi D6 ở mục 6 |
 | 3.4 | Nguồn người dùng/PIN-hash: theo D2 (mặc định: không đồng bộ hash) | ⏸ | D2 đã chốt: không đồng bộ hash; không có nguồn người dùng nào trong pull |
 | 3.5 | Lần đầu tải đầy đủ có phân trang | ✅ | `SyncIT.pullDeliversMasterdataDeltaWithPaging` (limit 4 → cursor → trang 2; delta theo `serverTime`) xanh 8.0 và 8.4 (kiểm lại ở Pha 9) |
 
@@ -170,16 +171,16 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 
 | Yêu cầu | Hiện tại | Đích E09 | Pha |
 |---|---|---|---|
-| FR-CC-060 | 🟡 | ✅ | 1.3, 6.2 |
-| FR-CC-061 | ✅ | ✅ | 0.3, 1.2 |
-| FR-CC-062 | 🟡 | ✅ (PIN-hash theo D2) | 3.1–3.5 |
-| FR-CC-063 | 🟡 | ✅ | 2.1, 2.2 |
-| FR-CC-064 | 🟡 | ✅ | 2.4, 6.3 |
-| FR-CC-065 | ⬜ | ✅ (trên lõi; thiết bị theo D5) | 6.1 |
-| FR-CC-066 | 🟡 | ✅ (theo D4) | 8.1, 8.2 |
-| FR-CC-067 | ❓ | ✅ (P1) | 4.1 |
-| FR-CC-068 | 🟡 | ✅ (P1) | 4.2 ✅, 4.3 ⬜, 0.3 🟡 |
-| FR-CC-069 | ❓ | ✅ | 5.1, 5.2 |
+| FR-CC-060 | 🟡 | 🟡 | 1.3 🟡 (envelope chưa bắt buộc chung), 6.2 ✅ |
+| FR-CC-061 | ✅ | ✅ | 0.3 ✅, 1.2 ⏸ (kiểm schema tự động) |
+| FR-CC-062 | 🟡 | 🟡 | 3.3 ⏸ (D6). 3.4 ✅ (D2), 3.5 ✅. Tombstone không cần (S9) |
+| FR-CC-063 | 🟡 | 🟡 | 2.1 ✅, 2.2 🟡 (chưa IT qua sync) |
+| FR-CC-064 | 🟡 | 🟡 | 2.4 🟡 (server không sắp lại), 6.3 ✅ |
+| FR-CC-065 | ⬜ | ✅ trên lõi | 6.1 ✅, 6.2 ✅; trên thiết bị ❌ (Pha 7) |
+| FR-CC-066 | 🟡 | ⏸ | Backend có; màn web chờ duyệt D4 (Pha 8) |
+| FR-CC-067 | ✅ | ✅ (P1) | 4.1 ✅ (cờ + cảnh báo `CC_CLOCK_SKEW`). Thời điểm tin cậy hiệu chỉnh offset: chưa làm |
+| FR-CC-068 | ✅ | ✅ (P1) | 0.3 ✅, 4.2 ✅, 4.3 ✅ (đo trên máy phát triển) |
+| FR-CC-069 | ✅ | ✅ | 5.1 ✅ (lệnh chưa có handler), 5.2 ✅ |
 
 ## 9. Rủi ro
 

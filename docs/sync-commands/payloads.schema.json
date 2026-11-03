@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pxvb:sync-commands:payloads:v1",
+  "title": "Payload lệnh đồng bộ tablet (CC-07, SRS §4.7)",
+  "description": "Hợp đồng payload cho từng loại lệnh trong POST /api/v1/sync/push. Tên loại lệnh theo handler trong mã nguồn (ProductionSyncHandlers, MaterialSyncHandlers); SRS §4.7 dùng tên khác ở một số chỗ (xem S10 trong plan). Envelope chung (FR-CC-060) nằm ngoài payload: clientCommandId, type, entityId, occurredAt, enteredAt, baseVersion, shiftSessionId, machineId. Các trường bắt buộc ở envelope được kiểm bởi service nghiệp vụ, không bởi schema này. Thời điểm dùng RFC 3339 (UTC). Số lượng dùng số hoặc chuỗi số thập phân.",
+  "oneOf": [
+    { "$ref": "#/$defs/PR.RecordOutput" },
+    { "$ref": "#/$defs/PR.StartStop" },
+    { "$ref": "#/$defs/PR.EndStop" },
+    { "$ref": "#/$defs/PR.ChangeProduct" },
+    { "$ref": "#/$defs/MT.IssueMaterial" },
+    { "$ref": "#/$defs/MT.ConfirmReceipt" },
+    { "$ref": "#/$defs/MT.RecordReturn" },
+    { "$ref": "#/$defs/MT.RecordStockCount" }
+  ],
+  "$defs": {
+    "decimal": { "type": ["number", "string"] },
+    "uuid": { "type": "string", "format": "uuid" },
+    "instant": { "type": "string", "format": "date-time" },
+    "PR.RecordOutput": {
+      "title": "Ghi sản lượng (BR-PR-001: chỉ khi phiên ca OPEN)",
+      "type": "object",
+      "properties": {
+        "qty": { "type": "integer", "minimum": 0 },
+        "counterReading": { "type": "integer", "minimum": 0 },
+        "periodFrom": { "$ref": "#/$defs/instant" },
+        "periodTo": { "$ref": "#/$defs/instant" },
+        "note": { "type": "string", "maxLength": 500 }
+      },
+      "anyOf": [{ "required": ["qty"] }, { "required": ["counterReading"] }],
+      "additionalProperties": false
+    },
+    "PR.StartStop": {
+      "title": "Bắt đầu dừng máy",
+      "type": "object",
+      "required": ["reasonCode"],
+      "properties": {
+        "reasonCode": { "type": "string", "minLength": 1, "maxLength": 10 },
+        "startAt": { "$ref": "#/$defs/instant" },
+        "endAt": { "$ref": "#/$defs/instant" },
+        "note": { "type": "string", "maxLength": 500 }
+      },
+      "additionalProperties": false
+    },
+    "PR.EndStop": {
+      "title": "Kết thúc dừng máy",
+      "type": "object",
+      "properties": {
+        "endAt": { "$ref": "#/$defs/instant" }
+      },
+      "additionalProperties": false
+    },
+    "PR.ChangeProduct": {
+      "title": "Đổi mác (sản phẩm)",
+      "type": "object",
+      "required": ["toProductId"],
+      "properties": {
+        "toProductId": { "$ref": "#/$defs/uuid" },
+        "startStopA": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "MT.IssueMaterial": {
+      "title": "Cấp phát NVL theo dòng phiếu",
+      "type": "object",
+      "required": ["slipLineId", "materialId", "issuedQty"],
+      "properties": {
+        "slipLineId": { "$ref": "#/$defs/uuid" },
+        "materialId": { "$ref": "#/$defs/uuid" },
+        "machineId": { "$ref": "#/$defs/uuid" },
+        "slotNo": { "type": "integer", "minimum": 1 },
+        "lotNo": { "type": "string", "maxLength": 60 },
+        "issuedQty": { "$ref": "#/$defs/decimal" },
+        "reasonCode": { "type": "string", "maxLength": 10 }
+      },
+      "additionalProperties": false
+    },
+    "MT.ConfirmReceipt": {
+      "title": "Xác nhận nhận NVL",
+      "type": "object",
+      "required": ["issueRecordId", "receivedQty"],
+      "properties": {
+        "issueRecordId": { "$ref": "#/$defs/uuid" },
+        "receivedQty": { "$ref": "#/$defs/decimal" },
+        "remainingBefore": { "$ref": "#/$defs/decimal" },
+        "note": { "type": "string", "maxLength": 500 }
+      },
+      "additionalProperties": false
+    },
+    "MT.RecordReturn": {
+      "title": "Hoàn trả NVL",
+      "type": "object",
+      "required": ["materialId", "qty"],
+      "properties": {
+        "shiftCode": { "type": "string", "maxLength": 20 },
+        "machineId": { "$ref": "#/$defs/uuid" },
+        "materialId": { "$ref": "#/$defs/uuid" },
+        "qty": { "$ref": "#/$defs/decimal" },
+        "reason": { "type": "string", "maxLength": 500 }
+      },
+      "additionalProperties": false
+    },
+    "MT.RecordStockCount": {
+      "title": "Kiểm đếm tồn NVL",
+      "type": "object",
+      "required": ["materialId", "kind", "qty"],
+      "properties": {
+        "shiftCode": { "type": "string", "maxLength": 20 },
+        "machineId": { "$ref": "#/$defs/uuid" },
+        "materialId": { "$ref": "#/$defs/uuid" },
+        "kind": { "type": "string", "maxLength": 20 },
+        "qty": { "$ref": "#/$defs/decimal" },
+        "note": { "type": "string", "maxLength": 500 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

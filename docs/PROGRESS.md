@@ -1,7 +1,7 @@
 # PXVB – Theo dõi tiến độ triển khai
 
 Nguồn backlog: `docs/PXVB-SRS-SDD.md` §18.2. Điểm cần chốt/giả định: `docs/OPEN-QUESTIONS.md` (mã L01–L63). Quyết định kiến trúc: `docs/adr/`.
-Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
+Cập nhật lần cuối: 2026-11-03 (E09: cập nhật tiến độ, còn Pha 7, 8 và D6).
 
 **Chú giải trạng thái:** ✅ Xong · 🟡 Xong một phần (còn việc, xem cột Ghi chú) · ⬜ Chưa làm
 
@@ -28,7 +28,7 @@ Cập nhật lần cuối: 2026-10-18 (sau Pha 1 của E15).
 | E06 | MD: máy, cụm, ghép cặp, ca, khung giờ, nhân sự | ✅ | `31f7da2` | Ghép cặp nhập trên lưới (L24 đã chốt) |
 | E07 | MD: SP, NVL, định mức (phiên bản), ngưỡng, mã dừng/lý do, tem | ✅ | `31f7da2` | Giá trị seed (giờ ca, ngưỡng, mã dừng) là giả định L25; quy cách tem chờ Q11 |
 | E08 | MD: biểu mẫu KSCL (store), lỗi/luật, bảo trì, phụ tùng, liên kết | 🟡 | `31f7da2` | Mới có kho lưu; 46 biểu mẫu thật + lỗi + ngưỡng A/B/C chờ PXVB (Q10) |
-| E09 | Sync service + tablet shell offline | 🟡 | `ba6e225` | Backend xong (push/pull/xung đột/giám sát). Tablet: chỉ lõi TS; UI RN + adapter op-sqlite chưa kiểm chứng (L31); tombstone bảng hard-delete chưa có (L30) |
+| E09 | Sync service + tablet shell offline | 🟡 | `feat/e09-sync-completion` (chưa merge) | Backend: push/pull/xung đột/giám sát, cảnh báo hàng đợi (`CC_QUEUE_BACKLOG`) và lệch đồng hồ (`CC_CLOCK_SKEW`), từ chối lệnh bắt buộc online. Lõi tablet 16/16 test. Còn: Pha 7 chạy RN trên thiết bị (L31, D5 bắt buộc, ❌ chưa có thiết bị); Pha 8 màn web chờ duyệt bản vẽ (D4); 3.3 chờ quyết định D6; 2.2 chưa có IT qua sync; 1.2 chờ quyết định thư viện JSON-Schema. Tombstone chưa xây (L30 đóng một phần, S9) |
 | E10 | PL: KHSX tháng/tuần, lệnh SX, bố trí nhân sự, điều chỉnh | 🟡 | `ba6e225` | Thuật toán gợi ý lệnh đơn giản (L32); theo dõi thực hiện kế hoạch FR-PL-007/008 chờ dữ liệu PR (L34) |
 | E11 | PR: phiên ca, sản lượng, dừng máy, đổi mác, tồn điếu | 🟡 | `97f1f02` | Chưa có: tồn điếu (FR-PR-007), đối chiếu thống kê (FR-PR-011), giám sát khu vực/nhập hộ UI (FR-PR-010), tạo yêu cầu sửa chữa 1 chạm (chờ PM), cảnh báo >110% công suất (L35–L41) |
 | E12 | OEE engine + công thức cấu hình + golden tests | 🟡 | `d3a92a0` | Mới có AC-PR-002 + 9 ca; cần 10 bộ golden của PO. Q chưa nối dữ liệu NC (QC); công suất 77 máy cần nhập (L42–L45) |
