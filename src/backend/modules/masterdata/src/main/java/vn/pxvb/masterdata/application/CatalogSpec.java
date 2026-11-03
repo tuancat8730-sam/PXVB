@@ -137,6 +137,11 @@ public final class CatalogSpec {
         return versioned;
     }
 
+    /** Xóa vật lý được khi không có cờ hoạt động, không versioned và không phải ngưỡng cảnh báo. */
+    public boolean hardDeletable() {
+        return !hasActive && !versioned && !"thresholds".equals(resource);
+    }
+
     public String statusProp() {
         return statusProp;
     }

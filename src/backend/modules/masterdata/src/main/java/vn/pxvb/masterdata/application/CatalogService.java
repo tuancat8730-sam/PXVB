@@ -218,7 +218,7 @@ public class CatalogService {
     @Transactional
     public void delete(String resource, UUID id) {
         CatalogSpec spec = spec(resource);
-        if (spec.hasActive() || spec.versioned() || "thresholds".equals(spec.resource())) {
+        if (!spec.hardDeletable()) {
             throw new BusinessException(ErrorCode.VALIDATION,
                     spec.title() + " không được xóa; hãy khóa hoặc đổi trạng thái");
         }

@@ -57,6 +57,7 @@
 | S5 | TB | FR-CC-067, 068, 069 chưa kiểm trong code | Pha 0 kiểm; làm ở Pha 4–5 |
 | S6 | THẤP | `TestSyncHandler` là handler test nằm trong module chính | Ghi nhận; không ảnh hưởng |
 | S7 | TB | Màn T-70 và W-DeviceSync chưa duyệt; theo DESIGN-SYSTEM §9 không build UI khi chưa duyệt | Pha 8 chờ duyệt (D4) |
+| S9 | CAO → TB (đã phân tích) | L30 nêu bảng hard-delete chưa có tombstone. Kiểm tra: `CatalogService.delete` chỉ xóa được catalog không có cờ hoạt động, không versioned, không phải `thresholds`. Trong 16 resource pull, không có resource nào vừa xóa được vừa delta (chỉ `product-allowed-machines`, đã alwaysFull). Các bảng xóa cứng khác (pairing, BOM, roster, kế hoạch, lệnh tự động) không nằm trong pull | Không xây tombstone ngay (xem D3 điều chỉnh). Bất biến test khóa lại. L30 đóng với điều kiện này |
 | S8 | TB | `push` đã trả cờ `clockSkewWarning` (hằng `CLOCK_SKEW_WARN_MS` cố định 120 000 ms) nhưng không phát cảnh báo cho giám sát; ngưỡng cứng, không cấu hình được (G2) | Đã xử lý ở 4.1: alert `CC_CLOCK_SKEW`, ngưỡng `SYNC_CLOCK_SKEW_SEC`. (Phát hiện ban đầu "không dùng" là sai, đã sửa) |
 
 ## 4. Phụ thuộc và rủi ro
@@ -84,7 +85,7 @@
 |---|---|---|---|
 | D1 | Phạm vi E09: chỉ engine và contract, hay gom cả handler QC/TX/PM/SP? | Engine và contract; handler thuộc từng epic (G1) | ✅ (2026-11-03) |
 | D2 | PIN-hash và người dùng có được đồng bộ xuống tablet không? (bảo mật, FR-CC-062) | Không đồng bộ hash; đăng nhập lần đầu bắt buộc online (FR-CC-069); tablet xác thực qua server | ✅ (2026-11-03) |
-| D3 | Tombstone: bảng `sync_tombstone` chung hay cờ `deleted_at` trên từng bảng? | Bảng `sync_tombstone` chung, ghi khi hard-delete | ✅ (2026-11-03) |
+| D3 | Tombstone: bảng `sync_tombstone` chung hay cờ `deleted_at` trên từng bảng? | Quyết định ban đầu: bảng `sync_tombstone` chung. **Điều chỉnh 2026-11-03 theo bằng chứng (S9):** không có resource nào được pull mà xóa cứng được ngoài `product-allowed-machines` (đã alwaysFull) và `thresholds` (cấm xóa). Nên chưa xây tombstone; bất biến `MasterdataPullDeletionInvariantTest` khóa điều kiện này. Khi có resource delta xóa cứng, làm tombstone trước | ✅ điều chỉnh (2026-11-03) |
 | D4 | Có duyệt T-70 và W-DeviceSync trong E09 không? | Không duyệt; Pha 8 chờ duyệt, các pha khác không phụ thuộc | ✅ (2026-11-03) |
 | D5 | Pha 7 (RN trên thiết bị) có bắt buộc để E09 ✅ không? | Có, bắt buộc (theo L31). E09 chỉ ✅ khi Pha 7 xong; hiện chưa có thiết bị nên Pha 7 ❌ | ✅ (2026-11-03) |
 
@@ -118,11 +119,11 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 3 – Pull đủ và tombstone (FR-CC-062, L30, S1, S2)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 3.1 | Thiết kế bảng `sync_tombstone` và ghi khi hard-delete (theo D3) | ⬜ | Migration Flyway theo module |
-| 3.2 | `pull` trả tombstone theo `since` | ⬜ | IT đỏ trước |
+| 3.1 | Thiết kế bảng `sync_tombstone` và ghi khi hard-delete (theo D3) | ⏸ | Không cần hiện tại: xem S9 và D3 (điều chỉnh). Bất biến `MasterdataPullDeletionInvariantTest` 1/1 khóa lại điều kiện này |
+| 3.2 | `pull` trả tombstone theo `since` | ⏸ | Hoãn cùng 3.1 |
 | 3.3 | `SyncPullProvider` cho ca đang chạy theo thiết bị (máy gắn với thiết bị) | ⬜ | Dùng `PlanningQueries`/`ProductionQueries` đã có |
-| 3.4 | Nguồn người dùng/PIN-hash: theo D2 (mặc định: không đồng bộ hash) | ⏸ | Chờ D2 |
-| 3.5 | Lần đầu tải đầy đủ có phân trang | ⬜ | |
+| 3.4 | Nguồn người dùng/PIN-hash: theo D2 (mặc định: không đồng bộ hash) | ⏸ | D2 đã chốt: không đồng bộ hash; không có nguồn người dùng nào trong pull |
+| 3.5 | Lần đầu tải đầy đủ có phân trang | ✅ | `SyncIT.pullDeliversMasterdataDeltaWithPaging` (limit 4 → cursor → trang 2; delta theo `serverTime`) xanh 8.0 và 8.4 (kiểm lại ở Pha 9) |
 
 ### Pha 4 – Đồng hồ và giới hạn (FR-CC-067, 068) — P1
 | ID | Việc | Trạng thái | Ghi chú |
