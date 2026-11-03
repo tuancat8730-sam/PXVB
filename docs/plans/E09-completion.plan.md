@@ -130,7 +130,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 |---|---|---|---|
 | 4.1 | Cảnh báo lệch đồng hồ > 2' (ngưỡng cấu hình, G2) | ✅ | Test đỏ (thiếu `SettingService` trong constructor), rồi xanh. `SyncServiceClockSkewTest` 3/3: cờ `clockSkewWarning` và alert `CC_CLOCK_SKEW` khi vượt ngưỡng; ngưỡng `SYNC_CLOCK_SKEW_SEC` = 120 giây (seeder). Unit sync 7/7 xanh |
 | 4.2 | Cảnh báo hàng đợi > 500 lệnh (từ `pendingCount`) | ✅ | Test đỏ trước (lỗi biên dịch: thiếu `scanQueueBacklog`), rồi xanh. `SyncMonitorQueueBacklogTest` 4/4; `alerting` và `masterdata` unit xanh; `SyncIT` 5/5 trên 8.0 và 8.4. Chưa có IT riêng cho seed rule `CC_QUEUE_BACKLOG` |
-| 4.3 | Dữ liệu offline 72 giờ: đo kích thước lưu trữ tablet | ⬜ | Đo trên lõi, không trên thiết bị |
+| 4.3 | Dữ liệu offline 72 giờ: đo kích thước lưu trữ tablet | ✅ | Đo trên lõi (không trên thiết bị). Giả định 1 lệnh/30 giây → 8 640 lệnh; `storage-72h.test.ts`: file SQLite 2,38 MB (ngưỡng 50 MB), ghi và đọc lại trong ~1,7 giây. Số đo này là trên máy phát triển, chưa đo trên tablet thật (Pha 7) |
 
 ### Pha 5 – Thao tác bắt buộc online (FR-CC-069)
 | ID | Việc | Trạng thái | Ghi chú |
@@ -141,9 +141,9 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 6 – Lõi tablet: phục hồi và hoàn thiện (FR-CC-060, 064, 065)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 6.1 | Test phục hồi hàng đợi sau tắt đột ngột (giao dịch SQLite) | ⬜ | FR-CC-065 |
-| 6.2 | Form nháp tự lưu theo thay đổi trường (lõi, không UI) | ⬜ | |
-| 6.3 | Trạng thái `PENDING/SYNCING/SYNCED/CONFLICT/REJECTED` đủ trong lõi | ⬜ | |
+| 6.1 | Test phục hồi hàng đợi sau tắt đột ngột (giao dịch SQLite) | ✅ | FR-CC-065. `queue-durability.test.ts`: mở lại file SQLite thật, lệnh đang gửi dở về PENDING, còn nguyên; giao dịch lỗi giữa chừng không ghi dòng nào. Xanh ngay (hành vi đã đúng, nay có bằng chứng trên file) |
+| 6.2 | Form nháp tự lưu theo thay đổi trường (lõi, không UI) | ✅ | `src/draft.ts` (`DraftStore`, bảng `form_draft`). Test đỏ trước (thiếu module), rồi xanh: `draft.test.ts` 2/2 (lưu từng trường, khôi phục sau mở lại; xóa nháp) |
+| 6.3 | Trạng thái `PENDING/SYNCING/SYNCED/CONFLICT/REJECTED` đủ trong lõi | ✅ | Kiểu `CommandStatus` đủ 5 giá trị; `sync.test.ts` kiểm CONFLICT và REJECTED. Thứ tự: `pending()` sắp theo `occurredAt` rồi `seq` (FR-CC-064); test đỏ trước rồi xanh |
 
 ### Pha 7 – Tablet RN trên thiết bị (L31, S4, D5)
 | ID | Việc | Trạng thái | Ghi chú |

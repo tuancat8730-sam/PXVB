@@ -106,10 +106,10 @@ export class CommandQueue {
     return id;
   }
 
-  /** Các lệnh chờ gửi theo đúng thứ tự phát sinh. */
+  /** Các lệnh chờ gửi theo thời điểm phát sinh (`occurredAt`), rồi theo thứ tự nhập (FR-CC-064). */
   pending(limit: number): QueuedCommand[] {
     return this.db
-      .all<Row>(`SELECT * FROM cmd_queue WHERE status = 'PENDING' ORDER BY seq LIMIT ?`, [limit])
+      .all<Row>(`SELECT * FROM cmd_queue WHERE status = 'PENDING' ORDER BY occurred_at, seq LIMIT ?`, [limit])
       .map(toCommand);
   }
 

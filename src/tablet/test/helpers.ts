@@ -3,7 +3,15 @@ import type { SqlDb } from '../src/db.ts';
 
 /** `SqlDb` trên `node:sqlite` (bộ nhớ) cho kiểm thử. */
 export function memoryDb(): SqlDb {
-  const sqlite = new DatabaseSync(':memory:');
+  return wrapSqlite(new DatabaseSync(':memory:'));
+}
+
+/** `SqlDb` trên file thật: dùng để kiểm tra phục hồi sau khi mở lại (FR-CC-065). */
+export function fileDb(path: string): SqlDb {
+  return wrapSqlite(new DatabaseSync(path));
+}
+
+function wrapSqlite(sqlite: DatabaseSync): SqlDb {
   let depth = 0;
   return {
     exec: (sql) => sqlite.exec(sql),
