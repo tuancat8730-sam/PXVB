@@ -1,7 +1,7 @@
 # Kế hoạch: Hoàn tất E09 (đồng bộ: push/pull/xung đột/giám sát + lõi tablet ngoại tuyến)
 
 **Nguồn:** `docs/PROGRESS.md` (E09 🟡, commit `ba6e225`), `docs/PXVB-SRS-SDD.md` §4.7 (CC-07: FR-CC-060…069), §18.2 (E09: XL, R0), `docs/OPEN-QUESTIONS.md` L30, L31; bản vẽ `docs/design/screens/T70-Sync.dc.html`, `W-DeviceSync.dc.html` (chờ duyệt).
-**Độ phức tạp:** Lớn (backend engine + contract) + lớn (tablet RN chưa chạy trên thiết bị). **Cập nhật lần cuối:** 2026-10-31.
+**Độ phức tạp:** Lớn (backend engine + contract) + lớn (tablet RN chưa chạy trên thiết bị). **Cập nhật lần cuối:** 2026-11-03.
 **Phương pháp:** rà soát tĩnh `modules/sync` và `src/tablet` đối chiếu FR-CC-060…069; baseline `src/tablet` (`npm test`: 10/10 xanh, 2026-10-31); `SyncIT` xanh trong full verify 2026-10-30 (8.0 và 8.4). Mỗi việc viết test trước (đỏ), rồi sửa mã (xanh), theo quy ước E04/E08.
 **Chú giải:** ✅ xong · 🟡 xong một phần · ⬜ chưa làm · ⏸ hoãn (có quyết định) · ❌ bị chặn · ❓ chưa kiểm (cần Pha 0)
 
@@ -58,6 +58,7 @@
 | S6 | THẤP | `TestSyncHandler` là handler test nằm trong module chính | Ghi nhận; không ảnh hưởng |
 | S7 | TB | Màn T-70 và W-DeviceSync chưa duyệt; theo DESIGN-SYSTEM §9 không build UI khi chưa duyệt | Pha 8 chờ duyệt (D4) |
 | S9 | CAO → TB (đã phân tích) | L30 nêu bảng hard-delete chưa có tombstone. Kiểm tra: `CatalogService.delete` chỉ xóa được catalog không có cờ hoạt động, không versioned, không phải `thresholds`. Trong 16 resource pull, không có resource nào vừa xóa được vừa delta (chỉ `product-allowed-machines`, đã alwaysFull). Các bảng xóa cứng khác (pairing, BOM, roster, kế hoạch, lệnh tự động) không nằm trong pull | Không xây tombstone ngay (xem D3 điều chỉnh). Bất biến test khóa lại. L30 đóng với điều kiện này |
+| S10 | TB | Tên loại lệnh trong SRS §4.7 khác tên trong code: SRS `PR.RecordProductChange`, `MT.RecordIssueActual`; code `PR.ChangeProduct`, `MT.IssueMaterial`. Tablet gửi theo tên code | Contract lấy tên code (`payloads.schema.json`). Cần PXVB/SRS đồng bộ tên khi sửa tài liệu |
 | S8 | TB | `push` đã trả cờ `clockSkewWarning` (hằng `CLOCK_SKEW_WARN_MS` cố định 120 000 ms) nhưng không phát cảnh báo cho giám sát; ngưỡng cứng, không cấu hình được (G2) | Đã xử lý ở 4.1: alert `CC_CLOCK_SKEW`, ngưỡng `SYNC_CLOCK_SKEW_SEC`. (Phát hiện ban đầu "không dùng" là sai, đã sửa) |
 
 ## 4. Phụ thuộc và rủi ro
@@ -161,11 +162,11 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 9 – Nghiệm thu và tài liệu
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 9.1 | IT `SyncIT` và IT mới xanh trên MySQL 8.0 và 8.4 | ⬜ | |
-| 9.2 | Full `verify` 8.0 và 8.4: không có lỗi mới ngoài baseline 13 | ⬜ | Baseline ProductionIT 11, MaterialIT 2 |
-| 9.3 | `npm test` và `npm run typecheck` ở `src/tablet` xanh | 🟡 | Tablet test 10/10 đã xanh; typecheck chưa chạy |
-| 9.4 | OPEN-QUESTIONS: đóng L30, L31 hoặc ghi phần còn lại | ⬜ | |
-| 9.5 | PROGRESS cập nhật E09 | ⬜ | |
+| 9.1 | IT `SyncIT` và IT mới xanh trên MySQL 8.0 và 8.4 | ✅ | `SyncIT` 5/5 trên 8.0 và 8.4; `MasterdataIT` 9/9 và `AlertingIT` 27/27 trên cả hai (2026-11-03). Không có IT mới nào được thêm (xem 2.2, 1.2) |
+| 9.2 | Full `verify` 8.0 và 8.4: không có lỗi mới ngoài baseline 13 | ✅ | 2026-11-03: 116 test, 13 lỗi trên mỗi môi trường, đúng `MaterialIT` 2 và `ProductionIT` 11. Không có lỗi mới |
+| 9.3 | `npm test` và `npm run typecheck` ở `src/tablet` xanh | ✅ | `npm test` 16/16; `npm run typecheck` exit 0 (2026-11-03) |
+| 9.4 | OPEN-QUESTIONS: đóng L30, L31 hoặc ghi phần còn lại | ✅ | L30 đóng một phần (S9, bất biến test); L31 còn mở, cần thiết bị (Pha 7) |
+| 9.5 | PROGRESS cập nhật E09 | ✅ | E09 vẫn 🟡 (Pha 7 ❌, Pha 8 ⏸, D6 ⬜) |
 
 ## 8. Trạng thái theo yêu cầu (đích cần đạt)
 
@@ -197,6 +198,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 
 | Ngày | Ghi chú |
 |---|---|
+| 2026-11-03 | **Hoàn tất phần làm được của E09 (kết thúc phiên).** Commit: `a596629`, `6d78654`, `5243ffe`, `8ccd94b`, `cf81b01`, `c0ec361`, `c5ced35`, `8e3cafc`. Kiểm chứng: `SyncIT` 5/5, `MasterdataIT` 9/9, `AlertingIT` 27/27 trên 8.0 và 8.4; full verify 8.0 và 8.4: 116 test, 13 lỗi = baseline; tablet 16/16 và typecheck 0; unit sync/alerting/masterdata xanh. **Chưa đạt ✅:** Pha 7 (cần thiết bị, D5 bắt buộc), Pha 8 (chờ duyệt D4), 3.3 (chờ D6), 2.2 (chưa IT qua sync), 1.2 (chờ quyết định thư viện JSON-Schema). Điều chỉnh: D3 (không xây tombstone, S9), S8 (đã sửa), S10 (tên lệnh SRS khác code). Môi trường: Colima đã bật; socket qua `DOCKER_HOST`, không có symlink `/var/run` |
 | 2026-10-31 | Lập kế hoạch E09 theo cấu trúc E08. Rà soát tĩnh `modules/sync` (8 file chính) và `src/tablet`. Baseline tablet 10/10 xanh. Chưa sửa mã |
 | 2026-11-03 | 4.2 ✅ (chọn phương án 2: rule `CC_QUEUE_BACKLOG` qua `SyncMonitorScanner`, ngưỡng `SYNC_QUEUE_MAX` = 500 trong seeder). Đỏ: test không biên dịch (thiếu `scanQueueBacklog`). Xanh: `SyncMonitorQueueBacklogTest` 4/4; unit sync/alerting/masterdata xanh; `SyncIT` 5/5 trên 8.0 và 8.4 (Colima chạy, socket trỏ qua `DOCKER_HOST`, không tạo symlink `/var/run`). Lệch so với plan: `scheduled()` gọi thêm `scanQueueBacklog`. Phát hiện S8. 0.3 còn test 100 lệnh/lô |
 | 2026-11-03 | 0.4 ✅: chốt D1–D5 theo mặc định (mục 6). Tạo worktree `/Volumes/DATA/code/PXVB-e09` từ `origin/main`, nhánh `feat/e09-sync-completion` (commit `a596629` thêm plan). Chưa chạy test; tiếp theo là 0.2 và 0.3 (test đỏ). Kiểm chứng: không có (chỉ sửa tài liệu) |
