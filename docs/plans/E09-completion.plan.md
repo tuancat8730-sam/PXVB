@@ -77,15 +77,15 @@
 | G3 | Tombstone chỉ cho bảng hard-delete liệt kê trong L30 | Mở rộng nếu bảng khác có xóa cứng |
 | G4 | Lõi tablet giữ là module TS độc lập; adapter RN là lớp mỏng bên ngoài | Thay đổi nếu chọn SQLite khác |
 
-## 6. Quyết định cần PXVB/dev lead (chưa chốt)
+## 6. Quyết định (đã chốt 2026-11-03 theo mặc định, do dev lead trả lời)
 
-| # | Câu hỏi | Mặc định nếu không có trả lời |
-|---|---|---|
-| D1 | Phạm vi E09: chỉ engine và contract, hay gom cả handler QC/TX/PM/SP? | Engine và contract; handler thuộc từng epic (G1) |
-| D2 | PIN-hash và người dùng có được đồng bộ xuống tablet không? (bảo mật, FR-CC-062) | Không đồng bộ hash; đăng nhập lần đầu bắt buộc online (FR-CC-069); tablet xác thực qua server |
-| D3 | Tombstone: bảng `sync_tombstone` chung hay cờ `deleted_at` trên từng bảng? | Bảng `sync_tombstone` chung, ghi khi hard-delete |
-| D4 | Có duyệt T-70 và W-DeviceSync trong E09 không? | Không duyệt; Pha 8 chờ duyệt, các pha khác không phụ thuộc |
-| D5 | Pha 7 (RN trên thiết bị) có bắt buộc để E09 ✅ không? | Có (theo L31); nếu PXVB chấp nhận tách thì E09 ✅ sau Pha 6 và Pha 7 thành epic riêng |
+| # | Câu hỏi | Quyết định | Trạng thái |
+|---|---|---|---|
+| D1 | Phạm vi E09: chỉ engine và contract, hay gom cả handler QC/TX/PM/SP? | Engine và contract; handler thuộc từng epic (G1) | ✅ (2026-11-03) |
+| D2 | PIN-hash và người dùng có được đồng bộ xuống tablet không? (bảo mật, FR-CC-062) | Không đồng bộ hash; đăng nhập lần đầu bắt buộc online (FR-CC-069); tablet xác thực qua server | ✅ (2026-11-03) |
+| D3 | Tombstone: bảng `sync_tombstone` chung hay cờ `deleted_at` trên từng bảng? | Bảng `sync_tombstone` chung, ghi khi hard-delete | ✅ (2026-11-03) |
+| D4 | Có duyệt T-70 và W-DeviceSync trong E09 không? | Không duyệt; Pha 8 chờ duyệt, các pha khác không phụ thuộc | ✅ (2026-11-03) |
+| D5 | Pha 7 (RN trên thiết bị) có bắt buộc để E09 ✅ không? | Có, bắt buộc (theo L31). E09 chỉ ✅ khi Pha 7 xong; hiện chưa có thiết bị nên Pha 7 ❌ | ✅ (2026-11-03) |
 
 ## 7. Kế hoạch thực hiện
 
@@ -97,7 +97,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | 0.1 | Kiểm FR-CC-060…069 theo mã (bảng mục 2): đánh dấu ❓ thành ✅/🟡/⬜ | ⬜ | Mục 2 |
 | 0.2 | Baseline: `npm test` (tablet) và `SyncIT` trên 8.0 | 🟡 | Tablet 10/10 xanh (2026-10-31). `SyncIT` xanh trong full verify 2026-10-30 |
 | 0.3 | Kiểm giới hạn 100 lệnh/lô và 500 lệnh cảnh báo (FR-CC-068) bằng test | ⬜ | Test đỏ trước |
-| 0.4 | Chốt D1–D5 | ⬜ | Mục 6 |
+| 0.4 | Chốt D1–D5 | ✅ | Mục 6, 2026-11-03 (theo mặc định) |
 
 ### Pha 1 – Contract lệnh (SRS §4.7, S3)
 | ID | Việc | Trạng thái | Ghi chú |
@@ -195,3 +195,4 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | Ngày | Ghi chú |
 |---|---|
 | 2026-10-31 | Lập kế hoạch E09 theo cấu trúc E08. Rà soát tĩnh `modules/sync` (8 file chính) và `src/tablet`. Baseline tablet 10/10 xanh. Chưa sửa mã |
+| 2026-11-03 | 0.4 ✅: chốt D1–D5 theo mặc định (mục 6). Tạo worktree `/Volumes/DATA/code/PXVB-e09` từ `origin/main`, nhánh `feat/e09-sync-completion` (commit `a596629` thêm plan). Chưa chạy test; tiếp theo là 0.2 và 0.3 (test đỏ). Kiểm chứng: không có (chỉ sửa tài liệu) |
