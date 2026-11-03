@@ -34,7 +34,7 @@ public class MasterdataSeeder implements ApplicationRunner {
             new Threshold("TX_MISMATCH_TOL", "0", "tem"), new Threshold("PM_DUE_SOON_DAYS", "3", "ngày"),
             new Threshold("PM_REPAIR_APPROVAL_SLA_MIN", "15", "phút"), new Threshold("OH_REPEAT_COUNT", "3", "lần"),
             new Threshold("OH_REPEAT_MONTHS", "12", "tháng"), new Threshold("SYNC_STALE_MIN", "30", "phút"),
-            new Threshold("SYNC_QUEUE_MAX", "500", "lệnh"),
+            new Threshold("SYNC_QUEUE_MAX", "500", "lệnh"), new Threshold("SYNC_CLOCK_SKEW_SEC", "120", "giây"),
             new Threshold("OUTPUT_INTERVAL_MIN", "120", "phút"));
 
     private final JdbcTemplate jdbc;

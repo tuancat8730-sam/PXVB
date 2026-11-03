@@ -22,6 +22,7 @@ import vn.pxvb.alerting.contract.AlertRaiser;
 import vn.pxvb.alerting.contract.AlertRaiser.AlertCommand;
 import vn.pxvb.common.error.BusinessException;
 import vn.pxvb.common.error.ErrorCode;
+import vn.pxvb.common.setting.SettingService;
 import vn.pxvb.identity.contract.DeviceRegistry;
 import vn.pxvb.sync.contract.SyncCommandHandler;
 import vn.pxvb.sync.contract.SyncCommandHandler.Command;
@@ -37,7 +38,8 @@ import vn.pxvb.common.sync.SyncPullProvider;
 public class SyncService {
 
     public static final int MAX_BATCH = 100;
-    public static final long CLOCK_SKEW_WARN_MS = 120_000;
+    private static final int DEFAULT_CLOCK_SKEW_SEC = 120;
+    private static final String CLOCK_SKEW_RULE_CODE = "CC_CLOCK_SKEW";
     private static final Logger log = LoggerFactory.getLogger(SyncService.class);
 
     public record CommandInput(UUID clientCommandId, String type, UUID entityId, JsonNode payload,
@@ -74,11 +76,12 @@ public class SyncService {
     private final ObjectMapper mapper;
     private final DeviceRegistry registry;
     private final AlertRaiser alerts;
+    private final SettingService settings;
     private final Clock clock;
 
     public SyncService(List<SyncCommandHandler> handlerBeans, List<SyncPullProvider> providerBeans,
                        JdbcTemplate jdbc, PlatformTransactionManager txManager, ObjectMapper mapper,
-                       DeviceRegistry registry, AlertRaiser alerts, Clock clock) {
+                       DeviceRegistry registry, AlertRaiser alerts, SettingService settings, Clock clock) {
         handlerBeans.forEach(h -> handlers.put(h.type(), h));
         providerBeans.forEach(p -> p.resources().forEach(r -> {
             providers.put(r, p);
@@ -92,6 +95,7 @@ public class SyncService {
         this.mapper = mapper;
         this.registry = registry;
         this.alerts = alerts;
+        this.settings = settings;
         this.clock = clock;
     }
 
@@ -111,8 +115,20 @@ public class SyncService {
         }
         registry.recordSync(deviceId, request.pendingCount() == null ? 0 : request.pendingCount(), offsetMs,
                 request.appVersion());
-        return new PushResponse(results, received, offsetMs,
-                offsetMs != null && Math.abs(offsetMs) > CLOCK_SKEW_WARN_MS);
+        int limitSec = settings.getInt("SYNC_CLOCK_SKEW_SEC", DEFAULT_CLOCK_SKEW_SEC);
+        boolean skewed = offsetMs != null && Math.abs(offsetMs) > limitSec * 1000L;
+        if (skewed) {
+            raiseClockSkew(deviceId, offsetMs, limitSec);
+        }
+        return new PushResponse(results, received, offsetMs, skewed);
+    }
+
+    private void raiseClockSkew(UUID deviceId, long offsetMs, int limitSec) {
+        alerts.raise(new AlertCommand(CLOCK_SKEW_RULE_CODE, "Device", deviceId.toString(), null, null,
+                "Đồng hồ thiết bị lệch " + offsetMs / 1000 + " giây",
+                "Ngưỡng cho phép: " + limitSec + " giây",
+                Map.of("deviceId", deviceId.toString(), "offsetMs", offsetMs),
+                "clock-skew:" + deviceId, null));
     }
 
     private CommandResult processOne(UUID userId, UUID deviceId, CommandInput in, Instant received) {

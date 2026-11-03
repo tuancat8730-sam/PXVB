@@ -62,6 +62,7 @@ public class AlertRuleCatalog implements ApplicationRunner {
             def("SP_STOCK_BELOW_MIN", "SP", Severity.WARN, List.of("WAREHOUSE_KEEPER", "KTCD")),
             def("CC_DEVICE_UNSYNCED", "CC", Severity.WARN, List.of("SHIFT_LEADER", "SYS_ADMIN")),
             def("CC_QUEUE_BACKLOG", "CC", Severity.WARN, List.of("SHIFT_LEADER", "SYS_ADMIN")),
+            def("CC_CLOCK_SKEW", "CC", Severity.WARN, List.of("SYS_ADMIN")),
             def("CC_SYNC_CONFLICT", "CC", Severity.WARN, List.of("SHIFT_LEADER", "SYS_ADMIN")),
             esc("CC_SHIFT_NOT_CLOSED", "CC", Severity.WARN, List.of("SHIFT_LEADER"), 15,
                     List.of("DEPUTY_DIRECTOR")));

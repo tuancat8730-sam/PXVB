@@ -57,7 +57,7 @@
 | S5 | TB | FR-CC-067, 068, 069 chưa kiểm trong code | Pha 0 kiểm; làm ở Pha 4–5 |
 | S6 | THẤP | `TestSyncHandler` là handler test nằm trong module chính | Ghi nhận; không ảnh hưởng |
 | S7 | TB | Màn T-70 và W-DeviceSync chưa duyệt; theo DESIGN-SYSTEM §9 không build UI khi chưa duyệt | Pha 8 chờ duyệt (D4) |
-| S8 | TB | Hằng `CLOCK_SKEW_WARN_MS = 120_000` (`SyncService.java:40`) đã khai báo nhưng không có nơi nào dùng để cảnh báo trong module sync | Pha 4.1: nối vào cảnh báo lệch đồng hồ, viết test đỏ trước |
+| S8 | TB | `push` đã trả cờ `clockSkewWarning` (hằng `CLOCK_SKEW_WARN_MS` cố định 120 000 ms) nhưng không phát cảnh báo cho giám sát; ngưỡng cứng, không cấu hình được (G2) | Đã xử lý ở 4.1: alert `CC_CLOCK_SKEW`, ngưỡng `SYNC_CLOCK_SKEW_SEC`. (Phát hiện ban đầu "không dùng" là sai, đã sửa) |
 
 ## 4. Phụ thuộc và rủi ro
 
@@ -127,7 +127,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 4 – Đồng hồ và giới hạn (FR-CC-067, 068) — P1
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 4.1 | Cảnh báo lệch đồng hồ > 2' (ngưỡng cấu hình, G2) | ⬜ | Test đỏ trước |
+| 4.1 | Cảnh báo lệch đồng hồ > 2' (ngưỡng cấu hình, G2) | ✅ | Test đỏ (thiếu `SettingService` trong constructor), rồi xanh. `SyncServiceClockSkewTest` 3/3: cờ `clockSkewWarning` và alert `CC_CLOCK_SKEW` khi vượt ngưỡng; ngưỡng `SYNC_CLOCK_SKEW_SEC` = 120 giây (seeder). Unit sync 7/7 xanh |
 | 4.2 | Cảnh báo hàng đợi > 500 lệnh (từ `pendingCount`) | ✅ | Test đỏ trước (lỗi biên dịch: thiếu `scanQueueBacklog`), rồi xanh. `SyncMonitorQueueBacklogTest` 4/4; `alerting` và `masterdata` unit xanh; `SyncIT` 5/5 trên 8.0 và 8.4. Chưa có IT riêng cho seed rule `CC_QUEUE_BACKLOG` |
 | 4.3 | Dữ liệu offline 72 giờ: đo kích thước lưu trữ tablet | ⬜ | Đo trên lõi, không trên thiết bị |
 
