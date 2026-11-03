@@ -134,8 +134,8 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 ### Pha 5 – Thao tác bắt buộc online (FR-CC-069)
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 5.1 | Từ chối lệnh offline cho: duyệt/chốt ca, duyệt điều chỉnh, phát hành phiếu mới | ⬜ | Test đỏ: lệnh loại này từ tablet → REJECTED |
-| 5.2 | Đăng nhập lần đầu của thiết bị phải online | ⬜ | Phụ thuộc D2 |
+| 5.1 | Từ chối lệnh offline cho: duyệt/chốt ca, duyệt điều chỉnh, phát hành phiếu mới | ✅ | Hằng `ONLINE_ONLY_TYPES` trong `SyncService`: `SHIFT.Close`, `SHIFT.Approve`, `ADJ.Approve`, `SLIP.Issue` (tên lệnh theo quy ước; chưa có handler nào). `SyncOnlineOnlyCommandTest` 2/2 (lệnh bị chặn không tới handler; lệnh thường vẫn tới). Lưu ý: test và guard viết gần như đồng thời, chưa quan sát pha đỏ riêng cho guard |
+| 5.2 | Đăng nhập lần đầu của thiết bị phải online | ✅ | Kích hoạt thiết bị (`/identity/devices/activate`) và đăng nhập PIN (`/identity/auth/pin-login`) đều là endpoint server (`SyncIT.setUp`). Lõi tablet không có đường đăng nhập ngoại tuyến. D2 đã chốt: hash không xuống tablet |
 
 ### Pha 6 – Lõi tablet: phục hồi và hoàn thiện (FR-CC-060, 064, 065)
 | ID | Việc | Trạng thái | Ghi chú |

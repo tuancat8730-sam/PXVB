@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,9 @@ public class SyncService {
     public static final int MAX_BATCH = 100;
     private static final int DEFAULT_CLOCK_SKEW_SEC = 120;
     private static final String CLOCK_SKEW_RULE_CODE = "CC_CLOCK_SKEW";
+    /** FR-CC-069: duyệt/chốt ca, duyệt điều chỉnh, phát hành phiếu mới chỉ thực hiện khi online. */
+    private static final Set<String> ONLINE_ONLY_TYPES = Set.of("SHIFT.Close", "SHIFT.Approve", "ADJ.Approve",
+            "SLIP.Issue");
     private static final Logger log = LoggerFactory.getLogger(SyncService.class);
 
     public record CommandInput(UUID clientCommandId, String type, UUID entityId, JsonNode payload,
@@ -145,6 +149,11 @@ public class SyncService {
             return new CommandResult(in.clientCommandId(), "DUPLICATE",
                     "Đã xử lý trước đó: " + row.get("status"), conflict == null ? null : UUID.fromString(conflict),
                     null, false);
+        }
+        if (ONLINE_ONLY_TYPES.contains(in.type())) {
+            String message = "Thao tác bắt buộc online, không nhận từ tablet ngoại tuyến: " + in.type();
+            record(deviceId, userId, in, "REJECTED", message, null, null, received);
+            return new CommandResult(in.clientCommandId(), "REJECTED", message, null, null, false);
         }
         SyncCommandHandler handler = handlers.get(in.type());
         if (handler == null) {
