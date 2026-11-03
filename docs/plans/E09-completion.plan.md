@@ -37,7 +37,7 @@
 | FR-CC-065 Phục hồi sau mất điện, form nháp tự lưu | ⬜ | Chưa có test; form nháp chưa có ở lõi |
 | FR-CC-066 Màn giám sát thiết bị và đồng bộ | 🟡 | Backend `/sync/devices`; web chưa build (bản vẽ chờ duyệt) |
 | FR-CC-067 Đồng hồ lệch > 2' | ❓ | `PushResponse` có `clockOffsetMs`; cảnh báo chưa kiểm |
-| FR-CC-068 72 giờ offline, cảnh báo > 500 lệnh | ❓ | Chưa kiểm |
+| FR-CC-068 72 giờ offline, cảnh báo > 500 lệnh | 🟡 | Cảnh báo hàng đợi: `SyncMonitorScanner.scanQueueBacklog` (rule `CC_QUEUE_BACKLOG`, ngưỡng `SYNC_QUEUE_MAX` = 500). Test unit 4/4; `SyncIT` 5/5 trên 8.0 và 8.4. Còn: đo 72 giờ (4.3) |
 | FR-CC-069 Thao tác bắt buộc online | ❓ | Chưa kiểm |
 | Handler PR.* | ✅ | `ProductionSyncHandlers` (E11): `PR.RecordOutput`, `PR.StartStop`, `PR.EndStop`, `PR.ChangeProduct` |
 | Handler MT.* | ✅ | `MaterialSyncHandlers` (E13) |
@@ -57,6 +57,7 @@
 | S5 | TB | FR-CC-067, 068, 069 chưa kiểm trong code | Pha 0 kiểm; làm ở Pha 4–5 |
 | S6 | THẤP | `TestSyncHandler` là handler test nằm trong module chính | Ghi nhận; không ảnh hưởng |
 | S7 | TB | Màn T-70 và W-DeviceSync chưa duyệt; theo DESIGN-SYSTEM §9 không build UI khi chưa duyệt | Pha 8 chờ duyệt (D4) |
+| S8 | TB | Hằng `CLOCK_SKEW_WARN_MS = 120_000` (`SyncService.java:40`) đã khai báo nhưng không có nơi nào dùng để cảnh báo trong module sync | Pha 4.1: nối vào cảnh báo lệch đồng hồ, viết test đỏ trước |
 
 ## 4. Phụ thuộc và rủi ro
 
@@ -96,7 +97,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 |---|---|---|---|
 | 0.1 | Kiểm FR-CC-060…069 theo mã (bảng mục 2): đánh dấu ❓ thành ✅/🟡/⬜ | ⬜ | Mục 2 |
 | 0.2 | Baseline: `npm test` (tablet) và `SyncIT` trên 8.0 | 🟡 | Tablet 10/10 xanh (2026-10-31). `SyncIT` xanh trong full verify 2026-10-30 |
-| 0.3 | Kiểm giới hạn 100 lệnh/lô và 500 lệnh cảnh báo (FR-CC-068) bằng test | ⬜ | Test đỏ trước |
+| 0.3 | Kiểm giới hạn 100 lệnh/lô và 500 lệnh cảnh báo (FR-CC-068) bằng test | 🟡 | 500 lệnh: xong ở 4.2. Còn test 100 lệnh/lô (`SyncService` dòng 102, chưa có test) |
 | 0.4 | Chốt D1–D5 | ✅ | Mục 6, 2026-11-03 (theo mặc định) |
 
 ### Pha 1 – Contract lệnh (SRS §4.7, S3)
@@ -127,7 +128,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | ID | Việc | Trạng thái | Ghi chú |
 |---|---|---|---|
 | 4.1 | Cảnh báo lệch đồng hồ > 2' (ngưỡng cấu hình, G2) | ⬜ | Test đỏ trước |
-| 4.2 | Cảnh báo hàng đợi > 500 lệnh (từ `pendingCount`) | ⬜ | |
+| 4.2 | Cảnh báo hàng đợi > 500 lệnh (từ `pendingCount`) | ✅ | Test đỏ trước (lỗi biên dịch: thiếu `scanQueueBacklog`), rồi xanh. `SyncMonitorQueueBacklogTest` 4/4; `alerting` và `masterdata` unit xanh; `SyncIT` 5/5 trên 8.0 và 8.4. Chưa có IT riêng cho seed rule `CC_QUEUE_BACKLOG` |
 | 4.3 | Dữ liệu offline 72 giờ: đo kích thước lưu trữ tablet | ⬜ | Đo trên lõi, không trên thiết bị |
 
 ### Pha 5 – Thao tác bắt buộc online (FR-CC-069)
@@ -176,7 +177,7 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | FR-CC-065 | ⬜ | ✅ (trên lõi; thiết bị theo D5) | 6.1 |
 | FR-CC-066 | 🟡 | ✅ (theo D4) | 8.1, 8.2 |
 | FR-CC-067 | ❓ | ✅ (P1) | 4.1 |
-| FR-CC-068 | ❓ | ✅ (P1) | 4.2, 4.3 |
+| FR-CC-068 | 🟡 | ✅ (P1) | 4.2 ✅, 4.3 ⬜, 0.3 🟡 |
 | FR-CC-069 | ❓ | ✅ | 5.1, 5.2 |
 
 ## 9. Rủi ro
@@ -195,4 +196,5 @@ Quy ước như E08: mỗi việc viết test trước (đỏ), rồi sửa mã 
 | Ngày | Ghi chú |
 |---|---|
 | 2026-10-31 | Lập kế hoạch E09 theo cấu trúc E08. Rà soát tĩnh `modules/sync` (8 file chính) và `src/tablet`. Baseline tablet 10/10 xanh. Chưa sửa mã |
+| 2026-11-03 | 4.2 ✅ (chọn phương án 2: rule `CC_QUEUE_BACKLOG` qua `SyncMonitorScanner`, ngưỡng `SYNC_QUEUE_MAX` = 500 trong seeder). Đỏ: test không biên dịch (thiếu `scanQueueBacklog`). Xanh: `SyncMonitorQueueBacklogTest` 4/4; unit sync/alerting/masterdata xanh; `SyncIT` 5/5 trên 8.0 và 8.4 (Colima chạy, socket trỏ qua `DOCKER_HOST`, không tạo symlink `/var/run`). Lệch so với plan: `scheduled()` gọi thêm `scanQueueBacklog`. Phát hiện S8. 0.3 còn test 100 lệnh/lô |
 | 2026-11-03 | 0.4 ✅: chốt D1–D5 theo mặc định (mục 6). Tạo worktree `/Volumes/DATA/code/PXVB-e09` từ `origin/main`, nhánh `feat/e09-sync-completion` (commit `a596629` thêm plan). Chưa chạy test; tiếp theo là 0.2 và 0.3 (test đỏ). Kiểm chứng: không có (chỉ sửa tài liệu) |
